@@ -38,8 +38,8 @@ miner::miner(arguments &args) : __args(args), __client(args.pool(), args.name(),
 
         LOG("Compute unit: " + (*it)->get_type());
         LOG((*it)->get_info());
-        LOG("\n");
     }
+    LOG("\n");
 }
 
 miner::~miner() {
@@ -187,6 +187,12 @@ bool miner::__update_pool_data() {
         __limit = new_settings.limit;
         __public_key = new_settings.public_key;
         __height = new_settings.height;
+        if(__args.is_verbose()) {
+            stringstream ss;
+            ss << "--> Pool data updated   Height: " << __height << "  Block: " << __blk <<
+               "  Limit: " << __limit << "  Difficulty: " << __difficulty;
+            LOG(ss.str());
+        }
         return true;
     }
 

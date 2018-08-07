@@ -10,11 +10,13 @@
 
 #include "../../argon2/defs.h"
 
-#if defined(__x86_64__)
+#if defined(__x86_64__) && !defined(BUILD_REF)
 #include "blamka-round-opt.h"
 #else
 #include "blamka-round-ref.h"
 #endif
+
+#ifndef BUILD_REF
 
 #if defined(__AVX512F__)
 static void fill_block(__m512i *state, const block *ref_block,
@@ -119,6 +121,7 @@ static void fill_block(__m128i *state, const block *ref_block,
         }
     }
 }
+#endif
 #else
 void copy_block(block *dst, const block *src) {
     memcpy(dst->v, src->v, sizeof(uint64_t) * ARGON2_QWORDS_IN_BLOCK);
@@ -174,14 +177,17 @@ void fill_memory_blocks(void *memory, int threads, void *user_data) {
     block *ref_block = NULL, *curr_block = NULL;
     uint32_t curr_offset, ref_offset;
     uint32_t starting_index = 2, i;
+#ifndef  BUILD_REF
 #if defined(__AVX512F__)
     __m512i state[ARGON2_512BIT_WORDS_IN_BLOCK];
 #elif defined(__AVX2__)
     __m256i state[ARGON2_HWORDS_IN_BLOCK];
 #elif defined(__x86_64__)
     __m128i state[ARGON2_OWORDS_IN_BLOCK];
+#endif
 #else
-    uint64_t state[ARGON2_QWORDS_IN_BLOCK];
+    block state_;
+    block *state = &state_;
 #endif
 
     block *blocks = memory;

@@ -216,7 +216,7 @@ void gpu_hasher::__run(opencl_device *device) {
             delete hash_factory;
 
             if(device->threads_count == 0) {
-                LOG("GPU hashing test failed, disabling hashing for it.");
+                LOG("--> GPU hashing test failed, disabling hashing for it.");
 
                 if(__devices.size() == 1) {
                     _intensity = 0;
@@ -226,7 +226,7 @@ void gpu_hasher::__run(opencl_device *device) {
                 return;
             }
             else {
-                LOG("GPU hashing test failed with " + to_string(device->threads_count + 1) + " threads, trying with " + to_string(device->threads_count) + " threads.");
+                LOG("--> GPU hashing test failed with " + to_string(device->threads_count + 1) + " threads, trying with " + to_string(device->threads_count) + " threads.");
             }
         } else
             break;

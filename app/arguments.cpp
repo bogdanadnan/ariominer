@@ -6,18 +6,6 @@
 
 #include "arguments.h"
 
-bool is_help();
-bool is_verbose();
-bool is_miner();
-bool is_proxy();
-
-string pool();
-string wallet();
-string name();
-int cpu_intensity();
-int gpu_intensity();
-
-
 arguments::arguments(int argc, char **argv) {
     __argv_0 = argv[0];
 
@@ -173,7 +161,51 @@ arguments::arguments(int argc, char **argv) {
 
 bool arguments::valid(string &error) {
     error = __error_message;
-    return !__error_flag;
+
+    if(__error_flag)
+        return false;
+
+    if(__miner_flag == false) {
+        error = "Only miner mode supported for the moment";
+        return false;
+    }
+
+    if(__pool.empty()) {
+        error = "Pool address is mandatory.";
+        return false;
+    }
+
+    if(__wallet.empty()) {
+        error = "Wallet is mandatory.";
+        return false;
+    }
+
+    if(__name.empty()) {
+        error = "Worker name is mandatory.";
+        return false;
+    }
+
+    if(__cpu_intensity < 0 || __cpu_intensity > 100) {
+        error = "CPU intensity must be between 0 - disabled and 100 - full load.";
+        return false;
+    }
+
+    if(__gpu_intensity < 0 || __gpu_intensity > 100) {
+        error = "GPU intensity must be between 0 - disabled and 100 - full load.";
+        return false;
+    }
+
+    if(__update_interval < 2000000) {
+        error = "Pool update interval must be at least 2 sec.";
+        return false;
+    }
+
+    if(__report_interval < 1000000) {
+        error = "Reporting interval must be at least 1 sec.";
+        return false;
+    }
+
+    return true;
 }
 
 bool arguments::is_help() {
@@ -255,10 +287,10 @@ string arguments::get_help() {
             "                    this is optional, defaults to 100 (*)\n"
             "   --gpu-intensity: miner specific option, mining intensity on GPU\n"
             "                    value from 0 (disabled) to 100 (full load)\n"
-            "                    this is optional, defaults to 100 (*)\n"
+            "                    this is optional, defaults to 80 (*)\n"
             "   --update-interval: how often should we update mining settings from pool, in seconds\n"
             "                    increasing it will lower the load on pool but will increase rejection rate\n"
-            "                    this is optional, defaults to 2 sec\n"
+            "                    this is optional, defaults to 2 sec and can't be set lower than that\n"
             "   --report-interval: how often should we display mining reports, in seconds\n"
             "                    this is optional, defaults to 10 sec\n"
             "\n"
@@ -276,10 +308,12 @@ void arguments::__init() {
     __wallet = "";
     __name = "";
     __cpu_intensity = 100;
-    __gpu_intensity = 100;
+    __gpu_intensity = 80;
     __proxy_port = 8088;
     __update_interval = 2000000;
     __report_interval = 10000000;
+
+    __error_flag = false;
 }
 
 string arguments::__argv_0 = "./";

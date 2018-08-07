@@ -20,6 +20,7 @@ static void mg_ev_handler(struct mg_connection *c, int ev, void *p) {
 
 http::http() {
     __internal_data = new mg_mgr();
+    __poll_running = false;
     mg_mgr_init((mg_mgr*)__internal_data, NULL);
 
 }

@@ -11,11 +11,15 @@ int main(int argc, char *argv[]) {
 
     arguments args(argc, argv);
 
-    string args_err;
-    if(!args.valid(args_err) || args.is_help()) {
-        if(!args_err.empty())
-            cout << args_err << endl;
+    if(args.is_help()) {
         cout << args.get_help() << endl;
+        return 0;
+    }
+
+    string args_err;
+    if(!args.valid(args_err)) {
+        cout << args_err << endl;
+        cout << "Type ariominer --help for usage information." << endl;
         return 0;
     }
 
