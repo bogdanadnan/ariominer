@@ -16,6 +16,7 @@
 #include <regex>
 
 #include <thread>
+#include <mutex>
 #include <chrono>
 
 #include <unistd.h>

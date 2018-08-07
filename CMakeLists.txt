@@ -48,6 +48,8 @@ find_package(OpenCL REQUIRED)
 include_directories(${OpenCL_INCLUDE_DIRS})
 link_directories(${OpenCL_LIBRARY})
 
+find_package (Threads)
+
 add_subdirectory(hash/cpu/cpu_features)
 
 add_executable(ariominer ${SOURCE})
@@ -73,4 +75,4 @@ target_compile_options(argon2_fill_blocks_AVX2 PRIVATE -mavx2 -O3)
 target_compile_options(argon2_fill_blocks_AVX512F PRIVATE -mavx512f -O3)
 target_compile_options(ariominer PRIVATE -O3)
 
-target_link_libraries(ariominer cpu_features ${OpenCL_LIBRARY})
+target_link_libraries(ariominer cpu_features ${OpenCL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
