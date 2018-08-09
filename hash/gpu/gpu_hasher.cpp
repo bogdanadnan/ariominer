@@ -15,6 +15,7 @@
 
 struct kernel_filler_params {
     cl::Buffer addresses;
+    cl::Buffer blkselector;
     cl::Buffer gpu_memory;
     cl::Buffer seed_memory;
     cl::Buffer gpu_output;
@@ -26,7 +27,7 @@ struct kernel_filler_params {
     int threads;
 };
 
-void kernel_filler(void *memory, int threads, void *user_data) {
+void kernel_filler(void *memory, int threads, argon2profile *profile, void *user_data) {
     kernel_filler_params *params = (kernel_filler_params *)user_data;
 
     auto result = params->queue.enqueueWriteBuffer(params->seed_memory, CL_TRUE, 0, 2 * ARGON2_BLOCK_SIZE * params->threads, memory);
@@ -140,7 +141,7 @@ string gpu_hasher::__detect_features_and_make_description() {
         ss << "["<< index << "] " << device_vendor << " - " << device_name << " : " << device_version << endl;
 
         d->available_processing_thr = d->device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() / KERNEL_WORKGROUP_SIZE;
-        d->available_memory_thr = d->device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>() / ARGON2_MEMORY_SIZE;
+        d->available_memory_thr = d->device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>() / argon2profile_default->memsize;
 
         ss << "Parallelism: " << d->available_processing_thr << " concurent threads supported." << endl;
         ss << "Memory: there is enough memory for " << d->available_memory_thr << " concurent threads." << endl;
@@ -150,6 +151,7 @@ string gpu_hasher::__detect_features_and_make_description() {
 }
 
 void gpu_hasher::__run(opencl_device *device) {
+    return; // THIS IS NOT WORKING NOW
     void *memory = malloc(2 * ARGON2_BLOCK_SIZE * device->threads_count + 256);
     size_t allocated_size = 2 * ARGON2_BLOCK_SIZE * device->threads_count + 256;
     uint8_t* aligned = (uint8_t*)align(32, 2 * ARGON2_BLOCK_SIZE, memory, allocated_size);
@@ -178,14 +180,14 @@ void gpu_hasher::__run(opencl_device *device) {
 
     params.kernel = cl::Kernel(program, "fill_blocks");
 
-    params.addresses = cl::Buffer(params.context, CL_MEM_READ_ONLY, BLOCKS_ADDRESSES_SIZE * sizeof(int32_t));
-    params.queue.enqueueWriteBuffer(params.addresses, CL_TRUE, 0, BLOCKS_ADDRESSES_SIZE * sizeof(int32_t),
-                                    blocks_addresses);
+    params.addresses = cl::Buffer(params.context, CL_MEM_READ_ONLY, argon2profile_default->block_refs_size * sizeof(int32_t));
+    params.queue.enqueueWriteBuffer(params.addresses, CL_TRUE, 0, argon2profile_default->block_refs_size * sizeof(int32_t),
+                                    argon2profile_default->block_refs);
 
     argon2 *hash_factory = NULL;
 
     while(true) {
-        params.gpu_memory = cl::Buffer(params.context, CL_MEM_READ_WRITE, ARGON2_MEMORY_SIZE * device->threads_count);
+        params.gpu_memory = cl::Buffer(params.context, CL_MEM_READ_WRITE, argon2profile_default->memsize * device->threads_count);
         params.seed_memory = cl::Buffer(params.context, CL_MEM_READ_ONLY,
                                         (2 * ARGON2_BLOCK_SIZE * device->threads_count));
         params.gpu_output = cl::Buffer(params.context, CL_MEM_WRITE_ONLY, ARGON2_BLOCK_SIZE * device->threads_count);
@@ -193,7 +195,9 @@ void gpu_hasher::__run(opencl_device *device) {
         params.threads = device->threads_count;
         params.output = (uint8_t *) malloc(ARGON2_BLOCK_SIZE * device->threads_count);
 
-        hash_factory = new argon2(kernel_filler, device->threads_count, aligned, ARGON2_BLOCK_SIZE * 2, &params);
+        hash_factory = new argon2(kernel_filler, aligned, &params);
+        hash_factory->set_threads(device->threads_count);
+        hash_factory->set_seed_memory_offset(ARGON2_BLOCK_SIZE * 2);
 
         params.kernel.setArg(0, params.addresses);
         params.kernel.setArg(1, params.gpu_memory);
@@ -201,7 +205,7 @@ void gpu_hasher::__run(opencl_device *device) {
 
         string test_base = "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCy7AEg3h9oYjeR74yj73q3gPxbxq9R3nxSSUV4KKgu1sQZu9Qj9v2q2HhT5H3LTHwW7HzAA28SjWFdzkNoovBMncD-IwByKLm3TUstklR5Y9Kk0iiWriHl28eB650C6LKg4w0-kdtd8pVPieNigRVj3ELd8zsR3FtrT9HCZbBtjZXkCt6BP7MUmTRgc3GPVeQEmiJW6shAH5wvwzZhLRZAkEKjwsg-14146465";
         string test_salt = "GTmEqKhy1LYzs9Z.";
-        vector<string> test_hashes = hash_factory->generate_hashes(test_base, test_salt);
+        vector<string> test_hashes = hash_factory->generate_hashes(*argon2profile_default, test_base, test_salt);
 
         bool test_pass = true;
         for (auto it = test_hashes.begin(); it != test_hashes.end(); it++) {
@@ -233,11 +237,12 @@ void gpu_hasher::__run(opencl_device *device) {
     }
 
     while(__running) {
-        string base = get_base();
-        if (!base.empty()) {
-            vector<string> hashes = hash_factory->generate_hashes(base);
+        hash_data input = get_input();
+        if (!input.base.empty()) {
+            vector<string> hashes = hash_factory->generate_hashes(*argon2profile_default, input.base);
             for(auto it = hashes.begin(); it != hashes.end(); ++it) {
-                _store_hash(*it);
+                input.hash = *it;
+                _store_hash(input);
             }
         }
     }

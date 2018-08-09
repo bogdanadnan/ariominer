@@ -17,12 +17,13 @@ public:
     void run();
 
 private:
-    string __make_nonce();
     string __calc_duration(const string &base, const string &hash);
     uint64_t __calc_compare(const string &duration);
     bool __update_pool_data();
     void __display_report();
 
+    string __argon2profile;
+    string __recommendation;
     string __nonce;
     string __blk;
     string __difficulty;

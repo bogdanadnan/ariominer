@@ -7,7 +7,6 @@
 #include "../hash/hasher.h"
 
 #include "../crypt/sha512.h"
-#include "../http/mongoose/mongoose.h"
 #include "mini-gmp/mini-gmp.h"
 
 #include "miner.h"
@@ -47,9 +46,9 @@ miner::~miner() {
 }
 
 void miner::run() {
-    uint64_t  __begin, __last_update, __last_report;
-    __begin = microseconds();
-    __last_update = __last_report = 0;
+    uint64_t  begin, last_update, last_report;
+    begin = microseconds();
+    last_update = last_report = 0;
 
     vector<hasher*> hashers = hasher::get_active_hashers();
 
@@ -77,37 +76,28 @@ void miner::run() {
                     else {
                         if(__args.is_verbose()) LOG("--> The nonce did not confirm.");
                         __rejected++;
+                        if(hash->realloc_flag != NULL)
+                            *(hash->realloc_flag) = true;
                     }
-                    __nonce = "";
                 }
             }
         }
 
-        bool need_hashers_update = false;
-
-        if(__nonce == "") {
-            __nonce = __make_nonce();
-            need_hashers_update = true;
-        }
-
-        if(microseconds() - __last_update > __args.update_interval()) {
-            need_hashers_update = __update_pool_data();
-            __last_update = microseconds();
-        }
-
-        if(need_hashers_update) {
-            string base = __public_key + "-" + __nonce + "-" + __blk + "-" + __difficulty;
-            for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
-                (*it)->set_input(__nonce, base);
+        if(microseconds() - last_update > __args.update_interval()) {
+            if(__update_pool_data()) {
+                for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
+                    (*it)->set_input(__public_key, __blk, __difficulty, __argon2profile, __recommendation);
+                }
             }
+            last_update = microseconds();
         }
 
-        if(microseconds() - __last_report > __args.report_interval()) {
+        if(microseconds() - last_report > __args.report_interval()) {
             __display_report();
-            __last_report = microseconds();
+            last_report = microseconds();
         }
 
-        __total_time = (microseconds() - __begin) / 1000000;
+        __total_time = (microseconds() - begin) / 1000000;
         this_thread::sleep_for(chrono::milliseconds(100));
     }
 }
@@ -154,19 +144,6 @@ uint64_t miner::__calc_compare(const string &duration) {
     return result;
 }
 
-string miner::__make_nonce() {
-    unsigned char input[32];
-    char output[50];
-
-    for(int i=0;i<32;i++) {
-        double rnd_scaler = rand()/(1.0 + RAND_MAX);
-        input[i] = (unsigned char)(rnd_scaler * 256);
-    }
-
-    mg_base64_encode(input, 32, output);
-    return regex_replace (string(output), regex("[^a-zA-Z0-9]"), "");
-}
-
 bool miner::__update_pool_data() {
     vector<hasher*> hashers = hasher::get_active_hashers();
 
@@ -187,10 +164,17 @@ bool miner::__update_pool_data() {
         __limit = new_settings.limit;
         __public_key = new_settings.public_key;
         __height = new_settings.height;
+        __argon2profile = new_settings.argon2profile;
+        __recommendation = new_settings.recommendation;
+
         if(__args.is_verbose()) {
             stringstream ss;
-            ss << "--> Pool data updated   Height: " << __height << "  Block: " << __blk <<
-               "  Limit: " << __limit << "  Difficulty: " << __difficulty;
+            ss << "-----------------------------------------------------------------------------------------------------------------------------------------" << endl;
+            ss << "--> Pool data updated   Block: " << __blk << endl;
+            ss << "--> " << ((new_settings.argon2profile == "1_1_524288") ? "CPU round" : (new_settings.recommendation == "pause" ? "Masternode round" : "GPU round"));
+            ss << "  Height: " << __height << "  Limit: " << __limit << "  Difficulty: " << __difficulty << endl;
+            ss << "-----------------------------------------------------------------------------------------------------------------------------------------";
+
             LOG(ss.str());
         }
         return true;
@@ -214,34 +198,34 @@ void miner::__display_report() {
             hash_count += (*it)->get_hash_count();
         }
 
-        ss << "--> Last hash rate: " << hash_rate << " H/s   " <<
-           "Average: " << avg_hash_rate << " H/s  " <<
-           "Total hashes: " << hash_count << "  " <<
-           "Mining Time: " << __total_time << "  " <<
-           "Shares: " << __confirmed << " " <<
-           "Finds: " << __found << " " <<
-           "Rejected: " << __rejected;
+        ss << fixed << setprecision(2) << "--> Last hash rate: " << setw(6) << hash_rate << " H/s   " <<
+           "Average: " << setw(6) << avg_hash_rate << " H/s  " <<
+           "Total hashes: " << setw(6) << hash_count << "  " <<
+           "Mining Time: " << setw(6) << __total_time << "  " <<
+           "Shares: " << setw(4) << __confirmed << " " <<
+           "Finds: " << setw(4) << __found << " " <<
+           "Rejected: " << setw(4) << __rejected;
     }
     else {
-        ss << "--> Mining Time: " << __total_time << "  " <<
-           "Shares: " << __confirmed << " " <<
-           "Finds: " << __found << " " <<
-           "Rejected: " << __rejected << endl;
+        ss << fixed << setprecision(2) << "--> Mining Time: " << setw(6) << __total_time << "  " <<
+           "Shares: " << setw(4) << __confirmed << " " <<
+           "Finds: " << setw(4) << __found << " " <<
+           "Rejected: " << setw(4) << __rejected << endl;
         for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
             if((*it)->get_intensity() == 0) continue;
             hash_rate += (*it)->get_current_hash_rate();
             avg_hash_rate += (*it)->get_avg_hash_rate();
             hash_count += (*it)->get_hash_count();
 
-            ss << "--> " << (*it)->get_type() << "  " <<
-               "Last hash rate: " << (*it)->get_current_hash_rate() << " H/s   " <<
-               "Average: " << (*it)->get_avg_hash_rate() << " H/s  " <<
-               "Total hashes: " << (*it)->get_hash_count() << endl;
+            ss << fixed << setprecision(2) << "--> " << (*it)->get_type() << "  " <<
+               "Last hash rate: " << setw(6)<< (*it)->get_current_hash_rate() << " H/s   " <<
+               "Average: " << setw(6) << (*it)->get_avg_hash_rate() << " H/s  " <<
+               "Total hashes: " << setw(6) << (*it)->get_hash_count() << endl;
         }
-        ss << "--> Aggregated:   " <<
-           "Last hash rate: " << hash_rate << " H/s   " <<
-           "Average: " << avg_hash_rate << " H/s  " <<
-           "Total hashes: " << hash_count;
+        ss << fixed << setprecision(2) << "--> ALL  " <<
+           "Last hash rate: " << setw(6) << hash_rate << " H/s   " <<
+           "Average: " << setw(6) << avg_hash_rate << " H/s  " <<
+           "Total hashes: " << setw(6) << hash_count;
     }
 
     LOG(ss.str());

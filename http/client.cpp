@@ -39,6 +39,8 @@ ariopool_update_result ariopool_client::update(double hash_rate) {
         result.limit = (uint)data["limit"].ToInt();
         result.public_key = data["public_key"].ToString();
         result.height = (uint)data["height"].ToInt();
+        result.argon2profile = to_string(data["argon_threads"].ToInt()) + "_" + to_string(data["argon_time"].ToInt()) + "_" + to_string(data["argon_mem"].ToInt());
+        result.recommendation = data["recommendation"].ToString();
     }
 
     return result;

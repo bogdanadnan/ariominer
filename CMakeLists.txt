@@ -18,7 +18,8 @@ set(SOURCE
         miner/mini-gmp/mini-gmp.h miner/mini-gmp/mini-gmp.c
         common/common.cpp
         hash/argon2/argon2.cpp hash/argon2/argon2.h
-        hash/argon2/defs.h hash/argon2/adresses.c
+        hash/argon2/defs.h
+        hash/argon2/argon2profile_4_4_16384.c hash/argon2/argon2profile_1_1_524288.c
         hash/argon2/blake2/blake2b.c hash/argon2/blake2/blake2.h
         hash/gpu/OpenCL_Cpp/cl.hpp
         hash/gpu/opencl_kernel.cpp hash/gpu/opencl_kernel.h)
@@ -28,8 +29,7 @@ set(ARGON2_FILL_BLOCKS_SRC
         hash/cpu/argon2_opt/blamka-round-opt.h
         hash/cpu/argon2_opt/blamka-round-ref.h
         hash/argon2/defs.h
-        hash/argon2/blake2/blake2-impl.h
-        hash/argon2/adresses.c)
+        hash/argon2/blake2/blake2-impl.h)
 
 set (CMAKE_CXX_STANDARD 11)
 set (ArioMiner_VERSION_MAJOR 0)

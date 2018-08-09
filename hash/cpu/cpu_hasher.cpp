@@ -131,7 +131,7 @@ string cpu_hasher::__detect_features_and_make_description() {
     //check available memory
     vector<void *> memory_test;
     for(__available_memory_thr = 0;__available_memory_thr < __available_processing_thr;__available_memory_thr++) {
-        void *memory = malloc(ARGON2_MEMORY_SIZE + 32); //32 bytes for alignament
+        void *memory = malloc(argon2profile_default->memsize + 32); //32 bytes for alignament
         if(memory == NULL)
             break;
         memory_test.push_back(memory);
@@ -145,23 +145,58 @@ string cpu_hasher::__detect_features_and_make_description() {
 }
 
 void cpu_hasher::__run() {
-    void *memory = malloc(ARGON2_MEMORY_SIZE + 256);
-    size_t allocated_size = ARGON2_MEMORY_SIZE + 256;
-    uint8_t* aligned = (uint8_t*)align(32, ARGON2_MEMORY_SIZE, memory, allocated_size);
+    void *buffer = NULL;
+    void *mem = __allocate_memory(buffer);
+    if(mem == NULL) {
+        LOG("Error allocating memory");
+        return;
+    }
 
-    argon2 hash_factory(__argon2_blocks_filler_ptr, 1, aligned, ARGON2_MEMORY_SIZE, NULL);
+    argon2 hash_factory(__argon2_blocks_filler_ptr, mem, NULL);
+
+    bool should_realloc = false;
 
     while(__running) {
-        string base = get_base();
-        if(!base.empty()) {
-            vector<string> hashes = hash_factory.generate_hashes(base);
-            for(auto it = hashes.begin(); it != hashes.end(); ++it) {
-                _store_hash(*it);
+        if(should_pause()) {
+            this_thread::sleep_for(chrono::milliseconds(100));
+            continue;
+        }
+
+        if(should_realloc) {
+            free(buffer);
+            mem = __allocate_memory(buffer);
+            if(mem == NULL) {
+                LOG("Error allocating memory");
+                return;
+            }
+            hash_factory.set_seed_memory((uint8_t *)mem);
+            should_realloc = false;
+        }
+
+        hash_data input = get_input();
+        argon2profile &profile = get_argon2profile();
+
+        if(!input.base.empty()) {
+            hash_factory.set_seed_memory_offset(profile.memsize);
+            hash_factory.set_threads(argon2profile_default->memsize / profile.memsize);
+
+            vector<string> hashes = hash_factory.generate_hashes(profile, input.base);
+            for(vector<string>::iterator it = hashes.begin(); it != hashes.end(); ++it) {
+                input.hash = *it;
+                input.realloc_flag = &should_realloc;
+                _store_hash(input);
             }
         }
     }
 
-    free(memory);
+    free(buffer);
+}
+
+void *cpu_hasher::__allocate_memory(void *&buffer) {
+    size_t mem_size = argon2profile_default->memsize + 64;
+    void *mem = malloc(mem_size);
+    buffer = mem;
+    return align(32, argon2profile_default->memsize, mem, mem_size);
 }
 
 void cpu_hasher::__load_argon2_block_filler() {

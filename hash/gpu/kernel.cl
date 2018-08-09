@@ -165,21 +165,30 @@ __constant int offsets_round_4[32][4] = {
     { 31, 46, 79, 126 },
 };
 
-#define xor_block(dst1, dst2, src)                                                     \
+#define xor_block_3(dst1, dst2, src)                                                     \
 { \
 ulong4 data = vload4(0, &dst1[offset]) ^ vload4(0, &src[offset]); \
 vstore4(data, 0, &dst1[offset]); \
 vstore4(data, 0, &dst2[offset]); \
 }
 
+#define xor_block_2(dst, src)                                                     \
+{ \
+ulong4 data = vload4(0, &dst[offset]) ^ vload4(0, &src[offset]); \
+vstore4(data, 0, &dst[offset]); \
+}
+
 #define copy_block(dst, src)                                                    \
 vstore4(vload4(0, &src[offset]), 0, &dst[offset]);
 
 static void fill_block(__local ulong *prev_block, __global const ulong *ref_block,
-                       __global ulong *next_block, __local ulong *buffer, int id) {
+                       __global ulong *next_block, __local ulong *buffer, int id, int with_xor) {
     int offset = id * MEMORY_CHUNK_PER_ITEM;
     
-    xor_block(prev_block, buffer, ref_block);
+    xor_block_3(prev_block, buffer, ref_block);
+    if(with_xor)
+        xor_block_2(buffer, next_block);
+
     barrier(CLK_LOCAL_MEM_FENCE);
 
     G(prev_block, offsets_round_1[id]);
@@ -191,28 +200,33 @@ static void fill_block(__local ulong *prev_block, __global const ulong *ref_bloc
     G(prev_block, offsets_round_4[id]);
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    xor_block(prev_block, next_block, buffer);
+    xor_block_3(prev_block, next_block, buffer);
     barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
 }
 
 kernel void fill_blocks(
             __global int *addresses,
+            __global int *blkselector,
             __global ulong *memory,
             __global ulong *seed,
-            __global ulong *out
+            __global ulong *out,
+            __global uint mem_size,
+            __global uint addr_size,
+            __global uint sel_size,
+            __global uint xor_limit
        )
 {
     int hash = get_group_id(0);
     int id = get_local_id(0);
     
-    __global ulong *local_memory = memory + hash * ARGON2_MEMORY_SIZE;
+    __global ulong *local_memory = memory + hash * (mem_size >> 3);
     __global ulong *local_out = out + hash * BLOCK_SIZE_ULONG;
     __global ulong *local_seed = seed + hash * 2 * BLOCK_SIZE_ULONG;
 
     __local ulong state[BLOCK_SIZE_ULONG];
     __local ulong buffer[BLOCK_SIZE_ULONG];
     
-    __global int *address = (addresses + 4);
+    __global int *address = addresses;
     
     int offset = id * MEMORY_CHUNK_PER_ITEM;
     
@@ -220,16 +234,25 @@ kernel void fill_blocks(
     copy_block((local_memory + BLOCK_SIZE_ULONG), (local_seed + BLOCK_SIZE_ULONG));
     copy_block(state, (local_seed + BLOCK_SIZE_ULONG));
     barrier(CLK_GLOBAL_MEM_FENCE | CLK_LOCAL_MEM_FENCE);
-    
-    for(int i=2; i < ARGON2_MEMORY_BLOCKS; ++i, address += 2) {
+
+    for(int i=0; i < addr_size; ++i, address += 3) {
+        int with_xor = (i >= xor_limit);
+        if(address[1] != -1) {
+            copy_block(state, (local_memory + (address[1] * BLOCK_SIZE_ULONG)));
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+
         fill_block(state,
-                   local_memory + (address[1] * BLOCK_SIZE_ULONG),
+                   local_memory + (address[2] * BLOCK_SIZE_ULONG),
                    (address[0] == -1) ? local_out : (local_memory + (address[0] * BLOCK_SIZE_ULONG)),
                    buffer,
-                   id);
+                   id, with_xor);
     }
-    
-    copy_block(local_out, state);
+
+    copy_block(local_out, (local_memory + blkselector[0] * BLOCK_SIZE_ULONG));
+    for(int i=1; i < sel_size; i++) {
+        xor_block_2(local_out, (local_memory + blkselector[i] * BLOCK_SIZE_ULONG));
+    }
     barrier(CLK_GLOBAL_MEM_FENCE);
 }
 

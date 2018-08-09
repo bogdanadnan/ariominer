@@ -6,8 +6,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-//#include "argon2.h"
-
 #include "../../argon2/defs.h"
 
 #if defined(__x86_64__) && !defined(BUILD_REF)
@@ -16,17 +14,37 @@
 #include "blamka-round-ref.h"
 #endif
 
+void copy_block(block *dst, const block *src) {
+    memcpy(dst->v, src->v, sizeof(uint64_t) * ARGON2_QWORDS_IN_BLOCK);
+}
+
+void xor_block(block *dst, const block *src) {
+    int i;
+    for (i = 0; i < ARGON2_QWORDS_IN_BLOCK; ++i) {
+        dst->v[i] ^= src->v[i];
+    }
+}
+
 #ifndef BUILD_REF
 
 #if defined(__AVX512F__)
 static void fill_block(__m512i *state, const block *ref_block,
-                       block *next_block) {
+                       block *next_block, int with_xor) {
     __m512i block_XY[ARGON2_512BIT_WORDS_IN_BLOCK];
     unsigned int i;
 
-    for (i = 0; i < ARGON2_512BIT_WORDS_IN_BLOCK; i++) {
-        block_XY[i] = state[i] = _mm512_xor_si512(
-            state[i], _mm512_loadu_si512((const __m512i *)ref_block->v + i));
+    if (with_xor) {
+        for (i = 0; i < ARGON2_512BIT_WORDS_IN_BLOCK; i++) {
+            state[i] = _mm512_xor_si512(
+                state[i], _mm512_loadu_si512((const __m512i *)ref_block->v + i));
+            block_XY[i] = _mm512_xor_si512(
+                state[i], _mm512_loadu_si512((const __m512i *)next_block->v + i));
+        }
+    } else {
+        for (i = 0; i < ARGON2_512BIT_WORDS_IN_BLOCK; i++) {
+            block_XY[i] = state[i] = _mm512_xor_si512(
+                state[i], _mm512_loadu_si512((const __m512i *)ref_block->v + i));
+        }
     }
 
     for (i = 0; i < 2; ++i) {
@@ -55,13 +73,22 @@ static void fill_block(__m512i *state, const block *ref_block,
 }
 #elif defined(__AVX2__)
 static void fill_block(__m256i *state, const block *ref_block,
-                       block *next_block) {
+                       block *next_block, int with_xor) {
     __m256i block_XY[ARGON2_HWORDS_IN_BLOCK];
     unsigned int i;
 
-    for (i = 0; i < ARGON2_HWORDS_IN_BLOCK; i++) {
-        block_XY[i] = state[i] = _mm256_xor_si256(
-                state[i], _mm256_load_si256((const __m256i *)ref_block->v + i));
+    if (with_xor) {
+        for (i = 0; i < ARGON2_HWORDS_IN_BLOCK; i++) {
+            state[i] = _mm256_xor_si256(
+                    state[i], _mm256_loadu_si256((const __m256i *)ref_block->v + i));
+            block_XY[i] = _mm256_xor_si256(
+                    state[i], _mm256_loadu_si256((const __m256i *)next_block->v + i));
+        }
+    } else {
+        for (i = 0; i < ARGON2_HWORDS_IN_BLOCK; i++) {
+            block_XY[i] = state[i] = _mm256_xor_si256(
+                    state[i], _mm256_loadu_si256((const __m256i *)ref_block->v + i));
+        }
     }
 
     for (i = 0; i < 4; ++i) {
@@ -86,15 +113,24 @@ static void fill_block(__m256i *state, const block *ref_block,
         }
     }
 }
-#elif defined(__x86_64__)
+#else
 static void fill_block(__m128i *state, const block *ref_block,
-                       block *next_block) {
+                       block *next_block, int with_xor) {
     __m128i block_XY[ARGON2_OWORDS_IN_BLOCK];
     unsigned int i;
 
-    for (i = 0; i < ARGON2_OWORDS_IN_BLOCK; i++) {
-        block_XY[i] = state[i] = _mm_xor_si128(
-            state[i], _mm_loadu_si128((const __m128i *)ref_block->v + i));
+    if (with_xor) {
+        for (i = 0; i < ARGON2_OWORDS_IN_BLOCK; i++) {
+            state[i] = _mm_xor_si128(
+                state[i], _mm_loadu_si128((const __m128i *)ref_block->v + i));
+            block_XY[i] = _mm_xor_si128(
+                state[i], _mm_loadu_si128((const __m128i *)next_block->v + i));
+        }
+    } else {
+        for (i = 0; i < ARGON2_OWORDS_IN_BLOCK; i++) {
+            block_XY[i] = state[i] = _mm_xor_si128(
+                state[i], _mm_loadu_si128((const __m128i *)ref_block->v + i));
+        }
     }
 
     for (i = 0; i < 8; ++i) {
@@ -122,25 +158,19 @@ static void fill_block(__m128i *state, const block *ref_block,
     }
 }
 #endif
+
 #else
-void copy_block(block *dst, const block *src) {
-    memcpy(dst->v, src->v, sizeof(uint64_t) * ARGON2_QWORDS_IN_BLOCK);
-}
-
-void xor_block(block *dst, const block *src) {
-    int i;
-    for (i = 0; i < ARGON2_QWORDS_IN_BLOCK; ++i) {
-        dst->v[i] ^= src->v[i];
-    }
-}
-
 static void fill_block(block *prev_block, const block *ref_block,
-                       block *next_block) {
+                       block *next_block, int with_xor) {
     block block_tmp;
     unsigned i;
 
     xor_block(prev_block, ref_block);
     copy_block(&block_tmp, prev_block);
+
+    if (with_xor && next_block != NULL) {
+        xor_block(&block_tmp, next_block);
+    }
 
     /* Apply Blake2 on columns of 64-bit words: (0,1,...,15) , then
      (16,17,..31)... finally (112,113,...127) */
@@ -173,10 +203,7 @@ static void fill_block(block *prev_block, const block *ref_block,
 
 #endif
 
-void fill_memory_blocks(void *memory, int threads, void *user_data) {
-    block *ref_block = NULL, *curr_block = NULL;
-    uint32_t curr_offset, ref_offset;
-    uint32_t starting_index = 2, i;
+void fill_memory_blocks(void *memory, int threads, argon2profile *profile, void *user_data) {
 #ifndef  BUILD_REF
 #if defined(__AVX512F__)
     __m512i state[ARGON2_512BIT_WORDS_IN_BLOCK];
@@ -190,17 +217,37 @@ void fill_memory_blocks(void *memory, int threads, void *user_data) {
     block *state = &state_;
 #endif
 
-    block *blocks = memory;
+    for(int thr = 0; thr < threads;thr++) {
+        block *ref_block = NULL, *curr_block = NULL, *prev_block = NULL;
 
-    memcpy(state, (void *)(blocks + 1), ARGON2_BLOCK_SIZE);
+        block *blocks = (block *)((uint8_t*)memory + thr * profile->memsize);
 
-    int32_t *address = blocks_addresses + (starting_index * 2);
+        memcpy(state, (void *) (blocks + 1), ARGON2_BLOCK_SIZE);
 
-    for (i = starting_index; i < ARGON2_MEMORY_BLOCKS; ++i, address += 2) {
-        ref_block = blocks + address[1];
-        curr_block = (address[0] == -1) ? NULL : (blocks + address[0]);
+        int32_t *address = profile->block_refs;
 
-        fill_block(state, ref_block, curr_block);
+        int with_xor = 0;
+
+        for (int i = 0; i < profile->block_refs_size; ++i, address += 3) {
+            if(profile->tm_cost > 1 && address[0] == 0)
+                with_xor = 1;
+
+            ref_block = blocks + address[2];
+            prev_block = (address[1] == -1) ? NULL : (blocks + address[1]);
+
+            if (address[0] == -2) {
+                xor_block(prev_block, ref_block);
+            } else {
+                if(prev_block != NULL)
+                    memcpy(state, (void *) prev_block, ARGON2_BLOCK_SIZE);
+                curr_block = (address[0] == -1) ? NULL : (blocks + address[0]);
+                fill_block(state, ref_block, curr_block, with_xor);
+            }
+        }
+
+        address -= 3;
+        if(address[0] == -2)
+            memcpy((void*)blocks, (void *) (blocks + address[1]), ARGON2_BLOCK_SIZE);
     }
 }
 

@@ -17,6 +17,8 @@ struct ariopool_update_result : public ariopool_result {
     uint limit;
     string public_key;
     uint height;
+    string argon2profile;
+    string recommendation;
 };
 
 struct ariopool_submit_result : public ariopool_result {

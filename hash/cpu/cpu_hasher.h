@@ -14,8 +14,9 @@ public:
 
 private:
     string __detect_features_and_make_description();
-
     void __load_argon2_block_filler();
+    void *__allocate_memory(void *&buffer);
+
     void __run();
 
     string __optimization;
