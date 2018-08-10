@@ -131,7 +131,7 @@ string cpu_hasher::__detect_features_and_make_description() {
     //check available memory
     vector<void *> memory_test;
     for(__available_memory_thr = 0;__available_memory_thr < __available_processing_thr;__available_memory_thr++) {
-        void *memory = malloc(argon2profile_default->memsize + 32); //32 bytes for alignament
+        void *memory = malloc(argon2profile_default->memsize + 64); //64 bytes for alignament - to work on AVX512F optimisations
         if(memory == NULL)
             break;
         memory_test.push_back(memory);
@@ -163,13 +163,16 @@ void cpu_hasher::__run() {
         }
 
         if(should_realloc) {
-            free(buffer);
-            mem = __allocate_memory(buffer);
+            void *new_buffer;
+            mem = __allocate_memory(new_buffer);
             if(mem == NULL) {
+                free(buffer);
                 LOG("Error allocating memory");
                 return;
             }
             hash_factory.set_seed_memory((uint8_t *)mem);
+            free(buffer);
+            buffer = new_buffer;
             should_realloc = false;
         }
 
@@ -196,7 +199,7 @@ void *cpu_hasher::__allocate_memory(void *&buffer) {
     size_t mem_size = argon2profile_default->memsize + 64;
     void *mem = malloc(mem_size);
     buffer = mem;
-    return align(32, argon2profile_default->memsize, mem, mem_size);
+    return align(64, argon2profile_default->memsize, mem, mem_size);
 }
 
 void cpu_hasher::__load_argon2_block_filler() {
