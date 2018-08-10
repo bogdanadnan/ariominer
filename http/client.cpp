@@ -76,5 +76,5 @@ ariopool_submit_result ariopool_client::submit(const string &hash, const string 
 }
 
 bool ariopool_client::__validate_response(const string &response) {
-    return !response.empty() && response.find("status") != string::npos;
+    return !response.empty() && response.find("status") != string::npos && response.find(":null") == string::npos;
 }

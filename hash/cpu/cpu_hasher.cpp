@@ -177,13 +177,13 @@ void cpu_hasher::__run() {
         }
 
         hash_data input = get_input();
-        argon2profile &profile = get_argon2profile();
+        argon2profile *profile = get_argon2profile();
 
         if(!input.base.empty()) {
-            hash_factory.set_seed_memory_offset(profile.memsize);
-            hash_factory.set_threads(argon2profile_default->memsize / profile.memsize);
+            hash_factory.set_seed_memory_offset(profile->memsize);
+            hash_factory.set_threads(argon2profile_default->memsize / profile->memsize);
 
-            vector<string> hashes = hash_factory.generate_hashes(profile, input.base);
+            vector<string> hashes = hash_factory.generate_hashes(*profile, input.base);
             for(vector<string>::iterator it = hashes.begin(); it != hashes.end(); ++it) {
                 input.hash = *it;
                 input.realloc_flag = &should_realloc;
