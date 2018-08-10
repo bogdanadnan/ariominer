@@ -31,6 +31,9 @@ set(ARGON2_FILL_BLOCKS_SRC
         hash/argon2/defs.h
         hash/argon2/blake2/blake2-impl.h)
 
+set(OPENCL_TEST_SRC
+        opencl_testing/main.cpp)
+
 set (CMAKE_CXX_STANDARD 11)
 set (ArioMiner_VERSION_MAJOR 0)
 set (ArioMiner_VERSION_MINOR 1)
@@ -53,6 +56,8 @@ find_package (Threads)
 add_subdirectory(hash/cpu/cpu_features)
 
 add_executable(ariominer ${SOURCE})
+#add_executable(opencl_test ${OPENCL_TEST_SRC})
+
 add_library(argon2_fill_blocks_REF SHARED ${ARGON2_FILL_BLOCKS_SRC})
 add_library(argon2_fill_blocks_SSE2 SHARED ${ARGON2_FILL_BLOCKS_SRC})
 add_library(argon2_fill_blocks_SSSE3 SHARED ${ARGON2_FILL_BLOCKS_SRC})
@@ -76,3 +81,4 @@ target_compile_options(argon2_fill_blocks_AVX512F PRIVATE -mavx512f -O3)
 target_compile_options(ariominer PRIVATE -O3)
 
 target_link_libraries(ariominer cpu_features ${OpenCL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+#target_link_libraries(opencl_test ${OpenCL_LIBRARY})

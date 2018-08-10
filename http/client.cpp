@@ -48,7 +48,11 @@ ariopool_update_result ariopool_client::update(double hash_rate) {
 
 ariopool_submit_result ariopool_client::submit(const string &hash, const string &nonce, const string &public_key) {
     ariopool_submit_result result;
-    string argon_data = hash.substr(30);
+    string argon_data = "";
+    if(hash.find("$argon2i$v=19$m=16384,t=4,p=4") == 0)
+        argon_data = hash.substr(29);
+    else
+        argon_data = hash.substr(30);
 
     string payload = "argon=" + __encode(argon_data) +
             "&nonce=" + __encode(nonce) +

@@ -33,7 +33,6 @@ vector<string> argon2::generate_hashes(const argon2profile &profile, const strin
         else {
             salt = salt_;
         }
-
         salts.push_back(salt);
 
         __initial_hash(profile, blockhash, base, salt);
@@ -53,7 +52,6 @@ vector<string> argon2::generate_hashes(const argon2profile &profile, const strin
 
         result.push_back(__encode_string(profile, salts[i], raw_hash));
     }
-
     return result;
 }
 
