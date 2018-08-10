@@ -31,7 +31,7 @@ public:
     void set_input(const string &public_key, const string &blk, const string &difficulty, const string &argon2profile_string, const string &recommendation);
 
     hash_data get_input();
-    argon2profile &get_argon2profile();
+    argon2profile *get_argon2profile();
     bool should_pause();
     int get_intensity();
 
@@ -65,7 +65,7 @@ private:
     string __blk;
     string __difficulty;
     bool __pause;
-    argon2profile &__argon2profile;
+    argon2profile *__argon2profile;
 
     mutex __hashes_mutex;
     vector<hash_data> __hashes;

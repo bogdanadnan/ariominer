@@ -12,7 +12,7 @@
 #include "gpu/gpu_hasher.h"
 #include "cpu/cpu_hasher.h"
 
-hasher::hasher() : __argon2profile(*argon2profile_default) {
+hasher::hasher() {
     _intensity = 0;
     _type = "";
     _description = "";
@@ -21,7 +21,7 @@ hasher::hasher() : __argon2profile(*argon2profile_default) {
     __blk = "";
     __difficulty = "";
     __pause = false;
-    __argon2profile = *argon2profile_default;
+    __argon2profile = argon2profile_default;
 
     __hash_rate = 0;
     __avg_hash_rate = 0;
@@ -53,13 +53,10 @@ void hasher::set_input(const string &public_key, const string &blk, const string
     __blk = blk;
     __difficulty = difficulty;
     if(argon2profile_string == "4_4_16384") {
-        __argon2profile = argon2profile_4_4_16384;
-    }
-    else if(argon2profile_string == "1_1_524288"){
-        __argon2profile = argon2profile_1_1_524288;
+        __argon2profile = &argon2profile_4_4_16384;
     }
     else {
-        __argon2profile = *argon2profile_default;
+        __argon2profile = &argon2profile_1_1_524288;
     }
     __pause = (recommendation == "pause");
     __input_mutex.unlock();
@@ -133,7 +130,7 @@ vector<hasher *> hasher::get_active_hashers() {
     return filtered;
 }
 
-argon2profile &hasher::get_argon2profile() {
+argon2profile *hasher::get_argon2profile() {
     return __argon2profile;
 }
 
