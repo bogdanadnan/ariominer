@@ -22,7 +22,7 @@ struct ariopool_update_result : public ariopool_result {
 };
 
 struct ariopool_submit_result : public ariopool_result {
-
+    string pool_response;
 };
 
 class ariopool_client : public http {

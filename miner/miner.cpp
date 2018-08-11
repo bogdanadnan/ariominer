@@ -74,7 +74,11 @@ void miner::run() {
                         }
                     }
                     else {
-                        if(__args.is_verbose()) LOG("--> The nonce did not confirm.");
+                        if(__args.is_verbose()) {
+                            LOG("--> The nonce did not confirm.");
+                            LOG("--> Pool response: ");
+                            LOG(reply.pool_response);
+                        }
                         __rejected++;
                         if(hash->realloc_flag != NULL)
                             *(hash->realloc_flag) = true;

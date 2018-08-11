@@ -58,6 +58,8 @@ ariopool_update_result ariopool_client::update(double hash_rate) {
 
 ariopool_submit_result ariopool_client::submit(const string &hash, const string &nonce, const string &public_key) {
     ariopool_submit_result result;
+    result.success = false;
+
     string argon_data = "";
     if(hash.find("$argon2i$v=19$m=16384,t=4,p=4") == 0)
         argon_data = hash.substr(29);
@@ -74,11 +76,13 @@ ariopool_submit_result ariopool_client::submit(const string &hash, const string 
     string url = __pool_address + "/mine.php?q=submitNonce";
 
     string response = __http_post(url, payload);
+    result.pool_response = response;
 
     if(!__validate_response(response)) {
         LOG("Error connecting to " + __pool_address + ".");
         return result;
     }
+
 
     json::JSON info = json::JSON::Load(response);
 
