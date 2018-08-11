@@ -18,7 +18,7 @@ What you need:
 - OpenCL libraries and headers - even if you don't plan to use GPU (will add a switch later on to be configurable)
 - Git client
 - CMake 3
-- GCC v7
+- GCC & G++ v7
 
 Instructions:
 - run the following snippet:
