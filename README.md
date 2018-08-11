@@ -3,19 +3,22 @@
 
 !!! THIS IS WORK IN PROGRESS, BUGS AND ISSUES ARE TO BE EXPECTED. I CAN'T MAKE ANY PROMISE THAT THIS SOFTWARE WILL WORK PERFECTLY ON YOUR COMPUTER, DON'T USE IT IN PRODUCTION UNTIL THIS MESSAGE WILL NOT BE REPLACED WITH SOMETHING MORE CHEERFUL - ETA: 17.08.2018 !!!
 
+## Dev Fee
+In order to support development, this miner has 1% dev fee included - 1 minute from 100 minutes it will mine for developer.
+
 ## Features
 - optimized argon2 hashing library - both in speed and in memory usage; everything not related to arionum mining was stripped down, indexing calculation was replaced with precalculated versions (improvements in the range of 10% - 50% compared to existing miners)
-- support for both CPU and GPU mining (GPU mining is temporarily broken due to the changes for 80k fork - will be fixed shortly)
+- support for both CPU and GPU mining **(GPU mining is temporarily broken due to the changes for 80k fork - will be fixed shortly)**
 - support for autodetecting the best version of the CPU hasher for your machine (SSE2/SSSE3/AVX2/AVX512F)
 - [TODO] support for proxy mode, to act as an aggregator for multiple small miners
 
 ## Instructions
 What you need:
 - recent Linux distribution (Ubuntu recommended) or Mac OS X (support for Windows will be added soon)
-- OpenCL libraries and headers - even if you don't plan to use GPU (will add a switch later on to be configurable)
+- OpenCL libraries and headers (for Ubuntu install **ocl-icd-opencl-dev** package, for Mac OS X it should be included in XCode SDK) - even if you don't plan to use GPU (will add a switch later on to be configurable)
 - Git client
 - CMake 3
-- GCC v7
+- GCC & G++ v7
 
 Instructions:
 - run the following snippet:
@@ -37,7 +40,7 @@ Usage:
        ariominer --mode proxy --port <proxy port> --pool <pool address> --wallet <wallet address> --name <proxy name>
 ```
 
-Parameters:
+Parameters:  
 ---help: show this help text  
 ---verbose: print more informative text during run  
 ---mode <mode>: start in specific mode - arguments: miner / proxy  
