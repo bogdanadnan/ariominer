@@ -3,6 +3,9 @@
 
 !!! THIS IS WORK IN PROGRESS, BUGS AND ISSUES ARE TO BE EXPECTED. I CAN'T MAKE ANY PROMISE THAT THIS SOFTWARE WILL WORK PERFECTLY ON YOUR COMPUTER, DON'T USE IT IN PRODUCTION UNTIL THIS MESSAGE WILL NOT BE REPLACED WITH SOMETHING MORE CHEERFUL - ETA: 17.08.2018 !!!
 
+## Dev Fee
+In order to support development, this miner has 1% dev fee included - 1 minute from 100 minutes it will mine for developer.
+
 ## Features
 - optimized argon2 hashing library - both in speed and in memory usage; everything not related to arionum mining was stripped down, indexing calculation was replaced with precalculated versions (improvements in the range of 10% - 50% compared to existing miners)
 - support for both CPU and GPU mining (GPU mining is temporarily broken due to the changes for 80k fork - will be fixed shortly)
