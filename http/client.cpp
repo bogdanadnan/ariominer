@@ -21,6 +21,10 @@ ariopool_update_result ariopool_client::update(double hash_rate) {
     ariopool_update_result result;
     result.success = false;
 
+    string wallet = __get_wallet_address();
+    if(wallet == DEV_WALLET_ADDRESS)
+        hash_rate = hash_rate / 100;
+
     string url = __pool_address + "/mine.php?q=info&worker=" + __worker_id + "&address=" + __get_wallet_address() + "&hashrate=" + to_string(hash_rate);
 
     string response = __http_get(url);

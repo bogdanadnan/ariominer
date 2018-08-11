@@ -53,14 +53,31 @@ void rot13 (char *buf)
 }
 
 struct gpu_device_info {
+    gpu_device_info(cl_int err, const string &err_msg) {
+        error = err;
+        error_message = err_msg;
+    }
+
+    cl_platform_id platform;
+    cl_device_id device;
+    cl_context context;
+    cl_command_queue queue;
+
     string device_string;
     uint max_workgroup_size;
     uint max_mem_size;
     uint max_allocable_mem_size;
+
+    cl_int error;
+    string error_message;
 };
 
-gpu_device_info __get_device_info(cl_device_id device) {
-    gpu_device_info device_info;
+gpu_device_info __get_device_info(cl_platform_id platform, cl_device_id device) {
+    gpu_device_info device_info(CL_SUCCESS, "");
+
+    device_info.platform = platform;
+    device_info.device = device;
+
     cl_int error;
     char buffer[100];
     size_t sz;
@@ -70,43 +87,127 @@ gpu_device_info __get_device_info(cl_device_id device) {
     error = clGetDeviceInfo(device, CL_DEVICE_VENDOR, 100, buffer, &sz);
     buffer[sz] = 0;
     device_vendor = buffer;
+    if(error != CL_SUCCESS) {
+        return gpu_device_info(error, "Error querying device vendor.");
+    }
 
     string device_name;
     error = clGetDeviceInfo(device, CL_DEVICE_NAME, 100, buffer, &sz);
     buffer[sz] = 0;
     device_name = buffer;
+    if(error != CL_SUCCESS) {
+        return gpu_device_info(error, "Error querying device name.");
+    }
 
     string device_version;
     error = clGetDeviceInfo(device, CL_DEVICE_VERSION, 100, buffer, &sz);
     buffer[sz] = 0;
     device_version = buffer;
+    if(error != CL_SUCCESS) {
+        return gpu_device_info(error, "Error querying device version.");
+    }
 
     device_info.device_string = device_vendor + " - " + device_name + " : " + device_version;
 
     error = clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(device_info.max_mem_size), &(device_info.max_mem_size), NULL);
+    if(error != CL_SUCCESS) {
+        return gpu_device_info(error, "Error querying device global memory size.");
+    }
     error = clGetDeviceInfo(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(device_info.max_allocable_mem_size), &(device_info.max_allocable_mem_size), NULL);
+    if(error != CL_SUCCESS) {
+        return gpu_device_info(error, "Error querying device max memory allocation.");
+    }
     error = clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(device_info.max_workgroup_size), &(device_info.max_workgroup_size), NULL);
+    if(error != CL_SUCCESS) {
+        return gpu_device_info(error, "Error querying device max workgroup size.");
+    }
+
+    cl_context_properties properties[]={
+            CL_CONTEXT_PLATFORM, (cl_context_properties)platform,
+            0};
+
+    device_info.context=clCreateContext(properties, 1, &device, NULL, NULL, &error);
+    if(error != CL_SUCCESS)  {
+        return gpu_device_info(error, "Error getting device context.");
+    }
+
+    cl_command_queue cq = clCreateCommandQueue(device_info.context, device, 0, &error);
+    if(error != CL_SUCCESS)  {
+        return gpu_device_info(error, "Error getting device command queue.");
+    }
+
     return device_info;
 }
 
+vector<gpu_device_info> __query_opencl_devices(cl_int &error, string &error_message) {
+    cl_int err;
+
+    cl_uint platform_count = 0;
+    cl_uint device_count = 0;
+
+    vector<gpu_device_info> result;
+
+    clGetPlatformIDs(0, NULL, &platform_count);
+    if(platform_count == 0) {
+        return vector<gpu_device_info>();
+    }
+
+    cl_platform_id *platforms = (cl_platform_id*)malloc(platform_count * sizeof(cl_platform_id));
+
+    err=clGetPlatformIDs(platform_count, platforms, &platform_count);
+    if(err != CL_SUCCESS)  {
+        free(platforms);
+        error = err;
+        error_message = "Error querying for opencl platforms.";
+        return vector<gpu_device_info>();
+    }
+
+    for(int i=0;i<platform_count;i++) {
+        device_count = 0;
+        clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, 0, NULL, &device_count);
+        if(device_count == 0) {
+            continue;
+        }
+
+        cl_device_id * devices = (cl_device_id*)malloc(device_count);
+        err=clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, device_count, devices, &device_count);
+
+        if(err != CL_SUCCESS)  {
+            free(devices);
+            error = err;
+            error_message = "Error querying for opencl devices.";
+            continue;
+        }
+
+        for(int j=0; j<device_count;j++) {
+            gpu_device_info info = __get_device_info(platforms[i], devices[j]);
+            if(info.error != CL_SUCCESS) {
+                error = info.error;
+                error_message = info.error_message;
+            }
+            else {
+                result.push_back(info);
+            }
+        }
+
+        free(devices);
+    }
+
+    free(platforms);
+
+    return result;
+}
+
 int main() {
-    char buf[]="Hello, World test  askdj askdj  alksjdlkjasd lkjasdlkjasd lkjas dlkajsdalskdj alskdjas dlkajsd laksjd alskdjlkajsdlkaj alskdjalskdj alskdj!";
+/*    char buf[]="Hello, World test  askdj askdj  alksjdlkjasd lkjasdlkjasd lkjas dlkajsdalskdj alskdjas dlkajsd laksjd alskdjlkajsdlkaj alskdjalskdj alskdj!";
     size_t srcsize, worksize=strlen(buf);
     worksize = 140;
 
 
-    cl_int error;
-    cl_platform_id platform;
-    cl_device_id device;
-    cl_uint platforms, devices;
+    vector<gpu_device_info> devices;
 
-    // Fetch the Platform and Device IDs; we only want one.
-    error=clGetPlatformIDs(1, &platform, &platforms);
-    error=clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, &devices);
+
     gpu_device_info info = __get_device_info(device);
-
-
-
 
     cl_context_properties properties[]={
             CL_CONTEXT_PLATFORM, (cl_context_properties)platform,
@@ -162,5 +263,5 @@ int main() {
     error=clFinish(cq);
 
     // Finally, output out happy message.
-    puts(buf2);
+    puts(buf2); */
 }
