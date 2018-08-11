@@ -35,10 +35,13 @@ public:
 private:
     bool __validate_response(const string &response);
 
+    string __get_wallet_address();
     string __pool_address;
     string __worker_id;
-    string __wallet_address;
-    string __encoded_wallet_address;
+    string __client_wallet_address;
+    string __used_wallet_address;
+
+    uint64_t __timestamp;
 };
 
 #endif //PROJECT_CLIENT_H
