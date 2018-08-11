@@ -40,7 +40,7 @@ Usage:
        ariominer --mode proxy --port <proxy port> --pool <pool address> --wallet <wallet address> --name <proxy name>
 ```
 
-Parameters:
+Parameters:  
 ---help: show this help text  
 ---verbose: print more informative text during run  
 ---mode <mode>: start in specific mode - arguments: miner / proxy  
