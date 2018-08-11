@@ -15,7 +15,7 @@ In order to support development, this miner has 1% dev fee included - 1 minute f
 ## Instructions
 What you need:
 - recent Linux distribution (Ubuntu recommended) or Mac OS X (support for Windows will be added soon)
-- OpenCL libraries and headers - even if you don't plan to use GPU (will add a switch later on to be configurable)
+- OpenCL libraries and headers (for Ubuntu install **ocl-icd-opencl-dev** package, for Mac OS X it should be included in XCode SDK) - even if you don't plan to use GPU (will add a switch later on to be configurable)
 - Git client
 - CMake 3
 - GCC & G++ v7
