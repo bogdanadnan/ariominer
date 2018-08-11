@@ -26,6 +26,8 @@ public:
     int update_interval();
     int report_interval();
 
+    string optimization();
+
     string get_help();
 
     static string get_app_folder();
@@ -49,6 +51,8 @@ private:
     int __proxy_port;
     int __update_interval;
     int __report_interval;
+
+    string __optimization;
 
     static string __argv_0;
 };

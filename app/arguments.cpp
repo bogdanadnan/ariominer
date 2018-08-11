@@ -32,6 +32,7 @@ arguments::arguments(int argc, char **argv) {
             {"name", required_argument, NULL, 'n'},
             {"cpu-intensity", required_argument, NULL, 'c'},
             {"gpu-intensity", required_argument, NULL, 'g'},
+            {"force-cpu-optimization", required_argument, NULL, 'o'},
             {"update-interval", required_argument, NULL, 'u'},
             {"report-interval", required_argument, NULL, 'r'},
             {0, 0, 0, 0}
@@ -39,7 +40,7 @@ arguments::arguments(int argc, char **argv) {
 
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:u:r:",
+        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:o:u:r:",
                          options, &option_index);
 
         switch (c)
@@ -123,6 +124,29 @@ arguments::arguments(int argc, char **argv) {
                 }
                 else {
                     __gpu_intensity = atoi(optarg);
+                }
+                break;
+            case 'o':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    if(strcmp(optarg, "REF") == 0)
+                        __optimization = "REF";
+                    else if(strcmp(optarg, "SSE2") == 0)
+                        __optimization = "SSE2";
+                    else if(strcmp(optarg, "SSSE3") == 0)
+                        __optimization = "SSSE3";
+                    else if(strcmp(optarg, "AVX2") == 0)
+                        __optimization = "AVX2";
+                    else if(strcmp(optarg, "AVX512F") == 0)
+                        __optimization = "AVX512F";
+                    else {
+                        sprintf(buff, "%s: invalid arguments",
+                                argv[0]);
+                        __error_message = buff;
+                        __error_flag = true;
+                    }
                 }
                 break;
             case 'u':
@@ -248,6 +272,10 @@ int arguments::gpu_intensity() {
     return __gpu_intensity;
 }
 
+string arguments::optimization() {
+    return __optimization;
+}
+
 int arguments::update_interval() {
     return __update_interval;
 }
@@ -288,6 +316,9 @@ string arguments::get_help() {
             "   --gpu-intensity: miner specific option, mining intensity on GPU\n"
             "                    value from 0 (disabled) to 100 (full load)\n"
             "                    this is optional, defaults to 80 (*)\n"
+            "   --force-cpu-optimization: miner specific option, what type of CPU optimization to use\n"
+            "                    values: REF, SSE2, SSSE3, AVX2, AVX512F\n"
+            "                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
             "   --update-interval: how often should we update mining settings from pool, in seconds\n"
             "                    increasing it will lower the load on pool but will increase rejection rate\n"
             "                    this is optional, defaults to 2 sec and can't be set lower than that\n"
@@ -312,6 +343,8 @@ void arguments::__init() {
     __proxy_port = 8088;
     __update_interval = 2000000;
     __report_interval = 10000000;
+
+    __optimization = "";
 
     __error_flag = false;
 }

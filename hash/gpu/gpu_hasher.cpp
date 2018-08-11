@@ -61,7 +61,8 @@ gpu_hasher::~gpu_hasher() {
     }
 }
 
-bool gpu_hasher::configure(int intensity) {
+bool gpu_hasher::configure(arguments &args) {
+    int intensity = args.gpu_intensity();
     int total_threads = 0;
 
     for(auto d = __devices.begin(); d != __devices.end(); d++) {

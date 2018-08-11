@@ -10,7 +10,7 @@ public:
     cpu_hasher();
     ~cpu_hasher();
 
-    virtual bool configure(int intensity);
+    virtual bool configure(arguments &args);
 
 private:
     string __detect_features_and_make_description();

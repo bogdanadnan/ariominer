@@ -26,13 +26,13 @@ miner::miner(arguments &args) : __args(args), __client(args.pool(), args.name(),
     vector<hasher*> hashers = hasher::get_hashers();
     for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
         if((*it)->get_type() == "CPU") {
-            (*it)->configure(__args.cpu_intensity());
+            (*it)->configure(__args);
         }
         else if((*it)->get_type() == "GPU") {
-            (*it)->configure(__args.gpu_intensity());
+            (*it)->configure(__args);
         }
         else {
-            (*it)->configure(100);
+            (*it)->configure(__args);
         }
 
         LOG("Compute unit: " + (*it)->get_type());

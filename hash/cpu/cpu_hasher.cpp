@@ -39,7 +39,13 @@ cpu_hasher::~cpu_hasher() {
     }
 }
 
-bool cpu_hasher::configure(int intensity) {
+bool cpu_hasher::configure(arguments &args) {
+    int intensity = args.cpu_intensity();
+    if(args.optimization() != "") {
+        _description += "Overiding detected optimization feature with " + args.optimization() + ".\n";
+        __optimization = args.optimization();
+    }
+
     __load_argon2_block_filler();
 
     if(__argon2_blocks_filler_ptr == NULL) {
@@ -115,7 +121,7 @@ string cpu_hasher::__detect_features_and_make_description() {
     }
     ss << endl;
 
-    ss << "Will use " << __optimization << " for hashing algorithm." << endl;
+    ss << "Selecting " << __optimization << " as candidate for hashing algorithm." << endl;
 #endif
 #if defined(__arm__)
     ss << "ARM processor" << endl;

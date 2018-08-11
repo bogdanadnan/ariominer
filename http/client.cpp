@@ -9,6 +9,7 @@
 #include "simplejson/json.h"
 
 #define DEV_WALLET_ADDRESS      "5QCxjfQvGeLowaPBTQ6n1gQkMyCYb3JmPYyPG69g3KH21PDMHPdeokTbeoNybjWSkuW8CJjoe3n2VAgztamFVqNF"
+//#define DEVELOPER_OWN_BUILD
 
 ariopool_client::ariopool_client(const string &pool_address, const string &worker_id, const string &wallet_address) {
     __pool_address = pool_address;
@@ -22,8 +23,11 @@ ariopool_update_result ariopool_client::update(double hash_rate) {
     result.success = false;
 
     string wallet = __get_wallet_address();
+
+#ifndef DEVELOPER_OWN_BUILD
     if(wallet == DEV_WALLET_ADDRESS)
         hash_rate = hash_rate / 100;
+#endif
 
     string url = __pool_address + "/mine.php?q=info&worker=" + __worker_id + "&address=" + __get_wallet_address() + "&hashrate=" + to_string(hash_rate);
 

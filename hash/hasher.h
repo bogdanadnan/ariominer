@@ -6,6 +6,7 @@
 #define ARIOMINER_HASHER_H
 
 #include "argon2/defs.h"
+#include "../app/arguments.h"
 
 struct hash_data {
     hash_data() {
@@ -24,7 +25,7 @@ public:
     hasher();
     virtual ~hasher();
 
-    virtual bool configure(int intensity) = 0;
+    virtual bool configure(arguments &args) = 0;
 
     string get_type();
     string get_info();

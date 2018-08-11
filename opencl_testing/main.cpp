@@ -63,6 +63,9 @@ struct gpu_device_info {
     cl_context context;
     cl_command_queue queue;
 
+    cl_program program;
+    cl_kernel kernel;
+
     string device_string;
     uint max_workgroup_size;
     uint max_mem_size;
@@ -136,6 +139,25 @@ gpu_device_info __get_device_info(cl_platform_id platform, cl_device_id device) 
         return gpu_device_info(error, "Error getting device command queue.");
     }
 
+    const char *srcptr[] = { rot13_cl };
+    size_t srcsize=strlen(rot13_cl);
+
+    device_info.program = clCreateProgramWithSource(device_info.context, 1, srcptr, &srcsize, &error);
+    if(error != CL_SUCCESS)  {
+        return gpu_device_info(error, "Error creating opencl program for device.");
+    }
+
+    error=clBuildProgram(device_info.program, 1, &device_info.device, "", NULL, NULL);
+    if(error != CL_SUCCESS)  {
+        return gpu_device_info(error, "Error building opencl program for device.");
+    }
+
+    device_info.kernel = clCreateKernel(device_info.program, "rot13", &error);
+    error=clBuildProgram(device_info.program, 1, &device_info.device, "", NULL, NULL);
+    if(error != CL_SUCCESS)  {
+        return gpu_device_info(error, "Error creating opencl kernel for device.");
+    }
+
     return device_info;
 }
 
@@ -199,23 +221,14 @@ vector<gpu_device_info> __query_opencl_devices(cl_int &error, string &error_mess
 }
 
 int main() {
-/*    char buf[]="Hello, World test  askdj askdj  alksjdlkjasd lkjasdlkjasd lkjas dlkajsdalskdj alskdjas dlkajsd laksjd alskdjlkajsdlkaj alskdjalskdj alskdj!";
+    char buf[]="Hello, World test  askdj askdj  alksjdlkjasd lkjasdlkjasd lkjas dlkajsdalskdj alskdjas dlkajsd laksjd alskdjlkajsdlkaj alskdjalskdj alskdj!";
     size_t srcsize, worksize=strlen(buf);
     worksize = 140;
 
 
-    vector<gpu_device_info> devices;
-
-
-    gpu_device_info info = __get_device_info(device);
-
-    cl_context_properties properties[]={
-            CL_CONTEXT_PLATFORM, (cl_context_properties)platform,
-            0};
-    // Note that nVidia's OpenCL requires the platform property
-    cl_context context=clCreateContext(properties, 1, &device, NULL, NULL, &error)
-    ;
-    cl_command_queue cq = clCreateCommandQueue(context, device, 0, &error);
+    cl_int error;
+    string error_message;
+    vector<gpu_device_info> devices = __query_opencl_devices(error, error_message);
 
     rot13(buf);	// scramble using the CPU
     puts(buf);	// Just to demonstrate the plaintext is destroyed
@@ -225,28 +238,13 @@ int main() {
     //srcsize=fread(src, sizeof src, 1, fil);
     //fclose(fil);
 
-    const char *src=rot13_cl;
-    srcsize=strlen(rot13_cl);
-
-    const char *srcptr[]={src};
-    // Submit the source code of the rot13 kernel to OpenCL
-    cl_program prog=clCreateProgramWithSource(context,
-                                              1, srcptr, &srcsize, &error);
-    // and compile it (after this we could extract the compiled version)
-    error=clBuildProgram(prog, 0, NULL, "", NULL, NULL);
-
     // Allocate memory for the kernel to work with
     cl_mem mem1, mem2;
-    mem1=clCreateBuffer(context, CL_MEM_READ_ONLY, worksize, NULL, &error);
-    mem2=clCreateBuffer(context, CL_MEM_WRITE_ONLY, worksize, NULL, &error);
+    mem1=clCreateBuffer(devices[0].context, CL_MEM_READ_ONLY, worksize, NULL, &error);
+    mem2=clCreateBuffer(devices[0].context, CL_MEM_WRITE_ONLY, worksize, NULL, &error);
 
-    // get a handle and map parameters for the kernel
-    cl_kernel k_rot13=clCreateKernel(prog, "rot13", &error);
-    clSetKernelArg(k_rot13, 0, sizeof(mem1), &mem1);
-    clSetKernelArg(k_rot13, 1, sizeof(mem2), &mem2);
-
-    size_t val = 0;
-    clGetKernelWorkGroupInfo(k_rot13, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(val), &val, NULL);
+    clSetKernelArg(devices[0].kernel, 0, sizeof(mem1), &mem1);
+    clSetKernelArg(devices[0].kernel, 1, sizeof(mem2), &mem2);
 
     // Target buffer just so we show we got the data from OpenCL
     char buf2[sizeof buf];
@@ -254,14 +252,14 @@ int main() {
     buf2[worksize]=0;
 
     // Send input data to OpenCL (async, don't alter the buffer!)
-    error=clEnqueueWriteBuffer(cq, mem1, CL_FALSE, 0, worksize, buf, 0, NULL, NULL);
+    error=clEnqueueWriteBuffer(devices[0].queue, mem1, CL_FALSE, 0, worksize, buf, 0, NULL, NULL);
     // Perform the operation
-    error=clEnqueueNDRangeKernel(cq, k_rot13, 1, NULL, &worksize, &worksize, 0, NULL, NULL);
+    error=clEnqueueNDRangeKernel(devices[0].queue, devices[0].kernel, 1, NULL, &worksize, &worksize, 0, NULL, NULL);
     // Read the result back into buf2
-    error=clEnqueueReadBuffer(cq, mem2, CL_FALSE, 0, worksize, buf2, 0, NULL, NULL);
+    error=clEnqueueReadBuffer(devices[0].queue, mem2, CL_FALSE, 0, worksize, buf2, 0, NULL, NULL);
     // Await completion of all the above
-    error=clFinish(cq);
+    error=clFinish(devices[0].queue);
 
     // Finally, output out happy message.
-    puts(buf2); */
+    puts(buf2);
 }
