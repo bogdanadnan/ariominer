@@ -65545,6 +65545,8 @@ argon2profile argon2profile_4_4_16384 = {
     4,
     16777216, //16384 blocks of 1024 bytes
     blocks_refs_4_4_16384,
-    sizeof(blocks_refs_4_4_16384) / (3 * sizeof(int32_t))
+    sizeof(blocks_refs_4_4_16384) / (3 * sizeof(int32_t)),
+    16375,
+    "4_4_16384"
 };
 

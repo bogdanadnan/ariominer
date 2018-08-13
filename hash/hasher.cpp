@@ -26,6 +26,7 @@ hasher::hasher() {
     __hash_rate = 0;
     __avg_hash_rate = 0;
     __hash_count = 0;
+    __total_hash_count = 0;
 
     __begin_time = __hashrate_time = microseconds();
 
@@ -75,6 +76,7 @@ hash_data hasher::get_input() {
     hash_data new_hash;
     new_hash.nonce = __make_nonce();
     new_hash.base = tmp_public_key + "-" + new_hash.nonce + "-" + tmp_blk + "-" + tmp_difficulty;
+    new_hash.salt = "";
     return new_hash;
 }
 
@@ -83,6 +85,16 @@ int hasher::get_intensity() {
 }
 
 double hasher::get_current_hash_rate() {
+    __hashes_mutex.lock();
+    uint64_t timestamp = microseconds();
+    if(timestamp - __hashrate_time > 5000000) { //we calculate hashrate every 5 seconds
+        __hash_rate = __hash_count / ((timestamp - __hashrate_time) / 1000000.0);
+        __avg_hash_rate = (__total_hash_count) / ((timestamp - __begin_time) / 1000000.0);
+        __hashrate_time = timestamp;
+        __hash_count = 0;
+    }
+    __hashes_mutex.unlock();
+
     return __hash_rate;
 }
 
@@ -91,7 +103,7 @@ double hasher::get_avg_hash_rate() {
 }
 
 uint hasher::get_hash_count() {
-    return __hash_count;
+    return __total_hash_count;
 }
 
 vector<hash_data> hasher::get_hashes() {
@@ -106,15 +118,9 @@ vector<hash_data> hasher::get_hashes() {
 void hasher::_store_hash(const hash_data &hash) {
     __hashes_mutex.lock();
     __hashes.push_back(hash);
-    __hashes_mutex.unlock();
-
     __hash_count++;
-    if(__hash_count % 50 == 0) { //we count hashrate for 50 hashes to get an accurate measurement
-        uint64_t timestamp = microseconds();
-        __hash_rate = 50 / ((timestamp - __hashrate_time) / 1000000.0);
-        __hashrate_time = timestamp;
-        __avg_hash_rate = (__hash_count) / ((timestamp - __begin_time) / 1000000.0);
-    }
+    __total_hash_count++;
+    __hashes_mutex.unlock();
 }
 
 vector<hasher *> hasher::get_hashers() {

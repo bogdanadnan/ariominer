@@ -20,6 +20,8 @@
 #include <mutex>
 #include <chrono>
 
+#include <cmath>
+
 #include <unistd.h>
 #include <getopt.h>
 

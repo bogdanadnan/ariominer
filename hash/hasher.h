@@ -13,6 +13,7 @@ struct hash_data {
         realloc_flag = NULL;
     };
     string nonce;
+    string salt;
     string base;
     string hash;
     bool *realloc_flag;
@@ -59,6 +60,7 @@ private:
 
     double __hash_rate;
     double __avg_hash_rate;
+    uint __total_hash_count;
     uint __hash_count;
 
     mutex __input_mutex;
@@ -73,7 +75,6 @@ private:
 
     uint64_t __begin_time;
     uint64_t __hashrate_time;
-
 };
 
 #endif //ARIOMINER_HASHER_H

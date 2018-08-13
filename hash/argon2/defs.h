@@ -26,6 +26,8 @@ typedef struct Argon2Profile {
     size_t memsize;
     int32_t *block_refs;
     size_t block_refs_size;
+    size_t xor_limit;
+    char profile_name[15];
 } argon2profile;
 
 extern argon2profile argon2profile_4_4_16384;

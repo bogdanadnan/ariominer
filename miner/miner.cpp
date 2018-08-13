@@ -131,6 +131,10 @@ string miner::__calc_duration(const string &base, const string &hash) {
 }
 
 uint64_t miner::__calc_compare(const string &duration) {
+    if(__difficulty.empty()) {
+        return -1;
+    }
+
     mpz_t mpzDiff, mpzDuration;
     mpz_t mpzResult;
     mpz_init(mpzResult);

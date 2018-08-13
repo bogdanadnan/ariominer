@@ -17,6 +17,7 @@ public:
 
     void set_seed_memory(uint8_t *memory);
     void set_seed_memory_offset(size_t offset);
+    void set_lane_length(int length); // in blocks
     void set_threads(int threads);
 private:
     string __make_salt();
@@ -28,6 +29,7 @@ private:
     int __threads;
     uint8_t *__seed_memory;
     size_t __seed_memory_offset;
+    int __lane_length;
     void *__user_data;
 
 };

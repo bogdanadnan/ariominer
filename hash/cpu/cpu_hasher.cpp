@@ -189,7 +189,7 @@ void cpu_hasher::__run() {
             hash_factory.set_seed_memory_offset(profile->memsize);
             hash_factory.set_threads(argon2profile_default->memsize / profile->memsize);
 
-            vector<string> hashes = hash_factory.generate_hashes(*profile, input.base);
+            vector<string> hashes = hash_factory.generate_hashes(*profile, input.base, input.salt);
             for(vector<string>::iterator it = hashes.begin(); it != hashes.end(); ++it) {
                 input.hash = *it;
                 input.realloc_flag = &should_realloc;

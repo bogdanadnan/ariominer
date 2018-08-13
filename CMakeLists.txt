@@ -32,7 +32,14 @@ set(ARGON2_FILL_BLOCKS_SRC
         hash/argon2/blake2/blake2-impl.h)
 
 set(OPENCL_TEST_SRC
-        opencl_testing/main.cpp)
+        opencl_testing/main.cpp
+        hash/argon2/argon2.cpp hash/argon2/argon2.h
+        hash/argon2/defs.h
+        hash/argon2/argon2profile_4_4_16384.c hash/argon2/argon2profile_1_1_524288.c
+        hash/argon2/blake2/blake2b.c hash/argon2/blake2/blake2.h
+        http/mongoose/mongoose.c
+        http/mongoose/mongoose.h
+        )
 
 set (CMAKE_CXX_STANDARD 11)
 set (ArioMiner_VERSION_MAJOR 0)

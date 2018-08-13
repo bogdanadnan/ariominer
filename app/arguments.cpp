@@ -339,7 +339,7 @@ void arguments::__init() {
     __wallet = "";
     __name = "";
     __cpu_intensity = 100;
-    __gpu_intensity = 80;
+    __gpu_intensity = 100;
     __proxy_port = 8088;
     __update_interval = 2000000;
     __report_interval = 10000000;

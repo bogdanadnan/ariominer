@@ -7,13 +7,49 @@
 
 #include "OpenCL_Cpp/cl.hpp"
 
-struct opencl_device {
-    cl::Platform platform;
-    cl::Device device;
+struct kernel_arguments {
+    cl_mem memory_chunk_0;
+    cl_mem memory_chunk_1;
+    cl_mem memory_chunk_2;
+    cl_mem memory_chunk_3;
+    cl_mem memory_chunk_4;
+    cl_mem memory_chunk_5;
+    cl_mem address_profile_1_1_524288;
+    cl_mem address_profile_4_4_16384;
+    cl_mem seed_memory;
+    cl_mem out_memory;
+};
 
-    int available_processing_thr;
-    int available_memory_thr;
-    int threads_count;
+struct argon2profile_info {
+    uint32_t threads_profile_1_1_524288;
+    uint32_t threads_per_chunk_profile_1_1_524288;
+    uint32_t threads_profile_4_4_16384;
+    uint32_t threads_per_chunk_profile_4_4_16384;
+};
+
+struct gpu_device_info {
+    gpu_device_info(cl_int err, const string &err_msg) {
+        error = err;
+        error_message = err_msg;
+    }
+
+    cl_platform_id platform;
+    cl_device_id device;
+    cl_context context;
+    cl_command_queue queue;
+
+    cl_program program;
+    cl_kernel kernel;
+
+    kernel_arguments arguments;
+    argon2profile_info profile_info;
+
+    string device_string;
+    uint64_t max_mem_size;
+    uint64_t max_allocable_mem_size;
+
+    cl_int error;
+    string error_message;
 };
 
 class gpu_hasher : public hasher {
@@ -24,11 +60,15 @@ public:
     virtual bool configure(arguments &args);
 
 private:
+    gpu_device_info __get_device_info(cl_platform_id platform, cl_device_id device);
+    bool __setup_device_info(gpu_device_info &device, int intensity);
+    vector<gpu_device_info> __query_opencl_devices(cl_int &error, string &error_message);
+
     string __detect_features_and_make_description();
 
-    void __run(opencl_device *device);
+    void __run(gpu_device_info *device);
 
-    vector<opencl_device> __devices;
+    vector<gpu_device_info> __devices;
 
     bool __running;
     vector<thread*> __runners;

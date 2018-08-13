@@ -14,6 +14,7 @@ argon2::argon2(argon2_blocks_filler_ptr filler, void *seed_memory, void *user_da
     __threads = 1;
     __seed_memory = (uint8_t*)seed_memory;
     __seed_memory_offset = argon2profile_default->memsize;
+    __lane_length = -1;
     __user_data = user_data;
 }
 
@@ -50,7 +51,8 @@ vector<string> argon2::generate_hashes(const argon2profile &profile, const strin
         blake2b_long((void *) raw_hash, ARGON2_RAW_LENGTH,
                      (void *) (__seed_memory + i * __seed_memory_offset), ARGON2_BLOCK_SIZE);
 
-        result.push_back(__encode_string(profile, salts[i], raw_hash));
+        string hash = __encode_string(profile, salts[i], raw_hash);
+        result.push_back(hash);
     }
     return result;
 }
@@ -122,7 +124,13 @@ void argon2::__initial_hash(const argon2profile &profile, uint8_t *blockhash, co
 void argon2::__fill_first_blocks(const argon2profile &profile, uint8_t *blockhash, int thread) {
     block *blocks = (block *)(__seed_memory + thread * __seed_memory_offset);
 
-    size_t lane_length = profile.mem_cost / profile.thr_cost;
+    size_t lane_length;
+    if(__lane_length == -1) {
+        lane_length = profile.mem_cost / profile.thr_cost;
+    }
+    else {
+        lane_length = __lane_length;
+    }
 
     for (int l = 0; l < profile.thr_cost; ++l) {
         *((uint32_t*)(blockhash + ARGON2_PREHASH_DIGEST_LENGTH)) = 0;
@@ -139,8 +147,8 @@ void argon2::__fill_first_blocks(const argon2profile &profile, uint8_t *blockhas
 }
 
 string argon2::__encode_string(const argon2profile &profile, const string &salt, uint8_t *hash) {
-    char salt_b64[23];
-    char hash_b64[44];
+    char salt_b64[50];
+    char hash_b64[50];
 
     mg_base64_encode((unsigned char *)salt.c_str(), salt.length(), salt_b64);
     mg_base64_encode(hash, ARGON2_RAW_LENGTH, hash_b64);
@@ -148,11 +156,9 @@ string argon2::__encode_string(const argon2profile &profile, const string &salt,
     salt_b64[22] = 0;
     hash_b64[43] = 0;
 
-    string result = "$argon2i$v=19$m=" + to_string(profile.mem_cost) + ",t=" + to_string(profile.tm_cost) + ",p=" + to_string(profile.thr_cost) + "$";
-    result += salt_b64;
-    result += "$";
-    result += hash_b64;
-    return result;
+    stringstream ss;
+    ss << "$argon2i$v=19$m=" << profile.mem_cost << ",t=" << profile.tm_cost << ",p=" << profile.thr_cost << "$" << salt_b64 << "$" << hash_b64;
+    return ss.str();
 }
 
 void argon2::set_seed_memory(uint8_t *memory) {
@@ -165,5 +171,10 @@ void argon2::set_seed_memory_offset(size_t offset) {
 
 void argon2::set_threads(int threads) {
     __threads = threads;
+}
+
+void argon2::set_lane_length(int length) {
+    if(length > 0)
+        __lane_length = length;
 }
 
