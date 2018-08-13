@@ -481,7 +481,7 @@ bool gpu_hasher::configure(arguments &args) {
         return false;
     }
 
-    for(vector<gpu_device_info>::iterator d = __devices.begin(); d != __devices.end(); d++) {
+    for(vector<gpu_device_info>::iterator d = __devices.begin(); d != __devices.end(); d++, index++) {
         ss << "["<< index << "] " << d->device_string << endl;
 
         _description += ss.str();
