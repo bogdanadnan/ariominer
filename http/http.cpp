@@ -2,11 +2,11 @@
 // Created by Haifa Bogdan Adnan on 04/08/2018.
 //
 
+#include "mongoose/mongoose.h"
+
 #include "../common/common.h"
 
 #include "http.h"
-
-#include "mongoose/mongoose.h"
 
 static void mg_ev_handler(struct mg_connection *c, int ev, void *p) {
     if (ev == MG_EV_HTTP_REPLY) {

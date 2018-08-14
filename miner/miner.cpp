@@ -197,7 +197,7 @@ void miner::__display_report() {
 
     double hash_rate = 0;
     double avg_hash_rate = 0;
-    uint hash_count = 0;
+    uint32_t hash_count = 0;
 
     if(!__args.is_verbose() || hashers.size() == 1) {
         for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {

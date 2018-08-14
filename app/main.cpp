@@ -7,7 +7,7 @@
 #include "../miner/miner.h"
 
 int main(int argc, char *argv[]) {
-    srand(time(NULL));
+    srand((uint32_t)time(NULL));
 
     arguments args(argc, argv);
 

@@ -17,6 +17,10 @@
 #define ARGON2_PREHASH_DIGEST_LENGTH    64
 #define ARGON2_PREHASH_SEED_LENGTH      72
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 typedef struct block_ { uint64_t v[ARGON2_QWORDS_IN_BLOCK]; } block;
 
 typedef struct Argon2Profile {
@@ -34,5 +38,8 @@ extern argon2profile argon2profile_4_4_16384;
 extern argon2profile argon2profile_1_1_524288;
 extern argon2profile *argon2profile_default;
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif //ARIOMINER_DEFS_H

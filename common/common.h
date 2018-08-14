@@ -22,10 +22,12 @@
 
 #include <cmath>
 
+#ifndef _MSC_VER
 #include <unistd.h>
-#include <getopt.h>
-
 #include <sys/time.h>
+#else
+#include <win32_compatibility_layer.h>
+#endif
 
 #include <config.h>
 

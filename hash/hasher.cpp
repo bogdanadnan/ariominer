@@ -2,10 +2,9 @@
 // Created by Haifa Bogdan Adnan on 03/08/2018.
 //
 
-#include "../common/common.h"
-
 #include "../http/mongoose/mongoose.h"
 
+#include "../common/common.h"
 #include "argon2/argon2.h"
 
 #include "hasher.h"
@@ -77,6 +76,8 @@ hash_data hasher::get_input() {
     new_hash.nonce = __make_nonce();
     new_hash.base = tmp_public_key + "-" + new_hash.nonce + "-" + tmp_blk + "-" + tmp_difficulty;
     new_hash.salt = "";
+//    new_hash.base = "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCy7AEg3h9oYjeR74yj73q3gPxbxq9R3nxSSUV4KKgu1sQZu9Qj9v2q2HhT5H3LTHwW7HzAA28SjWFdzkNoovBMncD-sauULo1zM4tt9DhGEnO8qPe5nlzItJwwIKiIcAUDg-4KhqbBhShBf36zYeen943tS6KhgFmQixtUoVbf2egtBmD6j3NQtcueEBite2zjzdpK2ShaA28icRfJM9yPUQ6azN-56262626";
+//    new_hash.salt = "NSHFFAg.iATJ0sfM";
     return new_hash;
 }
 
@@ -102,7 +103,7 @@ double hasher::get_avg_hash_rate() {
     return __avg_hash_rate;
 }
 
-uint hasher::get_hash_count() {
+uint32_t hasher::get_hash_count() {
     return __total_hash_count;
 }
 
@@ -116,6 +117,7 @@ vector<hash_data> hasher::get_hashes() {
 }
 
 void hasher::_store_hash(const hash_data &hash) {
+//    LOG(hash.hash);
     __hashes_mutex.lock();
     __hashes.push_back(hash);
     __hash_count++;
@@ -138,6 +140,7 @@ vector<hasher *> hasher::get_active_hashers() {
 
 argon2profile *hasher::get_argon2profile() {
     return __argon2profile;
+//    return &argon2profile_1_1_524288;
 }
 
 bool hasher::should_pause() {

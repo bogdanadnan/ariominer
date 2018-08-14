@@ -39,7 +39,7 @@ public:
 
     double get_current_hash_rate();
     double get_avg_hash_rate();
-    uint get_hash_count();
+    uint32_t get_hash_count();
 
     vector<hash_data> get_hashes();
 
@@ -60,8 +60,8 @@ private:
 
     double __hash_rate;
     double __avg_hash_rate;
-    uint __total_hash_count;
-    uint __hash_count;
+    uint32_t __total_hash_count;
+    uint32_t __hash_count;
 
     mutex __input_mutex;
     string __public_key;

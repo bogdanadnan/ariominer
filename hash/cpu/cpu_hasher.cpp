@@ -2,7 +2,7 @@
 // Created by Haifa Bogdan Adnan on 03/08/2018.
 //
 
-#if defined(__x86_64__) || defined(__i386__)
+#if defined(__x86_64__) || defined(__i386__) || defined(_WIN64)
     #include <cpuinfo_x86.h>
 #endif
 #if defined(__arm__)
@@ -76,7 +76,7 @@ bool cpu_hasher::configure(arguments &args) {
 
     __running = true;
     for(int i=0;i<__threads_count;i++) {
-        __runners.push_back(new thread(&cpu_hasher::__run, ref(*this)));
+		__runners.push_back(new thread([&]() { this->__run(); }));
     }
 
     _description += "Status: ENABLED - with " + to_string(__threads_count) + " threads.";
@@ -86,7 +86,7 @@ bool cpu_hasher::configure(arguments &args) {
 
 string cpu_hasher::__detect_features_and_make_description() {
     stringstream ss;
-#if defined(__x86_64__) || defined(__i386__)
+#if defined(__x86_64__) || defined(__i386__) || defined(_WIN64)
     char brand_string[49];
     cpu_features::FillX86BrandString(brand_string);
 
@@ -95,7 +95,7 @@ string cpu_hasher::__detect_features_and_make_description() {
     cpu_features::X86Features features = cpu_features::GetX86Info().features;
     ss << "Optimization features: ";
 
-#if defined(__x86_64__)
+#if defined(__x86_64__) || defined(_WIN64)
     ss << "SSE2 ";
     __optimization = "SSE2";
 #else

@@ -5,7 +5,13 @@
 #ifndef PROJECT_GPU_HASHER_H
 #define PROJECT_GPU_HASHER_H
 
-#include "OpenCL_Cpp/cl.hpp"
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
+
+#if defined(__APPLE__) || defined(__MACOSX)
+#include <OpenCL/opencl.h>
+#else
+#include <CL/opencl.h>
+#endif // !__APPLE__
 
 struct kernel_arguments {
     cl_mem memory_chunk_0;
@@ -61,10 +67,8 @@ public:
 
 private:
     gpu_device_info __get_device_info(cl_platform_id platform, cl_device_id device);
-    bool __setup_device_info(gpu_device_info &device, int intensity);
+    bool __setup_device_info(gpu_device_info &device, int intensity_cpu, int intensity_gpu);
     vector<gpu_device_info> __query_opencl_devices(cl_int &error, string &error_message);
-
-    string __detect_features_and_make_description();
 
     void __run(gpu_device_info *device);
 

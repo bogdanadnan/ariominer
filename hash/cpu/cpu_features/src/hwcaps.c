@@ -176,6 +176,13 @@ PlatformType CpuFeatures_GetPlatformType(void) {
 }
 #else  // (defined(HWCAPS_SUPPORTED)
 
+PlatformType kEmptyPlatformType;
+
+PlatformType CpuFeatures_GetPlatformType(void) {
+	PlatformType type = kEmptyPlatformType;
+	return type;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Implementation of GetHardwareCapabilities for unsupported platforms.
 ////////////////////////////////////////////////////////////////////////////////

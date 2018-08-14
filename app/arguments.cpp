@@ -4,6 +4,8 @@
 
 #include "../common/common.h"
 
+#include <getopt.h>
+
 #include "arguments.h"
 
 arguments::arguments(int argc, char **argv) {
@@ -31,7 +33,9 @@ arguments::arguments(int argc, char **argv) {
             {"wallet", required_argument, NULL, 'w'},
             {"name", required_argument, NULL, 'n'},
             {"cpu-intensity", required_argument, NULL, 'c'},
-            {"gpu-intensity", required_argument, NULL, 'g'},
+            {"gpu-intensity-gblocks", required_argument, NULL, 'g'},
+            {"gpu-intensity-cblocks", required_argument, NULL, 'x'},
+            {"gpu-filter", required_argument, NULL, 'd'},
             {"force-cpu-optimization", required_argument, NULL, 'o'},
             {"update-interval", required_argument, NULL, 'u'},
             {"report-interval", required_argument, NULL, 'r'},
@@ -40,7 +44,7 @@ arguments::arguments(int argc, char **argv) {
 
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:o:u:r:",
+        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:x:d:o:u:r:",
                          options, &option_index);
 
         switch (c)
@@ -123,7 +127,23 @@ arguments::arguments(int argc, char **argv) {
                     __help_flag = 1;
                 }
                 else {
-                    __gpu_intensity = atoi(optarg);
+                    __gpu_intensity_gblocks = atoi(optarg);
+                }
+                break;
+            case 'x':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    __gpu_intensity_cblocks = atoi(optarg);
+                }
+                break;
+            case 'd':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    __gpu_filter = optarg;
                 }
                 break;
             case 'o':
@@ -214,8 +234,13 @@ bool arguments::valid(string &error) {
         return false;
     }
 
-    if(__gpu_intensity < 0 || __gpu_intensity > 100) {
-        error = "GPU intensity must be between 0 - disabled and 100 - full load.";
+    if(__gpu_intensity_cblocks < 0 || __gpu_intensity_cblocks > 100) {
+        error = "GPU intensity for CPU blocks must be between 0 - disabled and 100 - full load.";
+        return false;
+    }
+
+    if(__gpu_intensity_gblocks < 0 || __gpu_intensity_gblocks > 100) {
+        error = "GPU intensity for GPU blocks must be between 0 - disabled and 100 - full load.";
         return false;
     }
 
@@ -268,8 +293,16 @@ int arguments::cpu_intensity() {
     return __cpu_intensity;
 }
 
-int arguments::gpu_intensity() {
-    return __gpu_intensity;
+int arguments::gpu_intensity_cblocks() {
+    return __gpu_intensity_cblocks;
+}
+
+int arguments::gpu_intensity_gblocks() {
+    return __gpu_intensity_gblocks;
+}
+
+string arguments::gpu_filter() {
+    return __gpu_filter;
 }
 
 string arguments::optimization() {
@@ -313,9 +346,15 @@ string arguments::get_help() {
             "   --cpu-intensity: miner specific option, mining intensity on CPU\n"
             "                    value from 0 (disabled) to 100 (full load)\n"
             "                    this is optional, defaults to 100 (*)\n"
-            "   --gpu-intensity: miner specific option, mining intensity on GPU\n"
+            "   --gpu-intensity-cblocks: miner specific option, mining intensity on GPU\n"
             "                    value from 0 (disabled) to 100 (full load)\n"
-            "                    this is optional, defaults to 80 (*)\n"
+            "                    this is optional, defaults to 100 (*)\n"
+            "   --gpu-intensity-gblocks: miner specific option, mining intensity on GPU\n"
+            "                    value from 0 (disabled) to 100 (full load)\n"
+            "                    this is optional, defaults to 100 (*)\n"
+            "   --gpu-filter: miner specific option, filter string for device selection\n"
+            "                    it will select only devices that have in description the specified string\n"
+            "                    this is optional, defaults to \"\"\n"
             "   --force-cpu-optimization: miner specific option, what type of CPU optimization to use\n"
             "                    values: REF, SSE2, SSSE3, AVX2, AVX512F\n"
             "                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
@@ -339,7 +378,9 @@ void arguments::__init() {
     __wallet = "";
     __name = "";
     __cpu_intensity = 100;
-    __gpu_intensity = 100;
+    __gpu_intensity_cblocks = 100;
+    __gpu_intensity_gblocks = 100;
+    __gpu_filter = "";
     __proxy_port = 8088;
     __update_interval = 2000000;
     __report_interval = 10000000;

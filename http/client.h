@@ -14,9 +14,9 @@ struct ariopool_result {
 struct ariopool_update_result : public ariopool_result {
     string block;
     string difficulty;
-    uint limit;
+    uint32_t limit;
     string public_key;
-    uint height;
+    uint32_t height;
     string argon2profile;
     string recommendation;
 };

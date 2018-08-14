@@ -20,7 +20,9 @@ public:
     string wallet();
     string name();
     int cpu_intensity();
-    int gpu_intensity();
+    int gpu_intensity_cblocks();
+    int gpu_intensity_gblocks();
+    string gpu_filter();
     int proxy_port();
 
     int update_interval();
@@ -47,7 +49,9 @@ private:
     string __wallet;
     string __name;
     int __cpu_intensity;
-    int __gpu_intensity;
+    int __gpu_intensity_cblocks;
+    int __gpu_intensity_gblocks;
+    string __gpu_filter;
     int __proxy_port;
     int __update_interval;
     int __report_interval;

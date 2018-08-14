@@ -27,12 +27,12 @@ private:
     string __nonce;
     string __blk;
     string __difficulty;
-    uint __limit;
+    uint32_t __limit;
     string __public_key;
-    uint __height;
-    uint __found;
-    uint __confirmed;
-    uint __rejected;
+    uint32_t __height;
+    uint32_t __found;
+    uint32_t __confirmed;
+    uint32_t __rejected;
 
     uint64_t __total_time;
 

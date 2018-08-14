@@ -1,0 +1,232 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{907DB311-1F34-4C68-9929-606992D97A88}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>ariominer</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;STACK_LINE_READER_BUFFER_SIZE=1024;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\hash\cpu\cpu_features\include;..\dlfcn;..\;$(INTELOCLSDKROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Psapi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>STACK_LINE_READER_BUFFER_SIZE=1024;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(INTELOCLSDKROOT)include;../;../dlfcn;../../hash/cpu/cpu_features/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>OpenCL.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;STACK_LINE_READER_BUFFER_SIZE=1024;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\hash\cpu\cpu_features\include;..\dlfcn;..\;$(INTELOCLSDKROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Psapi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>STACK_LINE_READER_BUFFER_SIZE=1024;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(INTELOCLSDKROOT)include;../;../dlfcn;../../hash/cpu/cpu_features/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>OpenCL.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\app\arguments.cpp" />
+    <ClCompile Include="..\..\app\main.cpp" />
+    <ClCompile Include="..\..\common\common.cpp" />
+    <ClCompile Include="..\..\crypt\sha512.cpp" />
+    <ClCompile Include="..\..\hash\argon2\argon2.cpp" />
+    <ClCompile Include="..\..\hash\argon2\argon2profile_1_1_524288.c" />
+    <ClCompile Include="..\..\hash\argon2\argon2profile_4_4_16384.c" />
+    <ClCompile Include="..\..\hash\argon2\blake2\blake2b.c" />
+    <ClCompile Include="..\..\hash\cpu\cpu_features\src\cpuid_x86_clang_gcc.c" />
+    <ClCompile Include="..\..\hash\cpu\cpu_features\src\cpuid_x86_msvc.c" />
+    <ClCompile Include="..\..\hash\cpu\cpu_features\src\cpuinfo_aarch64.c" />
+    <ClCompile Include="..\..\hash\cpu\cpu_features\src\cpuinfo_arm.c" />
+    <ClCompile Include="..\..\hash\cpu\cpu_features\src\cpuinfo_mips.c" />
+    <ClCompile Include="..\..\hash\cpu\cpu_features\src\cpuinfo_ppc.c" />
+    <ClCompile Include="..\..\hash\cpu\cpu_features\src\cpuinfo_x86.c" />
+    <ClCompile Include="..\..\hash\cpu\cpu_features\src\filesystem.c" />
+    <ClCompile Include="..\..\hash\cpu\cpu_features\src\hwcaps.c" />
+    <ClCompile Include="..\..\hash\cpu\cpu_features\src\linux_features_aggregator.c" />
+    <ClCompile Include="..\..\hash\cpu\cpu_features\src\stack_line_reader.c" />
+    <ClCompile Include="..\..\hash\cpu\cpu_features\src\string_view.c" />
+    <ClCompile Include="..\..\hash\cpu\cpu_hasher.cpp" />
+    <ClCompile Include="..\..\hash\gpu\gpu_hasher.cpp" />
+    <ClCompile Include="..\..\hash\gpu\opencl_kernel.cpp" />
+    <ClCompile Include="..\..\hash\hasher.cpp" />
+    <ClCompile Include="..\..\http\client.cpp" />
+    <ClCompile Include="..\..\http\http.cpp" />
+    <ClCompile Include="..\..\http\mongoose\mongoose.c" />
+    <ClCompile Include="..\..\http\server.cpp" />
+    <ClCompile Include="..\..\miner\miner.cpp" />
+    <ClCompile Include="..\..\miner\mini-gmp\mini-gmp.c" />
+    <ClCompile Include="..\..\proxy\proxy.cpp" />
+    <ClCompile Include="..\dlfcn\dlfcn.c" />
+    <ClCompile Include="..\win32_compatibility_layer.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\app\arguments.h" />
+    <ClInclude Include="..\..\common\common.h" />
+    <ClInclude Include="..\..\crypt\sha512.h" />
+    <ClInclude Include="..\..\hash\argon2\argon2.h" />
+    <ClInclude Include="..\..\hash\argon2\blake2\blake2-impl.h" />
+    <ClInclude Include="..\..\hash\argon2\blake2\blake2.h" />
+    <ClInclude Include="..\..\hash\argon2\defs.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_features\include\cpuinfo_aarch64.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_features\include\cpuinfo_arm.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_features\include\cpuinfo_mips.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_features\include\cpuinfo_ppc.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_features\include\cpuinfo_x86.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_features\include\cpu_features_macros.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_features\include\internal\bit_utils.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_features\include\internal\cpuid_x86.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_features\include\internal\filesystem.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_features\include\internal\hwcaps.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_features\include\internal\linux_features_aggregator.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_features\include\internal\stack_line_reader.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_features\include\internal\string_view.h" />
+    <ClInclude Include="..\..\hash\cpu\cpu_hasher.h" />
+    <ClInclude Include="..\..\hash\gpu\gpu_hasher.h" />
+    <ClInclude Include="..\..\hash\gpu\opencl_kernel.h" />
+    <ClInclude Include="..\..\hash\hasher.h" />
+    <ClInclude Include="..\..\http\client.h" />
+    <ClInclude Include="..\..\http\http.h" />
+    <ClInclude Include="..\..\http\mongoose\mongoose.h" />
+    <ClInclude Include="..\..\http\server.h" />
+    <ClInclude Include="..\..\http\simplejson\json.h" />
+    <ClInclude Include="..\..\miner\miner.h" />
+    <ClInclude Include="..\..\miner\mini-gmp\mini-gmp.h" />
+    <ClInclude Include="..\..\proxy\proxy.h" />
+    <ClInclude Include="..\config.h" />
+    <ClInclude Include="..\dlfcn\dlfcn.h" />
+    <ClInclude Include="..\getopt.h" />
+    <ClInclude Include="..\win32_compatibility_layer.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

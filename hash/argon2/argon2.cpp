@@ -2,8 +2,8 @@
 // Created by Haifa Bogdan Adnan on 05/08/2018.
 //
 
-#include "../../common/common.h"
 #include "../../http/mongoose/mongoose.h"
+#include "../../common/common.h"
 #include "blake2/blake2.h"
 
 #include "argon2.h"
@@ -59,7 +59,7 @@ vector<string> argon2::generate_hashes(const argon2profile &profile, const strin
 
 string argon2::__make_salt() {
     unsigned char input[13];
-    char output[20];
+    char output[25];
 
     for(int i=0;i<13;i++) {
         double rnd_scaler = rand()/(1.0 + RAND_MAX);
@@ -132,7 +132,7 @@ void argon2::__fill_first_blocks(const argon2profile &profile, uint8_t *blockhas
         lane_length = __lane_length;
     }
 
-    for (int l = 0; l < profile.thr_cost; ++l) {
+    for (uint32_t l = 0; l < profile.thr_cost; ++l) {
         *((uint32_t*)(blockhash + ARGON2_PREHASH_DIGEST_LENGTH)) = 0;
         *((uint32_t*)(blockhash + ARGON2_PREHASH_DIGEST_LENGTH + 4)) = l;
 

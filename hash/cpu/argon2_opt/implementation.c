@@ -8,7 +8,7 @@
 
 #include "../../argon2/defs.h"
 
-#if defined(__x86_64__) && !defined(BUILD_REF)
+#if !defined(BUILD_REF) && (defined(__x86_64__) || defined(_WIN64))
 #include "blamka-round-opt.h"
 #else
 #include "blamka-round-ref.h"
@@ -203,13 +203,16 @@ static void fill_block(block *prev_block, const block *ref_block,
 
 #endif
 
+#ifdef _MSC_VER
+__declspec(dllexport) 
+#endif
 void fill_memory_blocks(void *memory, int threads, argon2profile *profile, void *user_data) {
 #ifndef  BUILD_REF
 #if defined(__AVX512F__)
     __m512i state[ARGON2_512BIT_WORDS_IN_BLOCK];
 #elif defined(__AVX2__)
     __m256i state[ARGON2_HWORDS_IN_BLOCK];
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) || defined(_WIN64)
     __m128i state[ARGON2_OWORDS_IN_BLOCK];
 #endif
 #else

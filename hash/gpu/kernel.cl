@@ -2,14 +2,14 @@
 #define BLOCK_SIZE                      1024
 #define BLOCK_SIZE_ULONG                128
 
-#define fBlaMka(x, y) ((x) + (y) + 2 * ((x) & 0xFFFFFFFF) * ((y) & 0xFFFFFFFF))
+#define fBlaMka(x, y) ((x) + (y) + 2 * upsample(mul_hi((uint)(x), (uint)(y)), (uint)(x) * (uint)y))
 
 #define G(data, vec)           \
 {                           \
-    ulong a = data[vec[0]]; \
-    ulong b = data[vec[1]]; \
-    ulong c = data[vec[2]]; \
-    ulong d = data[vec[3]]; \
+    a = data[vec[0]]; \
+    b = data[vec[1]]; \
+    c = data[vec[2]]; \
+    d = data[vec[3]]; \
     a = fBlaMka(a, b);          \
     d = rotate(d ^ a, (ulong)32);      \
     c = fBlaMka(c, d);          \
@@ -188,64 +188,8 @@ vstore4(data, 0, &dst[offset]); \
 #define copy_block(dst, src)                                                    \
 vstore4(vload4(0, &src[offset]), 0, &dst[offset]);
 
-#define copy_2block(dst, src)                                                    \
-vstore8(vload8(0, &src[offset]), 0, &dst[offset]);
-
 #define zero_block(dst)                                                    \
 vstore4(zero, 0, &dst[offset]);
-
-static void fill_block_noxor(__global ulong *prev_block,
-        __global ulong *ref_block,
-        __global ulong *next_block,
-        __global ulong *global_state,
-        __local ulong *state,
-        __local ulong *buffer,
-        int id)
-{
-    int offset = id * MEMORY_CHUNK_PER_ITEM;
-    xor_block_4(prev_block, state, buffer, ref_block);
-
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    G(state, offsets_round_1[id]);
-    barrier(CLK_LOCAL_MEM_FENCE);
-    G(state, offsets_round_2[id]);
-    barrier(CLK_LOCAL_MEM_FENCE);
-    G(state, offsets_round_3[id]);
-    barrier(CLK_LOCAL_MEM_FENCE);
-    G(state, offsets_round_4[id]);
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    xor_block_4(state, global_state, next_block, buffer);
-    barrier(CLK_GLOBAL_MEM_FENCE);
-}
-
-static void fill_block_xor(__global ulong *prev_block,
-        __global ulong *ref_block,
-        __global ulong *next_block,
-        __global ulong *global_state,
-        __local ulong *state,
-        __local ulong *buffer,
-        int id)
-{
-    int offset = id * MEMORY_CHUNK_PER_ITEM;
-    xor_block_4(prev_block, state, buffer, ref_block);
-    xor_block_2(buffer, next_block);
-
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    G(state, offsets_round_1[id]);
-    barrier(CLK_LOCAL_MEM_FENCE);
-    G(state, offsets_round_2[id]);
-    barrier(CLK_LOCAL_MEM_FENCE);
-    G(state, offsets_round_3[id]);
-    barrier(CLK_LOCAL_MEM_FENCE);
-    G(state, offsets_round_4[id]);
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    xor_block_4(state, global_state, next_block, buffer);
-    barrier(CLK_GLOBAL_MEM_FENCE);
-}
 
 __kernel void fill_blocks(__global ulong *chunk_0,
         __global ulong *chunk_1,
@@ -266,7 +210,7 @@ __kernel void fill_blocks(__global ulong *chunk_0,
     __local ulong state[BLOCK_SIZE_ULONG];
     __local ulong buffer[BLOCK_SIZE_ULONG];
     __global ulong *global_state;
-    __global ulong *zero_blk;
+    ulong a, b, c, d;
 
     int hash = get_group_id(0);
     int id = get_local_id(0);
@@ -285,7 +229,7 @@ __kernel void fill_blocks(__global ulong *chunk_0,
     memory = memory + chunk_offset * (memsize >> 3);
 
     int mem_end = memsize >> 3;
-    for(int i=0;i<mem_end;i+=BLOCK_SIZE_ULONG){
+    for(int i=0; i < mem_end; i += BLOCK_SIZE_ULONG) {
         zero_block((memory + i));
     }
 
@@ -304,33 +248,56 @@ __kernel void fill_blocks(__global ulong *chunk_0,
         copy_block(dst, src);
     }
 
-    global_state = mem_seed + BLOCK_SIZE_ULONG;
-    zero_blk = mem_seed;
-
-    zero_block(zero_blk);
-    barrier(CLK_GLOBAL_MEM_FENCE);
-
     __global ulong *next_block;
     __global ulong *prev_block;
     __global ulong *ref_block;
-    __global ulong *xor_block;
+
+    prev_block = global_state = mem_seed + BLOCK_SIZE_ULONG;
 
     int final_addrsize = (profile == 1) ? (addrsize - 3) : addrsize;
 
     int i=0;
     for(; i < xor_limit; ++i, addresses += 3) {
         next_block = (addresses[0] == -1) ? global_state : (memory + addresses[0] * BLOCK_SIZE_ULONG);
-        prev_block = (addresses[1] == -1) ? global_state : (memory + addresses[1] * BLOCK_SIZE_ULONG);
+        prev_block = (addresses[1] == -1) ? prev_block : (memory + addresses[1] * BLOCK_SIZE_ULONG);
         ref_block = memory + (addresses[2] * BLOCK_SIZE_ULONG);
 
-        fill_block_noxor(prev_block, ref_block, next_block, global_state, state, buffer, id);
+        xor_block_4(prev_block, state, buffer, ref_block);
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        G(state, offsets_round_1[id]);
+        barrier(CLK_LOCAL_MEM_FENCE);
+        G(state, offsets_round_2[id]);
+        barrier(CLK_LOCAL_MEM_FENCE);
+        G(state, offsets_round_3[id]);
+        barrier(CLK_LOCAL_MEM_FENCE);
+        G(state, offsets_round_4[id]);
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        xor_block_3(state, next_block, buffer);
+        prev_block = next_block;
     }
+
     for(; i < final_addrsize; ++i, addresses += 3) {
         next_block = (addresses[0] == -1) ? global_state : (memory + addresses[0] * BLOCK_SIZE_ULONG);
-        prev_block = (addresses[1] == -1) ? global_state : (memory + addresses[1] * BLOCK_SIZE_ULONG);
+        prev_block = (addresses[1] == -1) ? prev_block : (memory + addresses[1] * BLOCK_SIZE_ULONG);
         ref_block = memory + (addresses[2] * BLOCK_SIZE_ULONG);
 
-        fill_block_xor(prev_block, ref_block, next_block, global_state, state, buffer, id);
+        xor_block_4(prev_block, state, buffer, ref_block);
+        xor_block_2(buffer, next_block);
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        G(state, offsets_round_1[id]);
+        barrier(CLK_LOCAL_MEM_FENCE);
+        G(state, offsets_round_2[id]);
+        barrier(CLK_LOCAL_MEM_FENCE);
+        G(state, offsets_round_3[id]);
+        barrier(CLK_LOCAL_MEM_FENCE);
+        G(state, offsets_round_4[id]);
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        xor_block_3(state, next_block, buffer);
+        prev_block = next_block;
     }
 
     int result_block = (profile == 1) ? addresses[1] : 0;
@@ -341,6 +308,4 @@ __kernel void fill_blocks(__global ulong *chunk_0,
         next_block = memory + addresses[2] * BLOCK_SIZE_ULONG;
         xor_block_2(out_mem, next_block);
     }
-
-    barrier(CLK_GLOBAL_MEM_FENCE);
 };

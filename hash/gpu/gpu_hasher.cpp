@@ -20,32 +20,53 @@ gpu_device_info gpu_hasher::__get_device_info(cl_platform_id platform, cl_device
     device_info.device = device;
 
     cl_int error;
-    char buffer[100];
+    char *buffer;
     size_t sz;
 
     // device name
     string device_vendor;
-    error = clGetDeviceInfo(device, CL_DEVICE_VENDOR, 100, buffer, &sz);
-    buffer[sz] = 0;
-    device_vendor = buffer;
+    sz = 0;
+    clGetDeviceInfo(device, CL_DEVICE_VENDOR, 0, NULL, &sz);
+    buffer = (char *)malloc(sz + 1);
+    error = clGetDeviceInfo(device, CL_DEVICE_VENDOR, sz, buffer, &sz);
     if(error != CL_SUCCESS) {
+        free(buffer);
         return gpu_device_info(error, "Error querying device vendor.");
+    }
+    else {
+        buffer[sz] = 0;
+        device_vendor = buffer;
+        free(buffer);
     }
 
     string device_name;
-    error = clGetDeviceInfo(device, CL_DEVICE_NAME, 100, buffer, &sz);
-    buffer[sz] = 0;
-    device_name = buffer;
+    sz = 0;
+    clGetDeviceInfo(device, CL_DEVICE_NAME, 0, NULL, &sz);
+    buffer = (char *)malloc(sz + 1);
+    error = clGetDeviceInfo(device, CL_DEVICE_NAME, sz, buffer, &sz);
     if(error != CL_SUCCESS) {
+        free(buffer);
         return gpu_device_info(error, "Error querying device name.");
+    }
+    else {
+        buffer[sz] = 0;
+        device_name = buffer;
+        free(buffer);
     }
 
     string device_version;
-    error = clGetDeviceInfo(device, CL_DEVICE_VERSION, 100, buffer, &sz);
-    buffer[sz] = 0;
-    device_version = buffer;
+    sz = 0;
+    clGetDeviceInfo(device, CL_DEVICE_VERSION, 0, NULL, &sz);
+    buffer = (char *)malloc(sz + 1);
+    error = clGetDeviceInfo(device, CL_DEVICE_VERSION, sz, buffer, &sz);
     if(error != CL_SUCCESS) {
+        free(buffer);
         return gpu_device_info(error, "Error querying device version.");
+    }
+    else {
+        buffer[sz] = 0;
+        device_version = buffer;
+        free(buffer);
     }
 
     device_info.device_string = device_vendor + " - " + device_name + " : " + device_version;
@@ -54,30 +75,35 @@ gpu_device_info gpu_hasher::__get_device_info(cl_platform_id platform, cl_device
     if(error != CL_SUCCESS) {
         return gpu_device_info(error, "Error querying device global memory size.");
     }
+
     error = clGetDeviceInfo(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(device_info.max_allocable_mem_size), &(device_info.max_allocable_mem_size), NULL);
     if(error != CL_SUCCESS) {
         return gpu_device_info(error, "Error querying device max memory allocation.");
     }
 
-    cl_context_properties properties[]={
-            CL_CONTEXT_PLATFORM, (cl_context_properties)platform,
-            0};
-
-    device_info.context=clCreateContext(properties, 1, &device, NULL, NULL, &error);
-    if(error != CL_SUCCESS)  {
-        return gpu_device_info(error, "Error getting device context.");
-    }
-
-    device_info.queue = clCreateCommandQueue(device_info.context, device, 0, &error);
-    if(error != CL_SUCCESS)  {
-        return gpu_device_info(error, "Error getting device command queue.");
-    }
-
     return device_info;
 }
 
-bool gpu_hasher::__setup_device_info(gpu_device_info &device, int intensity) {
+bool gpu_hasher::__setup_device_info(gpu_device_info &device, int intensity_cpu, int intensity_gpu) {
     cl_int error;
+
+    cl_context_properties properties[]={
+            CL_CONTEXT_PLATFORM, (cl_context_properties)device.platform,
+            0};
+
+    device.context=clCreateContext(properties, 1, &(device.device), NULL, NULL, &error);
+    if(error != CL_SUCCESS)  {
+        device.error = error;
+        device.error_message = "Error getting device context.";
+        return false;
+    }
+
+    device.queue = clCreateCommandQueue(device.context, device.device, 0, &error);
+    if(error != CL_SUCCESS)  {
+        device.error = error;
+        device.error_message = "Error getting device command queue.";
+        return false;
+    }
 
     const char *srcptr[] = { opencl_kernel.c_str() };
     size_t srcsize = opencl_kernel.size();
@@ -93,8 +119,9 @@ bool gpu_hasher::__setup_device_info(gpu_device_info &device, int intensity) {
     if(error != CL_SUCCESS)  {
         size_t log_size;
         clGetProgramBuildInfo(device.program, device.device, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
-        char *log = (char *) malloc(log_size);
+        char *log = (char *) malloc(log_size + 1);
         clGetProgramBuildInfo(device.program, device.device, CL_PROGRAM_BUILD_LOG, log_size, log, NULL);
+        log[log_size] = 0;
         string build_log = log;
         free(log);
 
@@ -110,29 +137,51 @@ bool gpu_hasher::__setup_device_info(gpu_device_info &device, int intensity) {
         return false;
     }
 
-    device.profile_info.threads_per_chunk_profile_1_1_524288 = device.max_allocable_mem_size / argon2profile_1_1_524288.memsize;
+    device.profile_info.threads_per_chunk_profile_1_1_524288 = (uint32_t)(device.max_allocable_mem_size / argon2profile_1_1_524288.memsize);
     size_t chunk_size_profile_1_1_524288 = device.profile_info.threads_per_chunk_profile_1_1_524288 * argon2profile_1_1_524288.memsize;
 
-    device.profile_info.threads_per_chunk_profile_4_4_16384 = device.max_allocable_mem_size / argon2profile_4_4_16384.memsize;
+    device.profile_info.threads_per_chunk_profile_4_4_16384 = (uint32_t)(device.max_allocable_mem_size / argon2profile_4_4_16384.memsize);
     size_t chunk_size_profile_4_4_16384 = device.profile_info.threads_per_chunk_profile_4_4_16384 * argon2profile_4_4_16384.memsize;
 
+    if(chunk_size_profile_1_1_524288 == 0 || chunk_size_profile_4_4_16384 == 0) {
+        device.error = -1;
+        device.error_message = "Not enough memory on GPU.";
+        return false;
+    }
+
     size_t chunk_size = max(chunk_size_profile_1_1_524288, chunk_size_profile_4_4_16384);
-    uint64_t usable_memory = (uint64_t)((device.max_mem_size * 0.9 * intensity) / 100.0); // leave 10% of memory for other tasks
+    uint64_t usable_memory = (uint64_t)(device.max_mem_size * 0.9); // leave 10% of memory for other tasks
     double chunks = (double)usable_memory / (double)chunk_size;
 
-    device.profile_info.threads_profile_1_1_524288 = device.profile_info.threads_per_chunk_profile_1_1_524288 * chunks;
-    device.profile_info.threads_profile_4_4_16384 = device.profile_info.threads_per_chunk_profile_4_4_16384 * chunks;
+    uint32_t max_threads_1_1_524288 = (uint32_t)(device.profile_info.threads_per_chunk_profile_1_1_524288 * chunks);
+    uint32_t max_threads_4_4_16384 = (uint32_t)(device.profile_info.threads_per_chunk_profile_4_4_16384 * chunks);
 
-    size_t max_threads = max(device.profile_info.threads_profile_1_1_524288, device.profile_info.threads_profile_4_4_16384);
+    if(max_threads_1_1_524288 == 0 && max_threads_4_4_16384 == 0) {
+        device.error = -1;
+        device.error_message = "Not enough memory on GPU.";
+        return false;
+    }
 
-    double counter = chunks;
-    double allocated_mem_for_current_chunk = 0;
+    device.profile_info.threads_profile_1_1_524288 = (uint32_t)(max_threads_1_1_524288 * intensity_cpu / 100.0);
+    if(device.profile_info.threads_profile_1_1_524288 == 0 && intensity_cpu > 0)
+        device.profile_info.threads_profile_1_1_524288 = 1;
+    device.profile_info.threads_profile_4_4_16384 = (uint32_t)(max_threads_4_4_16384 * intensity_gpu / 100.0);
+    if(device.profile_info.threads_profile_4_4_16384 == 0 && intensity_gpu > 0)
+        device.profile_info.threads_profile_4_4_16384 = 1;
+
+    size_t max_threads = max(device.profile_info.threads_profile_4_4_16384, device.profile_info.threads_profile_1_1_524288);
+
+    double chunks_1_1_524288 = (double)device.profile_info.threads_profile_1_1_524288 / (double)device.profile_info.threads_per_chunk_profile_1_1_524288;
+    double chunks_4_4_16384 = (double)device.profile_info.threads_profile_4_4_16384 / (double)device.profile_info.threads_per_chunk_profile_4_4_16384;
+
+    double counter = max(chunks_1_1_524288, chunks_4_4_16384);
+    size_t allocated_mem_for_current_chunk = 0;
 
     if(counter > 0) {
         if (counter > 1) {
             allocated_mem_for_current_chunk = chunk_size;
         } else {
-            allocated_mem_for_current_chunk = chunk_size * counter;
+            allocated_mem_for_current_chunk = (size_t)ceil(chunk_size * counter);
         }
         counter -= 1;
     }
@@ -150,8 +199,8 @@ bool gpu_hasher::__setup_device_info(gpu_device_info &device, int intensity) {
         if (counter > 1) {
             allocated_mem_for_current_chunk = chunk_size;
         } else {
-            allocated_mem_for_current_chunk = chunk_size * counter;
-        }
+			allocated_mem_for_current_chunk = (size_t)ceil(chunk_size * counter);
+		}
         counter -= 1;
     }
     else {
@@ -168,8 +217,8 @@ bool gpu_hasher::__setup_device_info(gpu_device_info &device, int intensity) {
         if (counter > 1) {
             allocated_mem_for_current_chunk = chunk_size;
         } else {
-            allocated_mem_for_current_chunk = chunk_size * counter;
-        }
+			allocated_mem_for_current_chunk = (size_t)ceil(chunk_size * counter);
+		}
         counter -= 1;
     }
     else {
@@ -186,8 +235,8 @@ bool gpu_hasher::__setup_device_info(gpu_device_info &device, int intensity) {
         if (counter > 1) {
             allocated_mem_for_current_chunk = chunk_size;
         } else {
-            allocated_mem_for_current_chunk = chunk_size * counter;
-        }
+			allocated_mem_for_current_chunk = (size_t)ceil(chunk_size * counter);
+		}
         counter -= 1;
     }
     else {
@@ -204,8 +253,8 @@ bool gpu_hasher::__setup_device_info(gpu_device_info &device, int intensity) {
         if (counter > 1) {
             allocated_mem_for_current_chunk = chunk_size;
         } else {
-            allocated_mem_for_current_chunk = chunk_size * counter;
-        }
+			allocated_mem_for_current_chunk = (size_t)ceil(chunk_size * counter);
+		}
         counter -= 1;
     }
     else {
@@ -222,8 +271,8 @@ bool gpu_hasher::__setup_device_info(gpu_device_info &device, int intensity) {
         if (counter > 1) {
             allocated_mem_for_current_chunk = chunk_size;
         } else {
-            allocated_mem_for_current_chunk = chunk_size * counter;
-        }
+			allocated_mem_for_current_chunk = (size_t)ceil(chunk_size * counter);
+		}
         counter -= 1;
     }
     else {
@@ -270,12 +319,14 @@ bool gpu_hasher::__setup_device_info(gpu_device_info &device, int intensity) {
         device.error_message = "Error writing to gpu memory.";
         return false;
     }
+
     error=clEnqueueWriteBuffer(device.queue, device.arguments.address_profile_4_4_16384, CL_TRUE, 0, argon2profile_4_4_16384.block_refs_size * 3 * sizeof(uint32_t), argon2profile_4_4_16384.block_refs, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
         device.error = error;
         device.error_message = "Error writing to gpu memory.";
         return false;
     }
+
     error=clFinish(device.queue);
     if(error != CL_SUCCESS) {
         device.error = error;
@@ -319,7 +370,7 @@ vector<gpu_device_info> gpu_hasher::__query_opencl_devices(cl_int &error, string
         return vector<gpu_device_info>();
     }
 
-    for(int i=0;i<platform_count;i++) {
+    for(uint32_t i=0; i < platform_count; i++) {
         device_count = 0;
         clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, 0, NULL, &device_count);
         if(device_count == 0) {
@@ -336,7 +387,7 @@ vector<gpu_device_info> gpu_hasher::__query_opencl_devices(cl_int &error, string
             continue;
         }
 
-        for(int j=0; j<device_count;j++) {
+        for(uint32_t j=0; j < device_count; j++) {
             gpu_device_info info = __get_device_info(platforms[i], devices[j]);
             if(info.error != CL_SUCCESS) {
                 error = info.error;
@@ -355,12 +406,104 @@ vector<gpu_device_info> gpu_hasher::__query_opencl_devices(cl_int &error, string
     return result;
 }
 
+gpu_hasher::gpu_hasher() {
+    _type = "GPU";
+    _intensity = 0;
+    __running = false;
+    _description = "";
+}
+
+gpu_hasher::~gpu_hasher() {
+    __running = false;
+    for(vector<thread*>::iterator it = __runners.begin();it != __runners.end();++it) {
+        (*it)->join();
+        delete *it;
+    }
+}
+
+bool gpu_hasher::configure(arguments &args) {
+    int index = 1;
+    int intensity_cpu = args.gpu_intensity_cblocks();
+    int intensity_gpu = args.gpu_intensity_gblocks();
+    string filter = args.gpu_filter();
+
+    int total_threads_profile_4_4_16384 = 0;
+    int total_threads_profile_1_1_524288 = 0;
+
+    if (intensity_cpu == 0 && intensity_gpu == 0) {
+        _intensity = 0;
+        _description += "Status: DISABLED - by user.";
+        return false;
+    }
+
+    stringstream ss;
+
+    cl_int error = CL_SUCCESS;
+    string error_message;
+
+    __devices = __query_opencl_devices(error, error_message);
+
+    if(error != CL_SUCCESS) {
+        _description = "No compatible GPU detected: " + error_message;
+        return false;
+    }
+
+    if (__devices.empty()) {
+        _description = "No compatible GPU detected.";
+        return false;
+    }
+
+    for(vector<gpu_device_info>::iterator d = __devices.begin(); d != __devices.end(); d++, index++) {
+        ss << "["<< index << "] " << d->device_string << endl;
+        string device_description = ss.str();
+
+        if(filter != "" && device_description.find(filter) == string::npos) {
+            d->profile_info.threads_profile_4_4_16384 = 0;
+            d->profile_info.threads_profile_1_1_524288 = 0;
+            continue;
+        }
+
+        _description += ss.str();
+
+        if(!(__setup_device_info(*d, intensity_cpu, intensity_gpu))) {
+            _description += d->error_message;
+            _description += "\n";
+            continue;
+        };
+        total_threads_profile_4_4_16384 += d->profile_info.threads_profile_4_4_16384;
+        total_threads_profile_1_1_524288 += d->profile_info.threads_profile_1_1_524288;
+    }
+
+    if (total_threads_profile_4_4_16384 == 0 && total_threads_profile_1_1_524288 == 0) {
+        _intensity = 0;
+        _description += "Status: DISABLED - not enough resources.";
+        return false;
+    }
+
+    _intensity = (intensity_cpu + intensity_gpu) / 2.0;
+
+    __running = true;
+    for(vector<gpu_device_info>::iterator d = __devices.begin(); d != __devices.end(); d++) {
+        if(d->profile_info.threads_profile_1_1_524288 != 0 || d->profile_info.threads_profile_4_4_16384 != 0) {
+            __runners.push_back(new thread([&](gpu_device_info *device) {
+                this->__run(device);
+            }, &(*d)));
+        }
+	}
+
+    _description += "Status: ENABLED - with " + to_string(total_threads_profile_1_1_524288) + " threads for CPU blocks and " + to_string(total_threads_profile_4_4_16384) + " threads for GPU blocks.";
+
+    return true;
+}
+
 void kernel_filler(void *memory, int threads, argon2profile *profile, void *user_data) {
     gpu_device_info *device = (gpu_device_info*) user_data;
 
     cl_int error;
 
     int mem_seed_count = profile->thr_cost;
+
+    uint64_t start_log = microseconds();
 
     error=clEnqueueWriteBuffer(device->queue, device->arguments.seed_memory, CL_TRUE, 0, threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, memory, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
@@ -409,6 +552,9 @@ void kernel_filler(void *memory, int threads, argon2profile *profile, void *user
     clSetKernelArg(device->kernel, 14, sizeof(uint32_t), &xor_limit);
     clSetKernelArg(device->kernel, 15, sizeof(uint32_t), &profile_id);
 
+//    printf("Write data to device: %lld\n", microseconds() - start_log);
+    start_log = microseconds();
+
     error=clEnqueueNDRangeKernel(device->queue, device->kernel, 1, NULL, &total_work_items, &local_work_items, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
         device->error = error;
@@ -422,6 +568,8 @@ void kernel_filler(void *memory, int threads, argon2profile *profile, void *user
         device->error_message = "Error running the kernel.";
         return;
     }
+//    printf("Execute kernel: %lld\n", microseconds() - start_log);
+    start_log = microseconds();
 
     error=clEnqueueReadBuffer(device->queue, device->arguments.out_memory, CL_TRUE, 0, threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, memory, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
@@ -436,80 +584,7 @@ void kernel_filler(void *memory, int threads, argon2profile *profile, void *user
         device->error_message = "Error reading gpu memory.";
         return;
     }
-}
-
-gpu_hasher::gpu_hasher() {
-    _type = "GPU";
-    _intensity = 0;
-    __running = false;
-    _description = "";
-}
-
-gpu_hasher::~gpu_hasher() {
-    __running = false;
-    for(vector<thread*>::iterator it = __runners.begin();it != __runners.end();++it) {
-        (*it)->join();
-        delete *it;
-    }
-}
-
-bool gpu_hasher::configure(arguments &args) {
-    int index = 1;
-    int intensity = args.gpu_intensity();
-    int total_threads = 0;
-
-    if (intensity == 0) {
-        _intensity = 0;
-        _description += "Status: DISABLED - by user.";
-        return false;
-    }
-
-    stringstream ss;
-
-    cl_int error = CL_SUCCESS;
-    string error_message;
-
-    __devices = __query_opencl_devices(error, error_message);
-
-    if(error != CL_SUCCESS) {
-        _description = "No compatible GPU detected: " + error_message;
-        return false;
-    }
-
-    if (__devices.empty()) {
-        _description = "No compatible GPU detected.";
-        return false;
-    }
-
-    for(vector<gpu_device_info>::iterator d = __devices.begin(); d != __devices.end(); d++, index++) {
-        ss << "["<< index << "] " << d->device_string << endl;
-
-        _description += ss.str();
-
-        if(!(__setup_device_info(*d, intensity))) {
-            _description += d->error_message;
-            _description += "\n";
-            continue;
-        };
-        total_threads += d->profile_info.threads_profile_4_4_16384;
-    }
-
-    if (total_threads == 0) {
-        _intensity = 0;
-        _description += "Status: DISABLED - not enough resources.";
-        return false;
-    }
-
-    _intensity = intensity;
-
-    __running = true;
-    for(auto d = __devices.begin(); d != __devices.end(); d++) {
-        __runners.push_back(new thread(&gpu_hasher::__run, ref(*this), &(*d)));
-    }
-
-    _description += "Status: ENABLED - with " + to_string(total_threads) + " threads.";
-
-    return false;
+//    printf("Read data from device: %lld\n", microseconds() - start_log);
 }
 
 void gpu_hasher::__run(gpu_device_info *device) {
@@ -524,15 +599,25 @@ void gpu_hasher::__run(gpu_device_info *device) {
             continue;
         }
 
+        uint64_t start_log = microseconds();
+
         hash_data input = get_input();
         argon2profile *profile = get_argon2profile();
 
         if(!input.base.empty()) {
             if(strcmp(profile->profile_name, "1_1_524288") == 0) {
+                if(device->profile_info.threads_profile_1_1_524288 == 0) {
+                    this_thread::sleep_for(chrono::milliseconds(100));
+                    continue;
+                }
                 hash_factory.set_seed_memory_offset(2 * ARGON2_BLOCK_SIZE);
                 hash_factory.set_threads(device->profile_info.threads_profile_1_1_524288);
             }
             else {
+                if(device->profile_info.threads_profile_4_4_16384 == 0) {
+                    this_thread::sleep_for(chrono::milliseconds(100));
+                    continue;
+                }
                 hash_factory.set_seed_memory_offset(8 * ARGON2_BLOCK_SIZE);
                 hash_factory.set_threads(device->profile_info.threads_profile_4_4_16384);
             }
@@ -543,6 +628,8 @@ void gpu_hasher::__run(gpu_device_info *device) {
                 _store_hash(input);
             }
         }
+
+//        printf("Total time: %lld\n", microseconds() - start_log);
     }
 
     free(memory);
