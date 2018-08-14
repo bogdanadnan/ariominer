@@ -377,7 +377,7 @@ vector<gpu_device_info> gpu_hasher::__query_opencl_devices(cl_int &error, string
             continue;
         }
 
-        cl_device_id * devices = (cl_device_id*)malloc(device_count);
+        cl_device_id * devices = (cl_device_id*)malloc(device_count * sizeof(cl_device_id));
         err=clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, device_count, devices, &device_count);
 
         if(err != CL_SUCCESS)  {
@@ -436,8 +436,6 @@ bool gpu_hasher::configure(arguments &args) {
         return false;
     }
 
-    stringstream ss;
-
     cl_int error = CL_SUCCESS;
     string error_message;
 
@@ -454,6 +452,7 @@ bool gpu_hasher::configure(arguments &args) {
     }
 
     for(vector<gpu_device_info>::iterator d = __devices.begin(); d != __devices.end(); d++, index++) {
+        stringstream ss;
         ss << "["<< index << "] " << d->device_string << endl;
         string device_description = ss.str();
 
