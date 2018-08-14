@@ -12,6 +12,9 @@ In order to support development, this miner has 1% dev fee included - 1 minute f
 - support for autodetecting the best version of the CPU hasher for your machine (SSE2/SSSE3/AVX2/AVX512F)
 - [TODO] support for proxy mode, to act as an aggregator for multiple small miners
 
+## Releases
+https://github.com/bogdanadnan/ariominer/releases
+
 ## Instructions
 What you need:
 - recent Linux distribution (Ubuntu recommended) or Mac OS X (support for Windows will be added soon)
