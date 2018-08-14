@@ -622,6 +622,9 @@ void gpu_hasher::__run(gpu_device_info *device) {
             }
 
             vector<string> hashes = hash_factory.generate_hashes(*profile, input.base, input.salt);
+			if (device->error != CL_SUCCESS) {
+				LOG("Error running kernel: (" + to_string(device->error) + ")" + device->error_message);
+			}
             for(vector<string>::iterator it = hashes.begin(); it != hashes.end(); ++it) {
                 input.hash = *it;
                 _store_hash(input);

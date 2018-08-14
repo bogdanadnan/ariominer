@@ -8,13 +8,18 @@
 
 #include "http.h"
 
+struct http_result_response {
+	char *reply;
+	bool reply_received;
+};
+
 static void mg_ev_handler(struct mg_connection *c, int ev, void *p) {
     if (ev == MG_EV_HTTP_REPLY) {
         http_message *hm = (http_message *)p;
         c->flags |= MG_F_CLOSE_IMMEDIATELY;
-        strncpy((char *)c->user_data, hm->body.p, hm->body.len);
+        strncpy(((http_result_response*)(c->user_data))->reply, hm->body.p, hm->body.len);
     } else if (ev == MG_EV_CLOSE) {
-        c->user_data = 0;
+        ((http_result_response*)(c->user_data))->reply_received = true;
     };
 }
 
@@ -46,11 +51,14 @@ string http::__http_post(const string &url, const string &post_data) {
             post_data.empty() ? NULL : "Content-Type: application/x-www-form-urlencoded\r\n",
             post_data.empty() ? NULL : post_data.c_str());
 
-    char *result = new char[1000];
-    conn->user_data = (void *)result;
+    char *result = (char *)malloc(1000);
+	http_result_response http_rsp;
+	http_rsp.reply = result;
+	http_rsp.reply_received = false;
+    conn->user_data = (void *)&http_rsp;
 
     time_t initial_timestamp = time(NULL);
-    while(conn->user_data != 0) {
+    while(!(http_rsp.reply_received)) {
         if(time(NULL) - initial_timestamp > 10) { //10 sec timeout
             return string("");
         }
@@ -64,7 +72,7 @@ string http::__http_post(const string &url, const string &post_data) {
 
     string t = result;
     if(time(NULL) - initial_timestamp <= 10) {
-        delete[] result;
+        free(result);
     }
     return t;
 }

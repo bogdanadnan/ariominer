@@ -5,7 +5,7 @@
 #ifndef ARIOMINER_WIN32_COMPATIBILITY_LAYER_H
 #define ARIOMINER_WIN32_COMPATIBILITY_LAYER_H
 
-#include <time.h>
+//#include <time.h>
 #include <windows.h>
 
 #ifdef __cplusplus 

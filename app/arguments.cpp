@@ -394,6 +394,8 @@ string arguments::__argv_0 = "./";
 
 string arguments::get_app_folder() {
     size_t last_slash = __argv_0.find_last_of("/\\");
+	if (last_slash == string::npos)
+		return ".";
     string app_folder = __argv_0.substr(0, last_slash);
     if(app_folder.empty()) {
         app_folder = ".";
