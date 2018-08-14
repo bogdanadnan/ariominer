@@ -21,7 +21,6 @@ set(SOURCE
         hash/argon2/defs.h
         hash/argon2/argon2profile_4_4_16384.c hash/argon2/argon2profile_1_1_524288.c
         hash/argon2/blake2/blake2b.c hash/argon2/blake2/blake2.h
-        hash/gpu/OpenCL_Cpp/cl.hpp
         hash/gpu/opencl_kernel.cpp hash/gpu/opencl_kernel.h)
 
 set(ARGON2_FILL_BLOCKS_SRC
