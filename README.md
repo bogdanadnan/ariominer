@@ -33,6 +33,9 @@ $ cd build
 $ cmake ..
 $ make
 ```
+Additional informations:  
+https://forum.arionum.com/viewtopic.php?f=15&t=369
+
 Usage:
 - starting in miner mode:
 ```sh
