@@ -14,7 +14,7 @@ struct http_result_response {
 };
 
 static void mg_ev_handler(struct mg_connection *c, int ev, void *p) {
-    if (ev == MG_EV_HTTP_REPLY) {
+	if (ev == MG_EV_HTTP_REPLY) {
         http_message *hm = (http_message *)p;
         c->flags |= MG_F_CLOSE_IMMEDIATELY;
         strncpy(((http_result_response*)(c->user_data))->reply, hm->body.p, hm->body.len);
@@ -51,15 +51,15 @@ string http::__http_post(const string &url, const string &post_data) {
             post_data.empty() ? NULL : "Content-Type: application/x-www-form-urlencoded\r\n",
             post_data.empty() ? NULL : post_data.c_str());
 
-    char *result = (char *)malloc(1000);
-	http_result_response http_rsp;
-	http_rsp.reply = result;
-	http_rsp.reply_received = false;
-    conn->user_data = (void *)&http_rsp;
+    char *result = new char[1000];
+	http_result_response *http_rsp = new http_result_response();
+	http_rsp->reply = result;
+	http_rsp->reply_received = false;
+    conn->user_data = (void *)http_rsp;
 
     time_t initial_timestamp = time(NULL);
-    while(!(http_rsp.reply_received)) {
-        if(time(NULL) - initial_timestamp > 10) { //10 sec timeout
+    while(!(http_rsp->reply_received)) {
+        if(time(NULL) - initial_timestamp > 30) { //30 sec timeout
             return string("");
         }
         if(!__poll_running) {
@@ -72,7 +72,8 @@ string http::__http_post(const string &url, const string &post_data) {
 
     string t = result;
     if(time(NULL) - initial_timestamp <= 10) {
-        free(result);
+        delete[] result;
+		delete http_rsp;
     }
     return t;
 }

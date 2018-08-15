@@ -1,0 +1,10 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs
+/win32/argon2_fill_blocks/x64
+/win32/ariominer/.vs/ariominer/v15
+/win32/ariominer/ariominer.vcxproj.user
+/win32/argon2_fill_blocks/argon2_fill_blocks.vcxproj.user
+/win32/ariominer/x64

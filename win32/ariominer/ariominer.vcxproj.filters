@@ -94,11 +94,11 @@
     <ClCompile Include="..\..\proxy\proxy.cpp">
       <Filter>proxy</Filter>
     </ClCompile>
-    <ClCompile Include="..\win32_compatibility_layer.c">
-      <Filter>win32</Filter>
-    </ClCompile>
     <ClCompile Include="..\dlfcn\dlfcn.c">
-      <Filter>win32\dlfcn</Filter>
+      <Filter>win64\dlfcn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\win64_compatibility_layer.c">
+      <Filter>win64</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -199,16 +199,16 @@
       <Filter>proxy</Filter>
     </ClInclude>
     <ClInclude Include="..\config.h">
-      <Filter>win32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\win32_compatibility_layer.h">
-      <Filter>win32</Filter>
+      <Filter>win64</Filter>
     </ClInclude>
     <ClInclude Include="..\dlfcn\dlfcn.h">
-      <Filter>win32\dlfcn</Filter>
+      <Filter>win64\dlfcn</Filter>
     </ClInclude>
     <ClInclude Include="..\getopt.h">
-      <Filter>win32</Filter>
+      <Filter>win64</Filter>
+    </ClInclude>
+    <ClInclude Include="..\win64_compatibility_layer.h">
+      <Filter>win64</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -263,11 +263,19 @@
     <Filter Include="proxy">
       <UniqueIdentifier>{56c8891a-451c-4c5d-9073-ff4126249cec}</UniqueIdentifier>
     </Filter>
-    <Filter Include="win32">
+    <Filter Include="resources">
+      <UniqueIdentifier>{e779a155-f27b-4dca-b23a-7da4c7d18330}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="win64">
       <UniqueIdentifier>{bf0c4301-9c14-4f68-9cce-8c2996a54c7b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="win32\dlfcn">
+    <Filter Include="win64\dlfcn">
       <UniqueIdentifier>{0f4541e7-e9f8-4c09-88f9-ec41c598e07e}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\tdr_delay.reg">
+      <Filter>resources</Filter>
+    </None>
   </ItemGroup>
 </Project>

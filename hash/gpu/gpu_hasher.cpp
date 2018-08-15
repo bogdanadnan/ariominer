@@ -479,7 +479,7 @@ bool gpu_hasher::configure(arguments &args) {
         return false;
     }
 
-    _intensity = (intensity_cpu + intensity_gpu) / 2.0;
+    _intensity = (int)((intensity_cpu + intensity_gpu) / 2.0);
 
     __running = true;
     for(vector<gpu_device_info>::iterator d = __devices.begin(); d != __devices.end(); d++) {
@@ -520,8 +520,8 @@ void kernel_filler(void *memory, int threads, argon2profile *profile, void *user
 
     clSetKernelArg(device->kernel, 9, sizeof(device->arguments.seed_memory), &device->arguments.seed_memory);
 
-    size_t total_work_items = threads * 32;
-    size_t local_work_items = 32;
+    size_t total_work_items = threads * KERNEL_WORKGROUP_SIZE;
+    size_t local_work_items = KERNEL_WORKGROUP_SIZE;
 
     uint32_t threads_per_chunk;
     uint32_t memsize;
@@ -531,16 +531,16 @@ void kernel_filler(void *memory, int threads, argon2profile *profile, void *user
 
     if(strcmp(profile->profile_name, "1_1_524288") == 0) {
         threads_per_chunk = device->profile_info.threads_per_chunk_profile_1_1_524288;
-        memsize = argon2profile_1_1_524288.memsize;
-        addrsize = argon2profile_1_1_524288.block_refs_size;
-        xor_limit = argon2profile_1_1_524288.xor_limit;
+        memsize = (uint32_t)argon2profile_1_1_524288.memsize;
+        addrsize = (uint32_t)argon2profile_1_1_524288.block_refs_size;
+        xor_limit = (uint32_t)argon2profile_1_1_524288.xor_limit;
         profile_id = 0;
     }
     else {
         threads_per_chunk = device->profile_info.threads_per_chunk_profile_4_4_16384;
-        memsize = argon2profile_4_4_16384.memsize;
-        addrsize = argon2profile_4_4_16384.block_refs_size;
-        xor_limit = argon2profile_4_4_16384.xor_limit;
+        memsize = (uint32_t)argon2profile_4_4_16384.memsize;
+        addrsize = (uint32_t)argon2profile_4_4_16384.block_refs_size;
+        xor_limit = (uint32_t)argon2profile_4_4_16384.xor_limit;
         profile_id = 1;
     }
 

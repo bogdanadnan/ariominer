@@ -16,6 +16,7 @@ argon2::argon2(argon2_blocks_filler_ptr filler, void *seed_memory, void *user_da
     __seed_memory_offset = argon2profile_default->memsize;
     __lane_length = -1;
     __user_data = user_data;
+	srand(microseconds());
 }
 
 vector<string> argon2::generate_hashes(const argon2profile &profile, const string &base, const string &salt_) {
@@ -102,13 +103,13 @@ void argon2::__initial_hash(const argon2profile &profile, uint8_t *blockhash, co
     value = ARGON2_TYPE_VALUE;
     blake2b_update(&BlakeHash, (const uint8_t *)&value, sizeof(value));
 
-    value = base.length();
+    value = (uint32_t)base.length();
     blake2b_update(&BlakeHash, (const uint8_t *)&value, sizeof(value));
 
     blake2b_update(&BlakeHash, (const uint8_t *)base.c_str(),
                    base.length());
 
-    value = salt.length();
+    value = (uint32_t)salt.length();
     blake2b_update(&BlakeHash, (const uint8_t *)&value, sizeof(value));
 
     blake2b_update(&BlakeHash, (const uint8_t *)salt.c_str(),
@@ -150,7 +151,7 @@ string argon2::__encode_string(const argon2profile &profile, const string &salt,
     char salt_b64[50];
     char hash_b64[50];
 
-    mg_base64_encode((unsigned char *)salt.c_str(), salt.length(), salt_b64);
+    mg_base64_encode((unsigned char *)salt.c_str(), (int)salt.length(), salt_b64);
     mg_base64_encode(hash, ARGON2_RAW_LENGTH, hash_b64);
 
     salt_b64[22] = 0;

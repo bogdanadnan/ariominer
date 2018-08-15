@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #else
-#include <win32_compatibility_layer.h>
+#include <win64_compatibility_layer.h>
 #endif
 
 #include <config.h>
