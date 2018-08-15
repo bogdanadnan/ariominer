@@ -15,21 +15,31 @@ ariopool_client::ariopool_client(const string &pool_address, const string &worke
     __pool_address = pool_address;
     __worker_id = worker_id;
     __client_wallet_address = __used_wallet_address = wallet_address;
-    __timestamp = microseconds();
+    __timestamp = __last_hash_report = microseconds();
+    __force_hashrate_report = false;
 }
 
-ariopool_update_result ariopool_client::update(double hash_rate) {
+ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double hash_rate_gblocks) {
     ariopool_update_result result;
     result.success = false;
 
     string wallet = __get_wallet_address();
 
 #ifndef DEVELOPER_OWN_BUILD
-    if(wallet == DEV_WALLET_ADDRESS)
-        hash_rate = hash_rate / 100;
+    if(wallet == DEV_WALLET_ADDRESS) {
+        hash_rate_cblocks = hash_rate_cblocks / 100;
+        hash_rate_gblocks = hash_rate_gblocks / 100;
+    }
 #endif
 
-    string url = __pool_address + "/mine.php?q=info&worker=" + __worker_id + "&address=" + __get_wallet_address() + "&hashrate=" + to_string(hash_rate);
+    uint64_t current_timestamp = microseconds();
+    string hash_report_query = "";
+    if(__force_hashrate_report || (current_timestamp - __last_hash_report) > 600000000) {
+        hash_report_query = "&hashrate=" + to_string(hash_rate_cblocks) + "&hrgpu=" + to_string(hash_rate_gblocks);
+        __last_hash_report = current_timestamp;
+        __force_hashrate_report = false;
+    }
+    string url = __pool_address + "/mine.php?q=info&worker=" + __worker_id + "&address=" + __get_wallet_address() + hash_report_query;
 
     string response = __http_get(url);
 
@@ -101,6 +111,7 @@ string ariopool_client::__get_wallet_address() {
         if(__used_wallet_address != DEV_WALLET_ADDRESS) {
             LOG("--> Switching to dev wallet for 1 minute.");
             __used_wallet_address = DEV_WALLET_ADDRESS;
+            __force_hashrate_report = true;
         }
     }
     else {

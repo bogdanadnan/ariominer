@@ -16,6 +16,7 @@ struct hash_data {
     string salt;
     string base;
     string hash;
+    string profile_name;
     bool *realloc_flag;
 };
 
@@ -38,8 +39,11 @@ public:
     int get_intensity();
 
     double get_current_hash_rate();
-    double get_avg_hash_rate();
-    uint32_t get_hash_count();
+    double get_avg_hash_rate_cblocks();
+    double get_avg_hash_rate_gblocks();
+
+    uint32_t get_hash_count_cblocks();
+    uint32_t get_hash_count_gblocks();
 
     vector<hash_data> get_hashes();
 
@@ -59,9 +63,12 @@ private:
     static vector<hasher*> *__registered_hashers;
 
     double __hash_rate;
-    double __avg_hash_rate;
-    uint32_t __total_hash_count;
-    uint32_t __hash_count;
+    double __avg_hash_rate_cblocks;
+    double __avg_hash_rate_gblocks;
+    uint32_t __total_hash_count_cblocks;
+    uint32_t __total_hash_count_gblocks;
+    uint32_t __hash_count_cblocks;
+    uint32_t __hash_count_gblocks;
 
     mutex __input_mutex;
     string __public_key;
@@ -73,7 +80,9 @@ private:
     mutex __hashes_mutex;
     vector<hash_data> __hashes;
 
-    uint64_t __begin_time;
+    uint64_t __begin_round_time;
+    uint64_t __cblocks_time;
+    uint64_t __gblocks_time;
     uint64_t __hashrate_time;
 };
 

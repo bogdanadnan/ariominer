@@ -155,12 +155,14 @@ uint64_t miner::__calc_compare(const string &duration) {
 bool miner::__update_pool_data() {
     vector<hasher*> hashers = hasher::get_active_hashers();
 
-    double hash_rate = 0;
+    double hash_rate_cblocks = 0;
+    double hash_rate_gblocks = 0;
     for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
-        hash_rate += (*it)->get_current_hash_rate();
+        hash_rate_cblocks += (*it)->get_avg_hash_rate_cblocks();
+        hash_rate_gblocks += (*it)->get_avg_hash_rate_gblocks();
     }
 
-    ariopool_update_result new_settings = __client.update(hash_rate);
+    ariopool_update_result new_settings = __client.update(hash_rate_cblocks, hash_rate_gblocks);
     if (new_settings.success &&
         (new_settings.block != __blk ||
         new_settings.difficulty != __difficulty ||
@@ -196,44 +198,53 @@ void miner::__display_report() {
     stringstream ss;
 
     double hash_rate = 0;
-    double avg_hash_rate = 0;
-    uint32_t hash_count = 0;
+    double avg_hash_rate_cblocks = 0;
+    double avg_hash_rate_gblocks = 0;
+    uint32_t hash_count_cblocks = 0;
+    uint32_t hash_count_gblocks = 0;
 
     if(!__args.is_verbose() || hashers.size() == 1) {
         for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
             hash_rate += (*it)->get_current_hash_rate();
-            avg_hash_rate += (*it)->get_avg_hash_rate();
-            hash_count += (*it)->get_hash_count();
+            avg_hash_rate_cblocks += (*it)->get_avg_hash_rate_cblocks();
+            hash_count_cblocks += (*it)->get_hash_count_cblocks();
+            avg_hash_rate_gblocks += (*it)->get_avg_hash_rate_gblocks();
+            hash_count_gblocks += (*it)->get_hash_count_gblocks();
         }
 
-        ss << fixed << setprecision(2) << "--> Last hash rate: " << setw(6) << hash_rate << " H/s   " <<
-           "Average: " << setw(6) << avg_hash_rate << " H/s  " <<
-           "Total hashes: " << setw(6) << hash_count << "  " <<
-           "Mining Time: " << setw(6) << __total_time << "  " <<
-           "Shares: " << setw(4) << __confirmed << " " <<
-           "Finds: " << setw(4) << __found << " " <<
-           "Rejected: " << setw(4) << __rejected;
+        ss << fixed << setprecision(2) << "--> Hash Rate: " << setw(6) << hash_rate << " H/s   " <<
+           "Avg. (CPU): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
+           "Avg. (GPU): " << setw(6) << avg_hash_rate_gblocks << " H/s  " <<
+           "Count: " << setw(4) << (hash_count_cblocks + hash_count_gblocks) << "  " <<
+           "Time: " << setw(4) << __total_time << "  " <<
+           "Shares: " << setw(3) << __confirmed << " " <<
+           "Finds: " << setw(3) << __found << " " <<
+           "Rejected: " << setw(3) << __rejected;
     }
     else {
-        ss << fixed << setprecision(2) << "--> Mining Time: " << setw(6) << __total_time << "  " <<
-           "Shares: " << setw(4) << __confirmed << " " <<
-           "Finds: " << setw(4) << __found << " " <<
-           "Rejected: " << setw(4) << __rejected << endl;
+        ss << fixed << setprecision(2) << "--> Time: " << setw(4) << __total_time << "  " <<
+           "Shares: " << setw(3) << __confirmed << " " <<
+           "Finds: " << setw(3) << __found << " " <<
+           "Rejected: " << setw(3) << __rejected << endl;
         for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
             if((*it)->get_intensity() == 0) continue;
             hash_rate += (*it)->get_current_hash_rate();
-            avg_hash_rate += (*it)->get_avg_hash_rate();
-            hash_count += (*it)->get_hash_count();
+            avg_hash_rate_cblocks += (*it)->get_avg_hash_rate_cblocks();
+            hash_count_cblocks += (*it)->get_hash_count_cblocks();
+            avg_hash_rate_gblocks += (*it)->get_avg_hash_rate_gblocks();
+            hash_count_gblocks += (*it)->get_hash_count_gblocks();
 
             ss << fixed << setprecision(2) << "--> " << (*it)->get_type() << "  " <<
-               "Last hash rate: " << setw(6)<< (*it)->get_current_hash_rate() << " H/s   " <<
-               "Average: " << setw(6) << (*it)->get_avg_hash_rate() << " H/s  " <<
-               "Total hashes: " << setw(6) << (*it)->get_hash_count() << endl;
+               "Hash rate: " << setw(6)<< (*it)->get_current_hash_rate() << " H/s   " <<
+               "Avg. (CPU): " << setw(6) << (*it)->get_avg_hash_rate_cblocks() << " H/s  " <<
+               "Avg. (GPU): " << setw(6) << (*it)->get_avg_hash_rate_gblocks() << "  " <<
+               "Count: " << setw(4) << ((*it)->get_hash_count_cblocks() + (*it)->get_hash_count_gblocks()) << endl;
         }
         ss << fixed << setprecision(2) << "--> ALL  " <<
-           "Last hash rate: " << setw(6) << hash_rate << " H/s   " <<
-           "Average: " << setw(6) << avg_hash_rate << " H/s  " <<
-           "Total hashes: " << setw(6) << hash_count;
+           "Hash rate: " << setw(6) << hash_rate << " H/s   " <<
+           "Avg. (CPU): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
+           "Avg. (GPU): " << setw(6) << avg_hash_rate_gblocks << "  " <<
+           "Count: " << setw(4) << (hash_count_cblocks + hash_count_gblocks);
     }
 
     LOG(ss.str());
