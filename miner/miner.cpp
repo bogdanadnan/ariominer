@@ -101,7 +101,7 @@ void miner::run() {
             last_report = microseconds();
         }
 
-        __total_time = (microseconds() - begin) / 1000000;
+        __total_time = (uint64_t)((microseconds() - begin) / 1000000.0);
         this_thread::sleep_for(chrono::milliseconds(100));
     }
 }
@@ -213,8 +213,8 @@ void miner::__display_report() {
         }
 
         ss << fixed << setprecision(2) << "--> Hash Rate: " << setw(6) << hash_rate << " H/s   " <<
-           "Avg. (CPU): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
-           "Avg. (GPU): " << setw(6) << avg_hash_rate_gblocks << " H/s  " <<
+           "Avg. (Cblocks): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
+           "Avg. (Gblocks): " << setw(6) << avg_hash_rate_gblocks << " H/s  " <<
            "Count: " << setw(4) << (hash_count_cblocks + hash_count_gblocks) << "  " <<
            "Time: " << setw(4) << __total_time << "  " <<
            "Shares: " << setw(3) << __confirmed << " " <<
@@ -236,14 +236,14 @@ void miner::__display_report() {
 
             ss << fixed << setprecision(2) << "--> " << (*it)->get_type() << "  " <<
                "Hash rate: " << setw(6)<< (*it)->get_current_hash_rate() << " H/s   " <<
-               "Avg. (CPU): " << setw(6) << (*it)->get_avg_hash_rate_cblocks() << " H/s  " <<
-               "Avg. (GPU): " << setw(6) << (*it)->get_avg_hash_rate_gblocks() << "  " <<
+               "Avg. (Cblocks): " << setw(6) << (*it)->get_avg_hash_rate_cblocks() << " H/s  " <<
+               "Avg. (Gblocks): " << setw(6) << (*it)->get_avg_hash_rate_gblocks() << "  " <<
                "Count: " << setw(4) << ((*it)->get_hash_count_cblocks() + (*it)->get_hash_count_gblocks()) << endl;
         }
         ss << fixed << setprecision(2) << "--> ALL  " <<
            "Hash rate: " << setw(6) << hash_rate << " H/s   " <<
-           "Avg. (CPU): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
-           "Avg. (GPU): " << setw(6) << avg_hash_rate_gblocks << "  " <<
+           "Avg. (Cblocks): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
+           "Avg. (Gblocks): " << setw(6) << avg_hash_rate_gblocks << "  " <<
            "Count: " << setw(4) << (hash_count_cblocks + hash_count_gblocks);
     }
 
