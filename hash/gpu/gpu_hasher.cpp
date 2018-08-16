@@ -487,6 +487,9 @@ bool gpu_hasher::configure(arguments &args) {
             __runners.push_back(new thread([&](gpu_device_info *device) {
                 this->__run(device);
             }, &(*d)));
+            __runners.push_back(new thread([&](gpu_device_info *device) {
+                this->__run(device);
+            }, &(*d)));
         }
 	}
 
@@ -502,12 +505,15 @@ void kernel_filler(void *memory, int threads, argon2profile *profile, void *user
 
     int mem_seed_count = profile->thr_cost;
 
-    uint64_t start_log = microseconds();
+//    uint64_t start_log = microseconds();
+
+    device->device_lock->lock();
 
     error=clEnqueueWriteBuffer(device->queue, device->arguments.seed_memory, CL_TRUE, 0, threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, memory, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
         device->error = error;
         device->error_message = "Error writing to gpu memory.";
+        device->device_lock->unlock();
         return;
     }
 
@@ -515,6 +521,7 @@ void kernel_filler(void *memory, int threads, argon2profile *profile, void *user
     if(error != CL_SUCCESS) {
         device->error = error;
         device->error_message = "Error writing to gpu memory.";
+        device->device_lock->unlock();
         return;
     }
 
@@ -552,12 +559,13 @@ void kernel_filler(void *memory, int threads, argon2profile *profile, void *user
     clSetKernelArg(device->kernel, 15, sizeof(uint32_t), &profile_id);
 
 //    printf("Write data to device: %lld\n", microseconds() - start_log);
-    start_log = microseconds();
+//    start_log = microseconds();
 
     error=clEnqueueNDRangeKernel(device->queue, device->kernel, 1, NULL, &total_work_items, &local_work_items, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
         device->error = error;
         device->error_message = "Error running the kernel.";
+        device->device_lock->unlock();
         return;
     }
 
@@ -565,15 +573,17 @@ void kernel_filler(void *memory, int threads, argon2profile *profile, void *user
     if(error != CL_SUCCESS) {
         device->error = error;
         device->error_message = "Error running the kernel.";
+        device->device_lock->unlock();
         return;
     }
 //    printf("Execute kernel: %lld\n", microseconds() - start_log);
-    start_log = microseconds();
+//    start_log = microseconds();
 
     error=clEnqueueReadBuffer(device->queue, device->arguments.out_memory, CL_TRUE, 0, threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, memory, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
         device->error = error;
         device->error_message = "Error reading gpu memory.";
+        device->device_lock->unlock();
         return;
     }
 
@@ -581,8 +591,10 @@ void kernel_filler(void *memory, int threads, argon2profile *profile, void *user
     if(error != CL_SUCCESS) {
         device->error = error;
         device->error_message = "Error reading gpu memory.";
+        device->device_lock->unlock();
         return;
     }
+    device->device_lock->unlock();
 //    printf("Read data from device: %lld\n", microseconds() - start_log);
 }
 

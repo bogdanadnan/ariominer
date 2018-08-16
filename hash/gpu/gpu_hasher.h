@@ -37,6 +37,7 @@ struct gpu_device_info {
     gpu_device_info(cl_int err, const string &err_msg) {
         error = err;
         error_message = err_msg;
+        device_lock = new mutex();
     }
 
     cl_platform_id platform;
@@ -56,6 +57,8 @@ struct gpu_device_info {
 
     cl_int error;
     string error_message;
+
+    mutex *device_lock;
 };
 
 class gpu_hasher : public hasher {
