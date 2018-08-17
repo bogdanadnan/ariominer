@@ -19,7 +19,7 @@ argon2::argon2(argon2_blocks_filler_ptr filler, void *seed_memory, void *user_da
     __user_data = user_data;
 }
 
-vector<string> argon2::generate_hashes(const argon2profile &profile, const string &base, string &salt_) {
+vector<string> argon2::generate_hashes(const argon2profile &profile, const string &base, string salt_) {
     vector<string> result;
     vector<string> salts;
 
@@ -27,13 +27,10 @@ vector<string> argon2::generate_hashes(const argon2profile &profile, const strin
     uint8_t raw_hash[ARGON2_RAW_LENGTH];
 
     for(int i=0;i<__threads;i++) {
-        string salt;
+        string salt = salt_;
 
-        if(salt_.empty()) {
-            salt = salt_ = __make_salt();
-        }
-        else {
-            salt = salt_;
+        if(salt.empty()) {
+            salt = __make_salt();
         }
         salts.push_back(salt);
 
