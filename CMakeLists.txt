@@ -13,15 +13,14 @@ set(SOURCE
         app/main.cpp
         app/arguments.cpp app/arguments.h common/common.h
         crypt/sha512.cpp crypt/sha512.h
-        http/mongoose/mongoose.c
-        http/mongoose/mongoose.h
+        http/http_parser/http_parser.c http/http_parser/http_parser.h
         miner/mini-gmp/mini-gmp.h miner/mini-gmp/mini-gmp.c
         common/common.cpp
         hash/argon2/argon2.cpp hash/argon2/argon2.h
         hash/argon2/defs.h
         hash/argon2/argon2profile_4_4_16384.c hash/argon2/argon2profile_1_1_524288.c
         hash/argon2/blake2/blake2b.c hash/argon2/blake2/blake2.h
-        hash/gpu/opencl_kernel.cpp hash/gpu/opencl_kernel.h)
+        hash/gpu/opencl_kernel.cpp hash/gpu/opencl_kernel.h crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h)
 
 set(ARGON2_FILL_BLOCKS_SRC
         hash/cpu/argon2_opt/implementation.c

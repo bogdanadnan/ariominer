@@ -22,7 +22,7 @@ public:
     int cpu_intensity();
     int gpu_intensity_cblocks();
     int gpu_intensity_gblocks();
-    string gpu_filter();
+    vector<string> gpu_filter();
     int proxy_port();
 
     int update_interval();
@@ -36,6 +36,7 @@ public:
 
 private:
     void __init();
+    vector<string> __parse_filter(const string &filter);
 
     string __error_message;
     bool __error_flag;
@@ -51,7 +52,7 @@ private:
     int __cpu_intensity;
     int __gpu_intensity_cblocks;
     int __gpu_intensity_gblocks;
-    string __gpu_filter;
+    vector<string> __gpu_filter;
     int __proxy_port;
     int __update_interval;
     int __report_interval;

@@ -143,7 +143,8 @@ arguments::arguments(int argc, char **argv) {
                     __help_flag = 1;
                 }
                 else {
-                    __gpu_filter = optarg;
+                    string filter = optarg;
+                    __gpu_filter = __parse_filter(filter);
                 }
                 break;
             case 'o':
@@ -301,7 +302,7 @@ int arguments::gpu_intensity_gblocks() {
     return __gpu_intensity_gblocks;
 }
 
-string arguments::gpu_filter() {
+vector<string> arguments::gpu_filter() {
     return __gpu_filter;
 }
 
@@ -380,7 +381,6 @@ void arguments::__init() {
     __cpu_intensity = 100;
     __gpu_intensity_cblocks = 100;
     __gpu_intensity_gblocks = 100;
-    __gpu_filter = "";
     __proxy_port = 8088;
     __update_interval = 2000000;
     __report_interval = 10000000;
@@ -401,4 +401,26 @@ string arguments::get_app_folder() {
         app_folder = ".";
     }
     return app_folder;
+}
+
+vector<string> arguments::__parse_filter(const string &filter) {
+    string::size_type pos, lastPos = 0, length = filter.length();
+    vector<string> tokens;
+
+    while(lastPos < length + 1)
+    {
+        pos = filter.find_first_of(",", lastPos);
+        if(pos == std::string::npos)
+        {
+            pos = length;
+        }
+
+        if(pos != lastPos)
+            tokens.push_back(string(filter.c_str()+lastPos,
+                                        pos-lastPos ));
+
+        lastPos = pos + 1;
+    }
+
+    return tokens;
 }

@@ -15,12 +15,17 @@
 #include <sstream>
 #include <iomanip>
 #include <regex>
+#include <random>
 
 #include <thread>
 #include <mutex>
 #include <chrono>
 
 #include <cmath>
+
+#include<sys/socket.h>
+#include<netdb.h>
+#include<arpa/inet.h>
 
 #ifndef _MSC_VER
 #include <unistd.h>

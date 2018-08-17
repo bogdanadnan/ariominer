@@ -41,7 +41,7 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
     }
     string url = __pool_address + "/mine.php?q=info&worker=" + __worker_id + "&address=" + __get_wallet_address() + hash_report_query;
 
-    string response = __http_get(url);
+    string response = _http_get(url);
 
     if(!__validate_response(response)) {
         LOG("Error connecting to " + __pool_address + ".");
@@ -77,15 +77,15 @@ ariopool_submit_result ariopool_client::submit(const string &hash, const string 
         argon_data = hash.substr(30);
 
     string __wallet = __get_wallet_address();
-    string payload = "argon=" + __encode(argon_data) +
-            "&nonce=" + __encode(nonce) +
-            "&private_key=" + __encode(__wallet) +
-            "&public_key=" + __encode(public_key) +
-            "&address=" + __encode(__wallet);
+    string payload = "argon=" + _encode(argon_data) +
+            "&nonce=" + _encode(nonce) +
+            "&private_key=" + _encode(__wallet) +
+            "&public_key=" + _encode(public_key) +
+            "&address=" + _encode(__wallet);
 
     string url = __pool_address + "/mine.php?q=submitNonce";
 
-    string response = __http_post(url, payload);
+    string response = _http_post(url, payload);
     result.pool_response = response;
 
     if(!__validate_response(response)) {

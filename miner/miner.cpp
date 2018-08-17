@@ -57,9 +57,9 @@ void miner::run() {
             vector<hash_data> hashes = (*it)->get_hashes();
 
             for(vector<hash_data>::iterator hash=hashes.begin();hash != hashes.end();hash++) {
+//                LOG(hash->hash);
                 string duration = __calc_duration(hash->base, hash->hash);
                 uint64_t result = __calc_compare(duration);
-
                 if(result > 0 && result <= __limit) {
                     if(__args.is_verbose()) LOG("--> Submitting nonce: " + hash->nonce + " / " + hash->hash.substr(30));
                     ariopool_submit_result reply = __client.submit(hash->hash, hash->nonce, __public_key);

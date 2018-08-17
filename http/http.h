@@ -12,19 +12,17 @@ public:
     virtual ~http();
 
 protected:
-    string __http_get(const string &url);
-    string __http_post(const string &url, const string &post_data);
+    string _encode(const string &src);
+    string _http_get(const string &url);
+    string _http_post(const string &url, const string &post_data);
 
-    void __http_server(int port);
-    void __http_server_stop();
-
-    void __poll_until(bool &flag);
-
-    string __encode(const string &src);
+    void _http_server(int port);
+    void _http_server_stop();
 
 private:
-    void *__internal_data;
-    bool __poll_running;
+    vector<string> __resolve_host(const string &hostname);
+    string __get_response(const string &url, const string &post_data);
+
 };
 
 

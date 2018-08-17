@@ -2,9 +2,10 @@
 // Created by Haifa Bogdan Adnan on 03/08/2018.
 //
 
-#include "../http/mongoose/mongoose.h"
-
 #include "../common/common.h"
+#include "../crypt/base64.h"
+#include "../crypt/random_generator.h"
+
 #include "argon2/argon2.h"
 
 #include "hasher.h"
@@ -109,8 +110,8 @@ double hasher::get_current_hash_rate() {
     uint64_t timestamp = microseconds();
     if(timestamp - __hashrate_time > 5000000) { //we calculate hashrate every 5 seconds
         __hash_rate = (__hash_count_cblocks + __hash_count_gblocks) / ((timestamp - __hashrate_time) / 1000000.0);
-        uint64_t cblocks_time = __cblocks_time + ((profile_name == "1_1_524288") ? (timestamp - __begin_round_time) : 0);
-        uint64_t gblocks_time = __gblocks_time + ((profile_name == "4_4_16384") ? (timestamp - __begin_round_time) : 0);
+        uint64_t cblocks_time = __cblocks_time + ((profile_name == "1_1_524288" || __cblocks_time == 0) ? (timestamp - __begin_round_time) : 0);
+        uint64_t gblocks_time = __gblocks_time + ((profile_name == "4_4_16384" || __gblocks_time == 0) ? (timestamp - __begin_round_time) : 0);
         __avg_hash_rate_cblocks = (__total_hash_count_cblocks) / (cblocks_time / 1000000.0);
         __avg_hash_rate_gblocks = (__total_hash_count_gblocks) / (gblocks_time / 1000000.0);
         __hashrate_time = timestamp;
@@ -148,7 +149,6 @@ vector<hash_data> hasher::get_hashes() {
 }
 
 void hasher::_store_hash(const hash_data &hash) {
-//    LOG(hash.hash);
     __hashes_mutex.lock();
     __hashes.push_back(hash);
     if(hash.profile_name == "1_1_524288") {
@@ -195,15 +195,12 @@ bool hasher::should_pause() {
 }
 
 string hasher::__make_nonce() {
-    unsigned char input[32];
+    char input[32];
     char output[50];
 
-    for(int i=0;i<32;i++) {
-        double rnd_scaler = rand()/(1.0 + RAND_MAX);
-        input[i] = (unsigned char)(rnd_scaler * 256);
-    }
+    random_generator::instance().get_random_data(input, 32);
 
-    mg_base64_encode(input, 32, output);
+    base64::encode(input, 32, output);
     return regex_replace (string(output), regex("[^a-zA-Z0-9]"), "");
 }
 

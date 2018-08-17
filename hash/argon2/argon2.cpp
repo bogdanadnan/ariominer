@@ -2,10 +2,11 @@
 // Created by Haifa Bogdan Adnan on 05/08/2018.
 //
 
-#include "../../http/mongoose/mongoose.h"
 #include "../../common/common.h"
-#include "blake2/blake2.h"
+#include "../../crypt/base64.h"
+#include "../../crypt/random_generator.h"
 
+#include "blake2/blake2.h"
 #include "argon2.h"
 #include "defs.h"
 
@@ -16,10 +17,9 @@ argon2::argon2(argon2_blocks_filler_ptr filler, void *seed_memory, void *user_da
     __seed_memory_offset = argon2profile_default->memsize;
     __lane_length = -1;
     __user_data = user_data;
-	srand(microseconds());
 }
 
-vector<string> argon2::generate_hashes(const argon2profile &profile, const string &base, const string &salt_) {
+vector<string> argon2::generate_hashes(const argon2profile &profile, const string &base, string &salt_) {
     vector<string> result;
     vector<string> salts;
 
@@ -30,7 +30,7 @@ vector<string> argon2::generate_hashes(const argon2profile &profile, const strin
         string salt;
 
         if(salt_.empty()) {
-            salt = __make_salt();
+            salt = salt_ = __make_salt();
         }
         else {
             salt = salt_;
@@ -59,15 +59,12 @@ vector<string> argon2::generate_hashes(const argon2profile &profile, const strin
 }
 
 string argon2::__make_salt() {
-    unsigned char input[13];
+    char input[13];
     char output[25];
 
-    for(int i=0;i<13;i++) {
-        double rnd_scaler = rand()/(1.0 + RAND_MAX);
-        input[i] = (unsigned char)(rnd_scaler * 256);
-    }
+    random_generator::instance().get_random_data(input, 13);
 
-    mg_base64_encode(input, 13, output);
+    base64::encode(input, 13, output);
 
     for (int i = 0; i < 16; i++) {
         if (output[i] == '+') {
@@ -151,8 +148,8 @@ string argon2::__encode_string(const argon2profile &profile, const string &salt,
     char salt_b64[50];
     char hash_b64[50];
 
-    mg_base64_encode((unsigned char *)salt.c_str(), (int)salt.length(), salt_b64);
-    mg_base64_encode(hash, ARGON2_RAW_LENGTH, hash_b64);
+    base64::encode(salt.c_str(), (int)salt.length(), salt_b64);
+    base64::encode((char *)hash, ARGON2_RAW_LENGTH, hash_b64);
 
     salt_b64[22] = 0;
     hash_b64[43] = 0;

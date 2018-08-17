@@ -425,7 +425,7 @@ bool gpu_hasher::configure(arguments &args) {
     int index = 1;
     int intensity_cpu = args.gpu_intensity_cblocks();
     int intensity_gpu = args.gpu_intensity_gblocks();
-    string filter = args.gpu_filter();
+    vector<string> filter = args.gpu_filter();
 
     int total_threads_profile_4_4_16384 = 0;
     int total_threads_profile_1_1_524288 = 0;
@@ -456,10 +456,19 @@ bool gpu_hasher::configure(arguments &args) {
         ss << "["<< index << "] " << d->device_string << endl;
         string device_description = ss.str();
 
-        if(filter != "" && device_description.find(filter) == string::npos) {
-            d->profile_info.threads_profile_4_4_16384 = 0;
-            d->profile_info.threads_profile_1_1_524288 = 0;
-            continue;
+        if(filter.size() > 0) {
+            bool found = false;
+            for(vector<string>::iterator fit = filter.begin(); fit != filter.end(); fit++) {
+                if(device_description.find(*fit) != string::npos) {
+                    found = true;
+                    break;
+                }
+            }
+            if(!found) {
+                d->profile_info.threads_profile_4_4_16384 = 0;
+                d->profile_info.threads_profile_1_1_524288 = 0;
+                continue;
+            }
         }
 
         _description += ss.str();

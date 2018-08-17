@@ -2,109 +2,217 @@
 // Created by Haifa Bogdan Adnan on 04/08/2018.
 //
 
-#include "mongoose/mongoose.h"
-
 #include "../common/common.h"
+#include "http_parser/http_parser.h"
 
 #include "http.h"
 
-struct http_result_response {
-	char *reply;
-	bool reply_received;
-};
-
-static void mg_ev_handler(struct mg_connection *c, int ev, void *p) {
-	if (ev == MG_EV_HTTP_REPLY) {
-        http_message *hm = (http_message *)p;
-        c->flags |= MG_F_CLOSE_IMMEDIATELY;
-        strncpy(((http_result_response*)(c->user_data))->reply, hm->body.p, hm->body.len);
-    } else if (ev == MG_EV_CLOSE) {
-        ((http_result_response*)(c->user_data))->reply_received = true;
-    };
+int http_callback (http_parser* parser, const char *at, size_t length) {
+    string *body = (string *)parser->data;
+    (*body) += string(at, length);
+    return 0;
 }
 
-http::http() {
-    __internal_data = new mg_mgr();
-    __poll_running = false;
-    mg_mgr_init((mg_mgr*)__internal_data, NULL);
+struct http_data {
+public:
+    http_data(const string &uri, const string &data) {
+        host = uri;
 
+        if(host.find("http://") != string::npos) {
+            host = host.erase(0, 7);
+            protocol = "http";
+        }
+
+        if(host.find("https://") != string::npos) {
+            host = host.erase(0, 8);
+            protocol = "https";
+        }
+
+        if(host.find("/") != string::npos) {
+            path = host.substr(host.find("/"));
+            host = host.erase(host.find("/"));
+        }
+        else {
+            path = "/";
+        }
+
+        if(path.find("?") != string::npos) {
+            query = path.substr(path.find("?"));
+            path = path.erase(path.find("?"));
+            query.erase(0, 1);
+        }
+
+        string port_str = "";
+        if(host.find(":") != string::npos) {
+            port_str = host.substr(host.find(":"));
+            host = host.erase(host.find(":"));
+        }
+
+        port = 80;
+        if(port_str != "") {
+            if(port_str.find(":") != string::npos) {
+                port_str = port_str.erase(port_str.find(":"), 1);
+                port = atoi(port_str.c_str());
+            }
+        }
+
+        action = "GET";
+        if(data != "") {
+            payload = data;
+            action = "POST";
+        }
+    }
+
+    string protocol;
+    string host;
+    int port;
+    string action;
+    string path;
+    string query;
+    string payload;
+};
+
+http::http() {
 }
 
 http::~http() {
-    if(__poll_running)
-        __http_server_stop();
-
-    mg_mgr_free((mg_mgr*)__internal_data);
-    delete (mg_mgr*)__internal_data;
 }
 
-string http::__http_get(const string &url) {
-    return __http_post(url, "");
+vector<string> http::__resolve_host(const string &hostname)
+{
+    string host = hostname;
+
+    if(host.find(":") != string::npos) {
+        host = host.erase(host.rfind(":"));
+    }
+
+    addrinfo hints, *servinfo, *p;
+    sockaddr_in *h;
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    if(getaddrinfo( host.c_str() , "http" , &hints , &servinfo) != 0) {
+        return vector<string>();
+    }
+
+    vector<string> addresses;
+    for(p = servinfo; p != NULL; p = p->ai_next)
+    {
+        h = (sockaddr_in *) p->ai_addr;
+        string ip = inet_ntoa(h->sin_addr);
+        if(ip != "0.0.0.0")
+            addresses.push_back(ip);
+    }
+
+    freeaddrinfo(servinfo);
+    return addresses;
 }
 
-// TODO modify memory allocation
+string http::__get_response(const string &url, const string &post_data) {
+    string reply = "";
 
-string http::__http_post(const string &url, const string &post_data) {
-    mg_mgr *mgr = (mg_mgr*)__internal_data;
+    http_data query(url, post_data);
+    if(query.protocol != "http")
+        return "";
 
-    mg_connection *conn = mg_connect_http(mgr, mg_ev_handler, url.c_str(),
-            post_data.empty() ? NULL : "Content-Type: application/x-www-form-urlencoded\r\n",
-            post_data.empty() ? NULL : post_data.c_str());
+    vector<string> ips = __resolve_host(query.host);
+    for(int i=0;i<ips.size();i++) {
+        int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(query.port);
+        inet_aton(ips[i].c_str(), &addr.sin_addr);
 
-    char *result = new char[1000];
-	http_result_response *http_rsp = new http_result_response();
-	http_rsp->reply = result;
-	http_rsp->reply_received = false;
-    conn->user_data = (void *)http_rsp;
+#ifdef WIN64_
+        DWORD sock_timeout = 10000;
+#else
+        const struct timeval sock_timeout={.tv_sec=10, .tv_usec=0};
+#endif
+        if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO,(char *)&sock_timeout,sizeof(sock_timeout)) != 0) {
+            return "";
+        };
 
-    time_t initial_timestamp = time(NULL);
-    while(!(http_rsp->reply_received)) {
-        if(time(NULL) - initial_timestamp > 30) { //30 sec timeout
-            return string("");
+        if(connect(sockfd,(struct sockaddr *) &addr, sizeof (addr)) != 0) {
+            continue;
         }
-        if(!__poll_running) {
-            mg_mgr_poll(mgr, 1000);
+
+        string request = query.action + " " + query.path + ((query.query == "") ? "" : ("?" + query.query)) + " HTTP/1.1\r\nHost: " + query.host + "\r\n";
+        if(query.payload != "") {
+            request += "Content-Type: application/x-www-form-urlencoded\r\nContent-Length: " + to_string(query.payload.length()) + "\r\n\r\n" + query.payload + "\r\n";
         }
+        request += "\r\n";
+
+        char *buff = (char *)request.c_str();
+        int sz = request.size();
+        while(sz > 0) {
+            int n = write(sockfd, buff, sz);
+            if(n < 0) {
+                return "";
+            }
+            buff+=n;
+            sz-=n;
+        }
+
+        http_parser_settings settings;
+        memset(&settings, 0, sizeof(settings));
+        settings.on_body = http_callback;
+
+        http_parser parser;
+        http_parser_init(&parser, HTTP_RESPONSE);
+        parser.data = (void *)&reply;
+
+        char buffer[2048];
+        int n = read(sockfd, buffer, 2048);
+
+        if(n > 0)
+            http_parser_execute(&parser, &settings, buffer, n);
+
+        close(sockfd);
+        if(reply != "")
+            break;
+    }
+
+    return reply;
+};
+
+string http::_http_get(const string &url) {
+    return __get_response(url, "");
+}
+
+string http::_http_post(const string &url, const string &post_data) {
+    return __get_response(url, post_data);
+}
+
+void http::_http_server(int port) {
+}
+
+void http::_http_server_stop() {
+}
+
+string http::_encode(const string &src) {
+    string new_str = "";
+    char c;
+    int ic;
+    const char* chars = src.c_str();
+    char bufHex[10];
+    int len = strlen(chars);
+
+    for(int i=0;i<len;i++){
+        c = chars[i];
+        ic = c;
+        if (c==' ') new_str += '+';
+        else if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') new_str += c;
         else {
-            this_thread::sleep_for(chrono::milliseconds(100));
+            sprintf(bufHex,"%X",c);
+            if(ic < 16)
+                new_str += "%0";
+            else
+                new_str += "%";
+            new_str += bufHex;
         }
     }
-
-    string t = result;
-    if(time(NULL) - initial_timestamp <= 10) {
-        delete[] result;
-		delete http_rsp;
-    }
-    return t;
-}
-
-void http::__http_server(int port) {
-    __poll_running = true;
-    __poll_until(__poll_running);
-}
-
-void http::__http_server_stop() {
-    mg_mgr *mgr = (mg_mgr*)__internal_data;
-    __poll_running = false;
-    while(mgr->user_data != 0) {
-        this_thread::sleep_for(chrono::milliseconds(100));
-    }
-}
-
-void http::__poll_until(bool &flag) {
-    mg_mgr *mgr = (mg_mgr*)__internal_data;
-    mgr->user_data = (void *)1;
-    while(flag) {
-        mg_mgr_poll(mgr, 1000);
-    }
-    mgr->user_data = (void *)0;
-}
-
-string http::__encode(const string &src) {
-    mg_str input = mg_mk_str(src.c_str());
-    mg_str output = mg_url_encode(input);
-    string result = output.p;
-    free((void *) output.p);
-    return result;
+    return new_str;
 }
 
