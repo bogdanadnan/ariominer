@@ -183,7 +183,11 @@ string http::__get_response(const string &url, const string &post_data) {
         if(n > 0)
             http_parser_execute(&parser, &settings, buffer, n);
 
+#ifdef _WIN64
         closesocket(sockfd);
+#else
+        close(sockfd);
+#endif
         if(reply != "")
             break;
     }
