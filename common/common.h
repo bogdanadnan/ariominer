@@ -23,15 +23,20 @@
 
 #include <cmath>
 
+#ifndef _MSC_VER
+#include <unistd.h>
+#include <sys/time.h>
+
 #include<sys/socket.h>
 #include<netdb.h>
 #include<arpa/inet.h>
 
-#ifndef _MSC_VER
-#include <unistd.h>
-#include <sys/time.h>
 #else
+
+#include <WinSock2.h>
+#include <WS2tcpip.h>
 #include <win64_compatibility_layer.h>
+
 #endif
 
 #include <config.h>

@@ -73,9 +73,23 @@ public:
 };
 
 http::http() {
+#ifdef _WIN64
+	WSADATA wsaData;
+	int iResult;
+
+	// Initialize Winsock
+	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (iResult != 0) {
+		LOG("WSAStartup failed:"+ to_string(iResult));
+		exit(1);
+	}
+#endif
 }
 
 http::~http() {
+#ifdef _WIN64
+	WSACleanup();
+#endif
 }
 
 vector<string> http::__resolve_host(const string &hostname)
@@ -123,9 +137,9 @@ string http::__get_response(const string &url, const string &post_data) {
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
         addr.sin_port = htons(query.port);
-        inet_aton(ips[i].c_str(), &addr.sin_addr);
+        inet_pton(AF_INET, ips[i].c_str(), &addr.sin_addr);
 
-#ifdef WIN64_
+#ifdef _WIN64
         DWORD sock_timeout = 10000;
 #else
         const struct timeval sock_timeout={.tv_sec=10, .tv_usec=0};
@@ -147,7 +161,7 @@ string http::__get_response(const string &url, const string &post_data) {
         char *buff = (char *)request.c_str();
         int sz = request.size();
         while(sz > 0) {
-            int n = write(sockfd, buff, sz);
+            int n = send(sockfd, buff, sz, 0);
             if(n < 0) {
                 return "";
             }
@@ -164,12 +178,12 @@ string http::__get_response(const string &url, const string &post_data) {
         parser.data = (void *)&reply;
 
         char buffer[2048];
-        int n = read(sockfd, buffer, 2048);
+        int n = recv(sockfd, buffer, 2048, 0);
 
         if(n > 0)
             http_parser_execute(&parser, &settings, buffer, n);
 
-        close(sockfd);
+        closesocket(sockfd);
         if(reply != "")
             break;
     }

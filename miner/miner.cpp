@@ -47,7 +47,7 @@ miner::~miner() {
 
 void miner::run() {
     uint64_t  begin, last_update, last_report;
-    begin = microseconds();
+    begin = (uint64_t)time(NULL);
     last_update = last_report = 0;
 
     vector<hasher*> hashers = hasher::get_active_hashers();
@@ -101,7 +101,7 @@ void miner::run() {
             last_report = microseconds();
         }
 
-        __total_time = (uint64_t)((microseconds() - begin) / 1000000.0);
+        __total_time = (uint64_t)((uint64_t)time(NULL) - begin);
         this_thread::sleep_for(chrono::milliseconds(100));
     }
 }

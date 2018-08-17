@@ -73,9 +73,6 @@
     <ClCompile Include="..\..\hash\hasher.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\http\mongoose\mongoose.c">
-      <Filter>http\mongoose</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\http\client.cpp">
       <Filter>http</Filter>
     </ClCompile>
@@ -99,6 +96,15 @@
     </ClCompile>
     <ClCompile Include="..\win64_compatibility_layer.c">
       <Filter>win64</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\http\http_parser\http_parser.c">
+      <Filter>http\http_parser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypt\base64.cpp">
+      <Filter>crypt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypt\random_generator.cpp">
+      <Filter>crypt</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -174,9 +180,6 @@
     <ClInclude Include="..\..\hash\hasher.h">
       <Filter>hash</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\http\mongoose\mongoose.h">
-      <Filter>http\mongoose</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\http\simplejson\json.h">
       <Filter>http\simplejson</Filter>
     </ClInclude>
@@ -209,6 +212,15 @@
     </ClInclude>
     <ClInclude Include="..\win64_compatibility_layer.h">
       <Filter>win64</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\http\http_parser\http_parser.h">
+      <Filter>http\http_parser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypt\base64.h">
+      <Filter>crypt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypt\random_generator.h">
+      <Filter>crypt</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -248,9 +260,6 @@
     <Filter Include="http">
       <UniqueIdentifier>{d43761d5-a7de-472c-96f7-d023a6c489c7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="http\mongoose">
-      <UniqueIdentifier>{8b797ada-a205-4ff4-8a07-e6b571cb63d8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="http\simplejson">
       <UniqueIdentifier>{e2498988-9444-4a61-b94e-bb3eaabdc235}</UniqueIdentifier>
     </Filter>
@@ -271,6 +280,9 @@
     </Filter>
     <Filter Include="win64\dlfcn">
       <UniqueIdentifier>{0f4541e7-e9f8-4c09-88f9-ec41c598e07e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="http\http_parser">
+      <UniqueIdentifier>{afe78bb6-d5f8-42ad-9af2-1a7bb0ef3ba3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
