@@ -18,11 +18,11 @@ https://github.com/bogdanadnan/ariominer/releases
 ## Instructions
 What you need:
 - for Windows download binary version from releases page and skip to Usage
-- recent Linux distribution (Ubuntu recommended) or Mac OS X
+- recent Linux distribution (Ubuntu recommended - 16.04 or higher) or Mac OS X
 - OpenCL libraries and headers (for Ubuntu install **ocl-icd-opencl-dev** package, for Mac OS X it should be included in XCode SDK) - even if you don't plan to use GPU (will add a switch later on to be configurable)
 - Git client
 - CMake 3
-- GCC & G++ v7
+- GCC & G++
 
 Instructions:
 - run the following snippet:
