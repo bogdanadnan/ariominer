@@ -21,7 +21,7 @@ miner::miner(arguments &args) : __args(args), __client(args.pool(), args.name(),
     __found = 0;
     __confirmed = 0;
     __rejected = 0;
-    __total_time = 0;
+    __begin_time = time(NULL);
 
     vector<hasher*> hashers = hasher::get_hashers();
     for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
@@ -46,8 +46,7 @@ miner::~miner() {
 }
 
 void miner::run() {
-    uint64_t  begin, last_update, last_report;
-    begin = (uint64_t)time(NULL);
+    uint64_t  last_update, last_report;
     last_update = last_report = 0;
 
     vector<hasher*> hashers = hasher::get_active_hashers();
@@ -101,7 +100,6 @@ void miner::run() {
             last_report = microseconds();
         }
 
-        __total_time = (uint64_t)((uint64_t)time(NULL) - begin);
         this_thread::sleep_for(chrono::milliseconds(100));
     }
 }
@@ -203,6 +201,8 @@ void miner::__display_report() {
     uint32_t hash_count_cblocks = 0;
     uint32_t hash_count_gblocks = 0;
 
+    time_t total_time = time(NULL) - __begin_time;
+
     if(!__args.is_verbose() || hashers.size() == 1) {
         for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
             hash_rate += (*it)->get_current_hash_rate();
@@ -216,13 +216,13 @@ void miner::__display_report() {
            "Avg. (Cblocks): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
            "Avg. (Gblocks): " << setw(6) << avg_hash_rate_gblocks << " H/s  " <<
            "Count: " << setw(4) << (hash_count_cblocks + hash_count_gblocks) << "  " <<
-           "Time: " << setw(4) << __total_time << "  " <<
+           "Time: " << setw(4) << total_time << "  " <<
            "Shares: " << setw(3) << __confirmed << " " <<
            "Finds: " << setw(3) << __found << " " <<
            "Rejected: " << setw(3) << __rejected;
     }
     else {
-        ss << fixed << setprecision(2) << "--> Time: " << setw(4) << __total_time << "  " <<
+        ss << fixed << setprecision(2) << "--> Time: " << setw(4) << total_time << "  " <<
            "Shares: " << setw(3) << __confirmed << " " <<
            "Finds: " << setw(3) << __found << " " <<
            "Rejected: " << setw(3) << __rejected << endl;

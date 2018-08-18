@@ -23,20 +23,20 @@
 
 #include <cmath>
 
-#ifndef _MSC_VER
+#ifndef _WIN64
 #include <unistd.h>
 #include <sys/time.h>
 
 #include<sys/socket.h>
 #include<netdb.h>
 #include<arpa/inet.h>
-
+#include <fcntl.h>
 #else
-
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <win64_compatibility_layer.h>
 
+#define close closesocket
 #endif
 
 #include <config.h>
