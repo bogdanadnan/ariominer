@@ -325,7 +325,7 @@ int arguments::report_interval() {
 
 string arguments::get_help() {
     return
-            "\nArionum CPU/GPU Miner v." ArioMiner_VERSION_MAJOR "." ArioMiner_VERSION_MINOR "\n"
+            "\nArionum CPU/GPU Miner v." ArioMiner_VERSION_MAJOR "." ArioMiner_VERSION_MINOR "." ArioMiner_VERSION_REVISION "\n"
             "Copyright (C) 2018 Haifa Bogdan Adnan\n"
             "\n"
             "Usage:\n"

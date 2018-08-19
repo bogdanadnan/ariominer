@@ -42,6 +42,8 @@ set(OPENCL_TEST_SRC
 set (CMAKE_CXX_STANDARD 11)
 set (ArioMiner_VERSION_MAJOR 0)
 set (ArioMiner_VERSION_MINOR 1)
+set (ArioMiner_VERSION_REVISION 2)
+
 set (CMAKE_MACOSX_RPATH 0)
 
 configure_file (
