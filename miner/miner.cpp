@@ -56,6 +56,8 @@ void miner::run() {
             vector<hash_data> hashes = (*it)->get_hashes();
 
             for(vector<hash_data>::iterator hash=hashes.begin();hash != hashes.end();hash++) {
+                if(hash->block != __blk) //the block expired
+                    continue;
 //                LOG(hash->hash);
                 string duration = __calc_duration(hash->base, hash->hash);
                 uint64_t result = __calc_compare(duration);
@@ -63,7 +65,7 @@ void miner::run() {
                     if(__args.is_verbose()) LOG("--> Submitting nonce: " + hash->nonce + " / " + hash->hash.substr(30));
                     ariopool_submit_result reply = __client.submit(hash->hash, hash->nonce, __public_key);
                     if(reply.success) {
-                        if(result < GOLD_RESULT) {
+                        if(result <= GOLD_RESULT) {
                             if(__args.is_verbose()) LOG("--> Block found.");
                             __found++;
                         }

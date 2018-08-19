@@ -220,6 +220,11 @@ bool arguments::valid(string &error) {
         return false;
     }
 
+    if(__pool.find("https://") == 0) {
+        error = "Only HTTP protocol is allowed for pool connection, HTTPS is not supported.";
+        return false;
+    }
+
     if(__wallet.empty()) {
         error = "Wallet is mandatory.";
         return false;

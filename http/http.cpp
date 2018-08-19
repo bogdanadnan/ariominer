@@ -18,6 +18,8 @@ public:
     http_data(const string &uri, const string &data) {
         host = uri;
 
+        protocol = "http";
+
         if(host.find("http://") != string::npos) {
             host = host.erase(0, 7);
             protocol = "http";
@@ -145,7 +147,7 @@ string http::__get_response(const string &url, const string &post_data) {
         }
 
 #ifdef _WIN64
-        int nonblock = 1;
+        u_long nonblock = 1;
         ioctlsocket(sockfd, FIONBIO, &nonblock);
 #else
         int flags;

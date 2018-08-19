@@ -85,8 +85,15 @@ ariopool_submit_result ariopool_client::submit(const string &hash, const string 
 
     string url = __pool_address + "/mine.php?q=submitNonce";
 
-    string response = _http_post(url, payload);
-    result.pool_response = response;
+    string response = "";
+
+    for(int i=0;i<2;i++) { //try resubmitting if first submit fails
+        response = _http_post(url, payload);
+        result.pool_response = response;
+        if(response != "") {
+            break;
+        }
+    }
 
     if(!__validate_response(response)) {
         LOG("Error connecting to " + __pool_address + ".");
