@@ -81,6 +81,7 @@ private:
 
     uint64_t __hashrate_time;
     size_t __hashrate_hashcount;
+    double __hashrate;
 
     size_t __total_hash_count_cblocks;
     size_t __total_hash_count_gblocks;

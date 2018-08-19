@@ -25,6 +25,7 @@ hasher::hasher() {
 
     __begin_round_time = __hashrate_time = microseconds();
     __hashrate_hashcount = 0;
+    __hashrate = 0;
 
     __total_hash_count_cblocks = 0;
     __total_hash_count_gblocks = 0;
@@ -112,17 +113,16 @@ int hasher::get_intensity() {
 
 double hasher::get_current_hash_rate() {
     uint64_t timestamp = microseconds();
-    double hash_rate = 0;
 
     if(timestamp - __hashrate_time > 5000000) { //we calculate hashrate every 5 seconds
         __hashes_mutex.lock();
-        hash_rate = __hashrate_hashcount / ((timestamp - __hashrate_time) / 1000000.0);
+        __hashrate = __hashrate_hashcount / ((timestamp - __hashrate_time) / 1000000.0);
         __hashrate_hashcount = 0;
         __hashes_mutex.unlock();
         __hashrate_time = timestamp;
     }
 
-    return hash_rate;
+    return __hashrate;
 }
 
 double hasher::get_avg_hash_rate_cblocks() {
