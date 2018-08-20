@@ -163,14 +163,18 @@ string http::__get_response(const string &url, const string &post_data) {
 
         char *buff = (char *)request.c_str();
         int sz = request.size();
+        int n = 0;
+
         while(sz > 0) {
-            int n = send(sockfd, buff, sz, 0);
-            if(n < 0) {
-                close(sockfd);
-                return "";
-            }
+            n = send(sockfd, buff, sz, 0);
+            if(n < 0) break;
             buff+=n;
             sz-=n;
+        }
+
+        if(n < 0) {
+            close(sockfd);
+            continue;
         }
 
         http_parser_settings settings;
@@ -181,27 +185,34 @@ string http::__get_response(const string &url, const string &post_data) {
         http_parser_init(&parser, HTTP_RESPONSE);
         parser.data = (void *)&reply;
 
-        fd_set fds ;
-        timeval tv ;
-        int n;
+        fd_set fds;
+        timeval tv;
 
-        FD_ZERO(&fds) ;
-        FD_SET(sockfd, &fds) ;
+        time_t timestamp = time(NULL);
+        while(time(NULL) - timestamp < 10) {
+            FD_ZERO(&fds);
+            FD_SET(sockfd, &fds);
 
-        tv.tv_sec = 10;
-        tv.tv_usec = 0;
+            tv.tv_sec = 0;
+            tv.tv_usec = 100000;
 
-        n = select(sockfd+1, &fds, NULL, NULL, &tv);
-        if (n <= 0) {
-            close(sockfd);
-            return "";
+            n = select(sockfd + 1, &fds, NULL, NULL, &tv);
+            if(n == 0)
+                continue;
+            else if(n < 0)
+                break;
+            else {
+                char buffer[2048];
+                n = recv(sockfd, buffer, 2048, 0);
+                if (n > 0)
+                    http_parser_execute(&parser, &settings, buffer, n);
+                else if(n <= 0)
+                    break;
+
+                if (reply != "")
+                    break;
+            }
         }
-
-        char buffer[2048];
-        n = recv(sockfd, buffer, 2048, 0);
-
-        if(n > 0)
-            http_parser_execute(&parser, &settings, buffer, n);
 
         close(sockfd);
 
