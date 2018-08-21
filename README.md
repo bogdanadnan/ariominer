@@ -37,7 +37,9 @@ $ make
 Additional informations:  
 https://forum.arionum.com/viewtopic.php?f=15&t=369
 
-Usage:
+Usage:  
+**!!! In some cases (mostly on Windows) the miner doesn't properly detect AVX2 optimization for CPU. If AVX2 doesn't appear in optimization features list for CPU at miner startup, please verify on google if your CPU model has it. If it does have AVX2 support, please run it with "--force-cpu-optimization AVX2" option. This will give a serious boost to hash rate speed so it does worth the effort to check. !!!**
+  
 - starting in miner mode:
 ```sh
        ariominer --mode miner --pool <pool / proxy address> --wallet <wallet address> --name <worker name> --cpu-intensity <intensity> --gpu-intensity-cblocks <intensity> --gpu-intensity-gblocks <intensity>  
