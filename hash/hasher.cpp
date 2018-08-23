@@ -107,7 +107,7 @@ hash_data hasher::get_input() {
     return new_hash;
 }
 
-int hasher::get_intensity() {
+double hasher::get_intensity() {
     return _intensity;
 }
 

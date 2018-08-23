@@ -19,9 +19,9 @@ public:
     string pool();
     string wallet();
     string name();
-    int cpu_intensity();
-    int gpu_intensity_cblocks();
-    int gpu_intensity_gblocks();
+    double cpu_intensity();
+    double gpu_intensity_cblocks();
+    double gpu_intensity_gblocks();
     vector<string> gpu_filter();
     int proxy_port();
 
@@ -49,9 +49,9 @@ private:
     string __pool;
     string __wallet;
     string __name;
-    int __cpu_intensity;
-    int __gpu_intensity_cblocks;
-    int __gpu_intensity_gblocks;
+    double __cpu_intensity;
+    double __gpu_intensity_cblocks;
+    double __gpu_intensity_gblocks;
     vector<string> __gpu_filter;
     int __proxy_port;
     int __update_interval;

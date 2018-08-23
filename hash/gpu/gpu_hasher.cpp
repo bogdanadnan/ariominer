@@ -84,7 +84,7 @@ gpu_device_info gpu_hasher::__get_device_info(cl_platform_id platform, cl_device
     return device_info;
 }
 
-bool gpu_hasher::__setup_device_info(gpu_device_info &device, int intensity_cpu, int intensity_gpu) {
+bool gpu_hasher::__setup_device_info(gpu_device_info &device, double intensity_cpu, double intensity_gpu) {
     cl_int error;
 
     cl_context_properties properties[]={
@@ -423,8 +423,8 @@ gpu_hasher::~gpu_hasher() {
 
 bool gpu_hasher::configure(arguments &args) {
     int index = 1;
-    int intensity_cpu = args.gpu_intensity_cblocks();
-    int intensity_gpu = args.gpu_intensity_gblocks();
+    double intensity_cpu = args.gpu_intensity_cblocks();
+    double intensity_gpu = args.gpu_intensity_gblocks();
     vector<string> filter = args.gpu_filter();
 
     int total_threads_profile_4_4_16384 = 0;
@@ -488,7 +488,7 @@ bool gpu_hasher::configure(arguments &args) {
         return false;
     }
 
-    _intensity = (int)((intensity_cpu + intensity_gpu) / 2.0);
+    _intensity = (intensity_cpu + intensity_gpu) / 2.0;
 
     __running = true;
     for(vector<gpu_device_info>::iterator d = __devices.begin(); d != __devices.end(); d++) {

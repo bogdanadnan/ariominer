@@ -70,7 +70,7 @@ public:
 
 private:
     gpu_device_info __get_device_info(cl_platform_id platform, cl_device_id device);
-    bool __setup_device_info(gpu_device_info &device, int intensity_cpu, int intensity_gpu);
+    bool __setup_device_info(gpu_device_info &device, double intensity_cpu, double intensity_gpu);
     vector<gpu_device_info> __query_opencl_devices(cl_int &error, string &error_message);
 
     void __run(gpu_device_info *device);

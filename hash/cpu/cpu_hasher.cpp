@@ -40,7 +40,7 @@ cpu_hasher::~cpu_hasher() {
 }
 
 bool cpu_hasher::configure(arguments &args) {
-    int intensity = args.cpu_intensity();
+    double intensity = args.cpu_intensity();
     if(args.optimization() != "") {
         _description += "Overiding detected optimization feature with " + args.optimization() + ".\n";
         __optimization = args.optimization();

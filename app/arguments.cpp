@@ -119,7 +119,7 @@ arguments::arguments(int argc, char **argv) {
                     __help_flag = 1;
                 }
                 else {
-                    __cpu_intensity = atoi(optarg);
+                    __cpu_intensity = atof(optarg);
                 }
                 break;
             case 'g':
@@ -127,7 +127,7 @@ arguments::arguments(int argc, char **argv) {
                     __help_flag = 1;
                 }
                 else {
-                    __gpu_intensity_gblocks = atoi(optarg);
+                    __gpu_intensity_gblocks = atof(optarg);
                 }
                 break;
             case 'x':
@@ -135,7 +135,7 @@ arguments::arguments(int argc, char **argv) {
                     __help_flag = 1;
                 }
                 else {
-                    __gpu_intensity_cblocks = atoi(optarg);
+                    __gpu_intensity_cblocks = atof(optarg);
                 }
                 break;
             case 'd':
@@ -295,15 +295,15 @@ string arguments::name() {
     return __name;
 }
 
-int arguments::cpu_intensity() {
+double arguments::cpu_intensity() {
     return __cpu_intensity;
 }
 
-int arguments::gpu_intensity_cblocks() {
+double arguments::gpu_intensity_cblocks() {
     return __gpu_intensity_cblocks;
 }
 
-int arguments::gpu_intensity_gblocks() {
+double arguments::gpu_intensity_gblocks() {
     return __gpu_intensity_gblocks;
 }
 
@@ -370,7 +370,7 @@ string arguments::get_help() {
             "   --report-interval: how often should we display mining reports, in seconds\n"
             "                    this is optional, defaults to 10 sec\n"
             "\n"
-            "(*) Mining intensity depends on the number of CPU/GPU cores and available memory. Full load (100) is dynamically calculated by the application.\n"
+            "(*) Mining intensity depends on the number of CPU/GPU cores and available memory. Full load (100) is dynamically calculated by the application. You can use fractional numbers for better tunning.\n"
             ;
 }
 

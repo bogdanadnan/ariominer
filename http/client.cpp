@@ -16,6 +16,7 @@ ariopool_client::ariopool_client(const string &pool_address, const string &worke
     __worker_id = worker_id;
     __client_wallet_address = __used_wallet_address = wallet_address;
     __timestamp = __last_hash_report = microseconds();
+    __last_hash_report -= 580000000; // force first hash report at 20 seconds after start
     __force_hashrate_report = false;
 }
 

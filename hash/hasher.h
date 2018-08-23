@@ -43,7 +43,7 @@ public:
     hash_data get_input();
     argon2profile *get_argon2profile();
     bool should_pause();
-    int get_intensity();
+    double get_intensity();
 
     double get_current_hash_rate();
     double get_avg_hash_rate_cblocks();
@@ -58,7 +58,7 @@ public:
     static vector<hasher*> get_active_hashers();
 
 protected:
-    int _intensity;
+    double _intensity;
     string _type;
     string _description;
 
