@@ -4,9 +4,27 @@
 
 #define fBlaMka(x, y) ((x) + (y) + 2 * upsample(mul_hi((uint)(x), (uint)(y)), (uint)(x) * (uint)y))
 
-#define G(data, vec)           \
+#define G1(data, vec)           \
 {                           \
     a = data[vec[0]]; \
+    b = data[vec[1]]; \
+    c = data[vec[2]]; \
+    d = data[vec[3]]; \
+    a = fBlaMka(a, b);          \
+    d = rotate(d ^ a, (ulong)32);      \
+    c = fBlaMka(c, d);          \
+    b = rotate(b ^ c, (ulong)40);      \
+    a = fBlaMka(a, b);          \
+    d = rotate(d ^ a, (ulong)48);      \
+    c = fBlaMka(c, d);          \
+    b = rotate(b ^ c, (ulong)1);       \
+    data[vec[1]] = b; \
+    data[vec[2]] = c; \
+    data[vec[3]] = d; \
+}
+
+#define G2(data, vec)           \
+{                           \
     b = data[vec[1]]; \
     c = data[vec[2]]; \
     d = data[vec[3]]; \
@@ -268,13 +286,13 @@ __kernel void fill_blocks(__global ulong *chunk_0,
         xor_block_4(state, state, buffer, ref_block);
         barrier(CLK_LOCAL_MEM_FENCE);
 
-        G(state, offsets_round_1[id]);
+        G1(state, offsets_round_1[id]);
         barrier(CLK_LOCAL_MEM_FENCE);
-        G(state, offsets_round_2[id]);
+        G2(state, offsets_round_2[id]);
         barrier(CLK_LOCAL_MEM_FENCE);
-        G(state, offsets_round_3[id]);
+        G1(state, offsets_round_3[id]);
         barrier(CLK_LOCAL_MEM_FENCE);
-        G(state, offsets_round_4[id]);
+        G2(state, offsets_round_4[id]);
         barrier(CLK_LOCAL_MEM_FENCE);
 
         if(addresses[0] != -1) {
@@ -300,13 +318,13 @@ __kernel void fill_blocks(__global ulong *chunk_0,
         xor_block_2(buffer, next_block);
         barrier(CLK_LOCAL_MEM_FENCE);
 
-        G(state, offsets_round_1[id]);
+        G1(state, offsets_round_1[id]);
         barrier(CLK_LOCAL_MEM_FENCE);
-        G(state, offsets_round_2[id]);
+        G2(state, offsets_round_2[id]);
         barrier(CLK_LOCAL_MEM_FENCE);
-        G(state, offsets_round_3[id]);
+        G1(state, offsets_round_3[id]);
         barrier(CLK_LOCAL_MEM_FENCE);
-        G(state, offsets_round_4[id]);
+        G2(state, offsets_round_4[id]);
         barrier(CLK_LOCAL_MEM_FENCE);
 
         xor_block_4(state, state, next_block, buffer);
