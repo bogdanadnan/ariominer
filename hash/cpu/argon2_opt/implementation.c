@@ -225,8 +225,6 @@ void fill_memory_blocks(void *memory, int threads, argon2profile *profile, void 
 
         block *blocks = (block *)((uint8_t*)memory + thr * profile->memsize);
 
-        memcpy(state, (void *) (blocks + 1), ARGON2_BLOCK_SIZE);
-
         int32_t *address = profile->block_refs;
 
         int with_xor = 0;

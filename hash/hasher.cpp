@@ -186,6 +186,7 @@ vector<hash_data> hasher::get_hashes() {
 }
 
 void hasher::_store_hash(const hash_data &hash) {
+//    LOG(hash.hash);
     __hashes_mutex.lock();
     __hashes.push_back(hash);
     __hash_count++;
