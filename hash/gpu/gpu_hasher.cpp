@@ -550,59 +550,21 @@ bool gpu_hasher::configure(arguments &args) {
     return true;
 }
 
-void *map_input_memory(gpu_device_info *device, int id, size_t sz) {
-    cl_int error;
-    void *mem = clEnqueueMapBuffer(device->queue, device->arguments.seed_memory[id], CL_TRUE, CL_MAP_WRITE, 0, sz, 0, NULL, NULL, &error);
-    if(error != CL_SUCCESS) {
-        device->error = error;
-        device->error_message = "Error mapping input GPU memory.";
-        return NULL;
-    }
-    return mem;
-}
-
-void unmap_input_memory(gpu_device_info *device, int id, void *mem) {
-    cl_int error = clEnqueueUnmapMemObject(device->queue, device->arguments.seed_memory[id], mem, 0, NULL, NULL);
-    if(error != CL_SUCCESS) {
-        device->error = error;
-        device->error_message = "Error unmapping input GPU memory.";
-    }
-}
-
-void *map_output_memory(gpu_device_info *device, int id, size_t sz) {
-    cl_int error;
-    void *mem = clEnqueueMapBuffer(device->queue, device->arguments.out_memory[id], CL_TRUE, CL_MAP_READ, 0, sz, 0, NULL, NULL, &error);
-    if(error != CL_SUCCESS) {
-        device->error = error;
-        device->error_message = "Error mapping output GPU memory.";
-        return NULL;
-    }
-    return mem;
-}
-
-void unmap_output_memory(gpu_device_info *device, int id, void *mem) {
-     cl_int error = clEnqueueUnmapMemObject(device->queue, device->arguments.out_memory[id], mem, 0, NULL, NULL);
-    if(error != CL_SUCCESS) {
-        device->error = error;
-        device->error_message = "Error unmapping output GPU memory.";
-    }
-}
-
 struct gpumgmt_thread_data {
     int thread_id;
     gpu_device_info *device;
 };
 
 void *kernel_filler(void *memory, int threads, argon2profile *profile, void *user_data) {
-    gpumgmt_thread_data *gpumgmt_thread = (gpumgmt_thread_data *)user_data;
+	//    uint64_t start_log = microseconds();
+	//    printf("Waiting for lock: %lld\n", microseconds() - start_log);
+	//    start_log = microseconds();
+	gpumgmt_thread_data *gpumgmt_thread = (gpumgmt_thread_data *)user_data;
     gpu_device_info *device = gpumgmt_thread->device;
 
     cl_int error;
 
     int mem_seed_count = profile->thr_cost;
-
-    unmap_input_memory(device, gpumgmt_thread->thread_id, memory);
-
     size_t total_work_items;
     size_t local_work_items;
 
@@ -628,14 +590,17 @@ void *kernel_filler(void *memory, int threads, argon2profile *profile, void *use
         local_work_items = KERNEL_WORKGROUP_SIZE * parallelism;
     }
 
-//    uint64_t start_log = microseconds();
+	device->device_lock->lock();
 
-    device->device_lock->lock();
+	error = clEnqueueWriteBuffer(device->queue, device->arguments.seed_memory[gpumgmt_thread->thread_id], CL_TRUE, 0, threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, memory, 0, NULL, NULL);
+	if (error != CL_SUCCESS) {
+		device->error = error;
+		device->error_message = "Error writing to gpu memory.";
+		device->device_lock->unlock();
+		return NULL;
+	}
 
-//    printf("Waiting for lock: %lld\n", microseconds() - start_log);
-//    start_log = microseconds();
-
-    clSetKernelArg(device->kernel, 6, sizeof(device->arguments.out_memory[gpumgmt_thread->thread_id]), &device->arguments.out_memory[gpumgmt_thread->thread_id]);
+	clSetKernelArg(device->kernel, 6, sizeof(device->arguments.out_memory[gpumgmt_thread->thread_id]), &device->arguments.out_memory[gpumgmt_thread->thread_id]);
     clSetKernelArg(device->kernel, 12, sizeof(int), &threads);
     clSetKernelArg(device->kernel, 13, sizeof(uint32_t), &threads_per_chunk);
     clSetKernelArg(device->kernel, 14, sizeof(uint32_t), &memsize);
@@ -651,26 +616,35 @@ void *kernel_filler(void *memory, int threads, argon2profile *profile, void *use
         return NULL;
     }
 
-    error=clFinish(device->queue);
+	error = clEnqueueReadBuffer(device->queue, device->arguments.out_memory[gpumgmt_thread->thread_id], CL_TRUE, 0, threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, memory, 0, NULL, NULL);
+	if (error != CL_SUCCESS) {
+		device->error = error;
+		device->error_message = "Error reading gpu memory.";
+		device->device_lock->unlock();
+		return NULL;
+	}
+	
+	error=clFinish(device->queue);
     if(error != CL_SUCCESS) {
         device->error = error;
-        device->error_message = "Error running the kernel.";
+        device->error_message = "Error flushing GPU queue.";
         device->device_lock->unlock();
         return NULL;
     }
 
-//    printf("Execute kernel: %lld\n", microseconds() - start_log);
-
     device->device_lock->unlock();
-    return map_output_memory(device, gpumgmt_thread->thread_id, threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE);
+
+	return memory;
 }
 
 void gpu_hasher::__run(gpu_device_info *device, int thread_id) {
-    gpumgmt_thread_data thread_data;
+	void *memory = malloc(8 * ARGON2_BLOCK_SIZE * max(device->profile_info.threads_profile_1_1_524288, device->profile_info.threads_profile_4_4_16384));
+	
+	gpumgmt_thread_data thread_data;
     thread_data.device = device;
     thread_data.thread_id = thread_id;
 
-    argon2 hash_factory(kernel_filler, NULL, &thread_data);
+    argon2 hash_factory(kernel_filler, memory, &thread_data);
     hash_factory.set_lane_length(2);
 
     while(__running) {
@@ -690,13 +664,6 @@ void gpu_hasher::__run(gpu_device_info *device, int thread_id) {
                     this_thread::sleep_for(chrono::milliseconds(100));
                     continue;
                 }
-                void *mem = map_input_memory(device, thread_id, device->profile_info.threads_profile_1_1_524288 * 2 * ARGON2_BLOCK_SIZE);
-                if(mem == NULL) {
-                    LOG("Error running kernel: (" + to_string(device->error) + ")" + device->error_message);
-                    this_thread::sleep_for(chrono::milliseconds(100));
-                    continue;
-                }
-                hash_factory.set_seed_memory((uint8_t *)mem);
                 hash_factory.set_seed_memory_offset(2 * ARGON2_BLOCK_SIZE);
                 hash_factory.set_threads(device->profile_info.threads_profile_1_1_524288);
             }
@@ -705,21 +672,11 @@ void gpu_hasher::__run(gpu_device_info *device, int thread_id) {
                     this_thread::sleep_for(chrono::milliseconds(100));
                     continue;
                 }
-                void *mem = map_input_memory(device, thread_id, device->profile_info.threads_profile_4_4_16384 * 8 * ARGON2_BLOCK_SIZE);
-                if(mem == NULL) {
-                    LOG("Error running kernel: (" + to_string(device->error) + ")" + device->error_message);
-                    this_thread::sleep_for(chrono::milliseconds(100));
-                    continue;
-                }
-                hash_factory.set_seed_memory((uint8_t *)mem);
                 hash_factory.set_seed_memory_offset(8 * ARGON2_BLOCK_SIZE);
                 hash_factory.set_threads(device->profile_info.threads_profile_4_4_16384);
             }
 
             vector<string> hashes = hash_factory.generate_hashes(*profile, input.base, input.salt);
-            if(hashes.size() > 0) {
-                unmap_output_memory(device, thread_id, (void *) hash_factory.get_output_memory());
-            }
 
 			if (device->error != CL_SUCCESS) {
 				LOG("Error running kernel: (" + to_string(device->error) + ")" + device->error_message);
@@ -731,6 +688,7 @@ void gpu_hasher::__run(gpu_device_info *device, int thread_id) {
         }
 //        printf("Total time: %lld\n", microseconds() - start_log);
     }
+	free(memory);
 }
 
 REGISTER_HASHER(gpu_hasher);
