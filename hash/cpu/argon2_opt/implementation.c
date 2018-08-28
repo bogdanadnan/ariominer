@@ -206,7 +206,7 @@ static void fill_block(block *prev_block, const block *ref_block,
 #ifdef _MSC_VER
 __declspec(dllexport) 
 #endif
-void fill_memory_blocks(void *memory, int threads, argon2profile *profile, void *user_data) {
+void *fill_memory_blocks(void *memory, int threads, argon2profile *profile, void *user_data) {
 #ifndef  BUILD_REF
 #if defined(__AVX512F__)
     __m512i state[ARGON2_512BIT_WORDS_IN_BLOCK];
@@ -250,5 +250,7 @@ void fill_memory_blocks(void *memory, int threads, argon2profile *profile, void 
         if(address[0] == -2)
             memcpy((void*)blocks, (void *) (blocks + address[1]), ARGON2_BLOCK_SIZE);
     }
+
+    return memory;
 }
 

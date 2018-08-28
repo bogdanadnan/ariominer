@@ -43,14 +43,16 @@ vector<string> argon2::generate_hashes(const argon2profile &profile, const strin
         __fill_first_blocks(profile, blockhash, i);
     }
 
-    (*__filler) (__seed_memory, __threads, (argon2profile*)&profile, __user_data);
+    uint8_t *output_memory = (uint8_t *)(*__filler) (__seed_memory, __threads, (argon2profile*)&profile, __user_data);
 
-    for(int i=0;i<__threads;i++) {
-        blake2b_long((void *) raw_hash, ARGON2_RAW_LENGTH,
-                     (void *) (__seed_memory + i * __seed_memory_offset), ARGON2_BLOCK_SIZE);
+    if(output_memory != NULL) {
+        for (int i = 0; i < __threads; i++) {
+            blake2b_long((void *) raw_hash, ARGON2_RAW_LENGTH,
+                         (void *) (output_memory + i * __seed_memory_offset), ARGON2_BLOCK_SIZE);
 
-        string hash = __encode_string(profile, salts[i], raw_hash);
-        result.push_back(hash);
+            string hash = __encode_string(profile, salts[i], raw_hash);
+            result.push_back(hash);
+        }
     }
     return result;
 }
@@ -158,6 +160,10 @@ string argon2::__encode_string(const argon2profile &profile, const string &salt,
 
 void argon2::set_seed_memory(uint8_t *memory) {
     __seed_memory = memory;
+}
+
+uint8_t *argon2::get_seed_memory() {
+    return __seed_memory;
 }
 
 void argon2::set_seed_memory_offset(size_t offset) {

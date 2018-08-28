@@ -24,8 +24,8 @@ struct kernel_arguments {
     cl_mem address_profile_4_4_16384;
     cl_mem segments_profile_1_1_524288;
     cl_mem segments_profile_4_4_16384;
-    cl_mem seed_memory;
-    cl_mem out_memory;
+    cl_mem seed_memory[2];
+    cl_mem out_memory[2];
 };
 
 struct argon2profile_info {
@@ -75,7 +75,7 @@ private:
     bool __setup_device_info(gpu_device_info &device, double intensity_cpu, double intensity_gpu);
     vector<gpu_device_info> __query_opencl_devices(cl_int &error, string &error_message);
 
-    void __run(gpu_device_info *device);
+    void __run(gpu_device_info *device, int thread_id);
 
     vector<gpu_device_info> __devices;
 
