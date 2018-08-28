@@ -43,27 +43,18 @@
     data[vec[3]] = d; \
 }
 
-#define xor_block_4(dst1, dst2, dst3, src)                                                     \
-{ \
-ulong4 data = vload4(0, &dst1[offset]) ^ vload4(0, &src[offset]); \
-vstore4(data, 0, &dst2[offset]); \
-vstore4(data, 0, &dst3[offset]); \
-}
+#define xor_block(dst, src)                                                     \
+vstore4(vload4(0, &dst[offset]) ^ vload4(0, &src[offset]), 0, &dst[offset]);
 
-#define xor_block_2(dst, src)                                                     \
-{ \
-ulong4 data = vload4(0, &dst[offset]) ^ vload4(0, &src[offset]); \
-vstore4(data, 0, &dst[offset]); \
-}
+#define xor_block_small(dst, src)                                                    \
+dst[local_id] ^= src[local_id];
 
 #define copy_block(dst, src)                                                    \
 vstore4(vload4(0, &src[offset]), 0, &dst[offset]);
 
 #define copy_block_small(dst, src)                                                    \
-        dst[local_id] = src[local_id]; \
+dst[local_id] = src[local_id];
 
-#define xor_block_small(dst, src)                                                    \
-        dst[local_id] ^= src[local_id]; \
 
 __constant int offsets_round_1[32][4] = {
         { 0, 4, 8, 12 },
@@ -223,8 +214,9 @@ __kernel void fill_blocks(__global ulong *chunk_0,
         int addrsize,
         int parallelism) {
     __local ulong state[4 * BLOCK_SIZE_ULONG];
-    __local ulong buffer[4 * BLOCK_SIZE_ULONG];
     ulong a, b, c, d;
+    ulong4 buffer = 0;
+
     ulong chunks[6];
     chunks[0] = (ulong)chunk_0;
     chunks[1] = (ulong)chunk_1;
@@ -266,7 +258,6 @@ __kernel void fill_blocks(__global ulong *chunk_0,
     __global ulong *ref_block;
 
     __local ulong *local_state = state + segment * BLOCK_SIZE_ULONG;
-    __local ulong *local_buffer = buffer + segment * BLOCK_SIZE_ULONG;
 
     for(int s=0; s<segments_in_lane; s++) {
         __global int *curr_seg = segments  + 3 * (s * parallelism + segment);
@@ -281,12 +272,15 @@ __kernel void fill_blocks(__global ulong *chunk_0,
             if(addr[1] != -1) {
                 prev_block = memory + addr[1] * BLOCK_SIZE_ULONG;
                 copy_block(local_state, prev_block);
+                buffer = vload4(0, &local_state[offset]);
             }
             ref_block = memory + addr[2] * BLOCK_SIZE_ULONG;
 
-            xor_block_4(local_state, local_state, local_buffer, ref_block);
+            buffer ^= vload4(0, &ref_block[offset]);
+            vstore4(buffer, 0, &local_state[offset]);
+
             if(with_xor == 1) {
-                xor_block_2(local_buffer, next_block);
+                buffer ^= vload4(0, &next_block[offset]);
             }
 
             G1(local_state, offsets_round_1[id]);
@@ -298,11 +292,11 @@ __kernel void fill_blocks(__global ulong *chunk_0,
             G2(local_state, offsets_round_4[id]);
             barrier(CLK_LOCAL_MEM_FENCE);
 
+            buffer ^= vload4(0, &local_state[offset]);
+            vstore4(buffer, 0, &local_state[offset]);
+
             if(addr[0] != -1) {
-                xor_block_4(local_state, local_state, next_block, local_buffer);
-            }
-            else {
-                xor_block_2(local_state, local_buffer);
+                vstore4(buffer, 0, &next_block[offset]);
             }
         }
     }
@@ -324,7 +318,7 @@ __kernel void fill_blocks(__global ulong *chunk_0,
     for(;dst_addr < addrsize; ++dst_addr) {
         next_block = memory + addresses[dst_addr * 3 + 2] * BLOCK_SIZE_ULONG;
         if(parallelism == 1) {
-            xor_block_2(out_mem, next_block);
+            xor_block(out_mem, next_block);
         }
         else {
             xor_block_small(out_mem, next_block);

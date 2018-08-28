@@ -36,7 +36,7 @@ public:
 
 private:
     void __init();
-    vector<string> __parse_filter(const string &filter);
+    vector<string> __parse_multiarg(const string &arg);
 
     string __error_message;
     bool __error_flag;

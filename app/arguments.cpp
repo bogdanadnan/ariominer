@@ -144,7 +144,7 @@ arguments::arguments(int argc, char **argv) {
                 }
                 else {
                     string filter = optarg;
-                    __gpu_filter = __parse_filter(filter);
+                    __gpu_filter = __parse_multiarg(filter);
                 }
                 break;
             case 'o':
@@ -408,20 +408,20 @@ string arguments::get_app_folder() {
     return app_folder;
 }
 
-vector<string> arguments::__parse_filter(const string &filter) {
-    string::size_type pos, lastPos = 0, length = filter.length();
+vector<string> arguments::__parse_multiarg(const string &arg) {
+    string::size_type pos, lastPos = 0, length = arg.length();
     vector<string> tokens;
 
     while(lastPos < length + 1)
     {
-        pos = filter.find_first_of(",", lastPos);
+        pos = arg.find_first_of(",", lastPos);
         if(pos == std::string::npos)
         {
             pos = length;
         }
 
         if(pos != lastPos)
-            tokens.push_back(string(filter.c_str()+lastPos,
+            tokens.push_back(string(arg.c_str()+lastPos,
                                         pos-lastPos ));
 
         lastPos = pos + 1;
