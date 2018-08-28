@@ -581,7 +581,7 @@ void *map_output_memory(gpu_device_info *device, int id, size_t sz) {
 }
 
 void unmap_output_memory(gpu_device_info *device, int id, void *mem) {
-    cl_int error = clEnqueueUnmapMemObject(device->queue, device->arguments.out_memory[id], mem, 0, NULL, NULL);
+     cl_int error = clEnqueueUnmapMemObject(device->queue, device->arguments.out_memory[id], mem, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
         device->error = error;
         device->error_message = "Error unmapping output GPU memory.";
@@ -718,7 +718,7 @@ void gpu_hasher::__run(gpu_device_info *device, int thread_id) {
 
             vector<string> hashes = hash_factory.generate_hashes(*profile, input.base, input.salt);
             if(hashes.size() > 0) {
-                unmap_output_memory(device, thread_id, (void *) hash_factory.get_seed_memory());
+                unmap_output_memory(device, thread_id, (void *) hash_factory.get_output_memory());
             }
 
 			if (device->error != CL_SUCCESS) {
