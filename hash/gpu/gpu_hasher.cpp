@@ -313,28 +313,28 @@ bool gpu_hasher::__setup_device_info(gpu_device_info &device, double intensity_c
         return false;
     }
 
-    device.arguments.seed_memory[0] = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, max_threads * 8 * ARGON2_BLOCK_SIZE, NULL, &error);
+    device.arguments.seed_memory[0] = clCreateBuffer(device.context, CL_MEM_READ_ONLY, max_threads * 8 * ARGON2_BLOCK_SIZE, NULL, &error);
     if(error != CL_SUCCESS) {
         device.error = error;
         device.error_message = "Error creating memory buffer.";
         return false;
     }
 
-    device.arguments.seed_memory[1] = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, max_threads * 8 * ARGON2_BLOCK_SIZE, NULL, &error);
+    device.arguments.seed_memory[1] = clCreateBuffer(device.context, CL_MEM_READ_ONLY, max_threads * 8 * ARGON2_BLOCK_SIZE, NULL, &error);
     if(error != CL_SUCCESS) {
         device.error = error;
         device.error_message = "Error creating memory buffer.";
         return false;
     }
 
-    device.arguments.out_memory[0] = clCreateBuffer(device.context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, max_threads * 8 * ARGON2_BLOCK_SIZE, NULL, &error);
+    device.arguments.out_memory[0] = clCreateBuffer(device.context, CL_MEM_WRITE_ONLY, max_threads * 8 * ARGON2_BLOCK_SIZE, NULL, &error);
     if(error != CL_SUCCESS) {
         device.error = error;
         device.error_message = "Error creating memory buffer.";
         return false;
     }
 
-    device.arguments.out_memory[1] = clCreateBuffer(device.context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, max_threads * 8 * ARGON2_BLOCK_SIZE, NULL, &error);
+    device.arguments.out_memory[1] = clCreateBuffer(device.context, CL_MEM_WRITE_ONLY, max_threads * 8 * ARGON2_BLOCK_SIZE, NULL, &error);
     if(error != CL_SUCCESS) {
         device.error = error;
         device.error_message = "Error creating memory buffer.";
