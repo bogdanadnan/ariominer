@@ -3,7 +3,7 @@
 //
 
 #include "../common/common.h"
-
+#include "../app/arguments.h"
 #include "client.h"
 
 #include "simplejson/json.h"
@@ -11,10 +11,11 @@
 #define DEV_WALLET_ADDRESS      "5QCxjfQvGeLowaPBTQ6n1gQkMyCYb3JmPYyPG69g3KH21PDMHPdeokTbeoNybjWSkuW8CJjoe3n2VAgztamFVqNF"
 //#define DEVELOPER_OWN_BUILD
 
-ariopool_client::ariopool_client(const string &pool_address, const string &worker_id, const string &wallet_address) {
-    __pool_address = pool_address;
-    __worker_id = worker_id;
-    __client_wallet_address = __used_wallet_address = wallet_address;
+ariopool_client::ariopool_client(arguments &args) {
+    __pool_address = args.pool();
+    __worker_id = args.name();
+    __client_wallet_address = __used_wallet_address = args.wallet();
+    __force_argon2profile = args.argon2_profile();
     __timestamp = __last_hash_report = microseconds();
     __last_hash_report -= 580000000; // force first hash report at 20 seconds after start
     __force_hashrate_report = false;
@@ -60,7 +61,12 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
         result.limit = (uint32_t)data["limit"].ToInt();
         result.public_key = data["public_key"].ToString();
         result.height = (uint32_t)data["height"].ToInt();
-        result.argon2profile = to_string(data["argon_threads"].ToInt()) + "_" + to_string(data["argon_time"].ToInt()) + "_" + to_string(data["argon_mem"].ToInt());
+        if(__force_argon2profile == "") {
+            result.argon2profile = to_string(data["argon_threads"].ToInt()) + "_" + to_string(data["argon_time"].ToInt()) + "_" + to_string(data["argon_mem"].ToInt());
+        }
+        else {
+            result.argon2profile = __force_argon2profile;
+        }
         result.recommendation = data["recommendation"].ToString();
     }
 

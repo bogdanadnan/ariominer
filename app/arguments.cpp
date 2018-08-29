@@ -39,12 +39,13 @@ arguments::arguments(int argc, char **argv) {
             {"force-cpu-optimization", required_argument, NULL, 'o'},
             {"update-interval", required_argument, NULL, 'u'},
             {"report-interval", required_argument, NULL, 'r'},
+            {"force-block-type", required_argument, NULL, 'b'},
             {0, 0, 0, 0}
         };
 
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:x:d:o:u:r:",
+        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:x:d:o:u:r:b:",
                          options, &option_index);
 
         switch (c)
@@ -151,6 +152,23 @@ arguments::arguments(int argc, char **argv) {
                 else {
                     string filter = optarg;
                     __gpu_filter = __parse_multiarg(filter);
+                }
+                break;
+            case 'b':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    if(strcmp(optarg, "CPU") == 0)
+                        __argon2profile = "1_1_524288";
+                    else if(strcmp(optarg, "GPU") == 0)
+                        __argon2profile = "4_4_16384";
+                    else {
+                        sprintf(buff, "%s: invalid arguments",
+                                argv[0]);
+                        __error_message = buff;
+                        __error_flag = true;
+                    }
                 }
                 break;
             case 'o':
@@ -339,6 +357,10 @@ int arguments::report_interval() {
     return __report_interval;
 }
 
+string arguments::argon2_profile() {
+    return __argon2profile;
+}
+
 string arguments::get_help() {
     return
             "\nArionum CPU/GPU Miner v." ArioMiner_VERSION_MAJOR "." ArioMiner_VERSION_MINOR "." ArioMiner_VERSION_REVISION "\n"
@@ -382,6 +404,9 @@ string arguments::get_help() {
             "   --force-cpu-optimization: miner specific option, what type of CPU optimization to use\n"
             "                    values: REF, SSE2, SSSE3, AVX2, AVX512F\n"
             "                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
+            "   --force-block-type: miner specific option, override block type sent by pool\n"
+            "                    useful for tunning intensity; values: CPU, GPU\n"
+            "                    don't use for regular mining, shares submitted during opposite block type will be rejected\n"
             "   --update-interval: how often should we update mining settings from pool, in seconds\n"
             "                    increasing it will lower the load on pool but will increase rejection rate\n"
             "                    this is optional, defaults to 2 sec and can't be set lower than that\n"
@@ -407,6 +432,7 @@ void arguments::__init() {
     __report_interval = 10000000;
 
     __optimization = "";
+    __argon2profile = "";
 
     __error_flag = false;
 }

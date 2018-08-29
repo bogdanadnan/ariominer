@@ -219,8 +219,8 @@ argon2profile *hasher::get_argon2profile() {
     profile = __argon2profile;
     __input_mutex.unlock();
 
-//    return profile;
-    return &argon2profile_4_4_16384;
+    return profile;
+//    return &argon2profile_4_4_16384;
 }
 
 bool hasher::should_pause() {

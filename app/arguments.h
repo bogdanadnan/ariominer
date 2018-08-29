@@ -24,6 +24,7 @@ public:
     vector<double> &gpu_intensity_gblocks();
     vector<string> gpu_filter();
     int proxy_port();
+    string argon2_profile();
 
     int update_interval();
     int report_interval();
@@ -56,6 +57,8 @@ private:
     int __proxy_port;
     int __update_interval;
     int __report_interval;
+
+    string __argon2profile;
 
     string __optimization;
 

@@ -11,7 +11,7 @@
 
 #include "miner.h"
 
-miner::miner(arguments &args) : __args(args), __client(args.pool(), args.name(), args.wallet()) {
+miner::miner(arguments &args) : __args(args), __client(args) {
     __nonce = "";
     __blk = "";
     __difficulty = "";
