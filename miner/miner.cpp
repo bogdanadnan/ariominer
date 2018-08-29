@@ -11,7 +11,7 @@
 
 #include "miner.h"
 
-miner::miner(arguments &args) : __args(args), __client(args.pool(), args.name(), args.wallet()) {
+miner::miner(arguments &args) : __args(args), __client(args) {
     __nonce = "";
     __blk = "";
     __difficulty = "";
@@ -21,7 +21,7 @@ miner::miner(arguments &args) : __args(args), __client(args.pool(), args.name(),
     __found = 0;
     __confirmed = 0;
     __rejected = 0;
-    __total_time = 0;
+    __begin_time = time(NULL);
 
     vector<hasher*> hashers = hasher::get_hashers();
     for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
@@ -46,8 +46,7 @@ miner::~miner() {
 }
 
 void miner::run() {
-    uint64_t  begin, last_update, last_report;
-    begin = (uint64_t)time(NULL);
+    uint64_t  last_update, last_report;
     last_update = last_report = 0;
 
     vector<hasher*> hashers = hasher::get_active_hashers();
@@ -57,6 +56,8 @@ void miner::run() {
             vector<hash_data> hashes = (*it)->get_hashes();
 
             for(vector<hash_data>::iterator hash=hashes.begin();hash != hashes.end();hash++) {
+                if(hash->block != __blk) //the block expired
+                    continue;
 //                LOG(hash->hash);
                 string duration = __calc_duration(hash->base, hash->hash);
                 uint64_t result = __calc_compare(duration);
@@ -64,7 +65,7 @@ void miner::run() {
                     if(__args.is_verbose()) LOG("--> Submitting nonce: " + hash->nonce + " / " + hash->hash.substr(30));
                     ariopool_submit_result reply = __client.submit(hash->hash, hash->nonce, __public_key);
                     if(reply.success) {
-                        if(result < GOLD_RESULT) {
+                        if(result <= GOLD_RESULT) {
                             if(__args.is_verbose()) LOG("--> Block found.");
                             __found++;
                         }
@@ -101,7 +102,6 @@ void miner::run() {
             last_report = microseconds();
         }
 
-        __total_time = (uint64_t)((uint64_t)time(NULL) - begin);
         this_thread::sleep_for(chrono::milliseconds(100));
     }
 }
@@ -203,7 +203,9 @@ void miner::__display_report() {
     uint32_t hash_count_cblocks = 0;
     uint32_t hash_count_gblocks = 0;
 
-    if(!__args.is_verbose() || hashers.size() == 1) {
+    time_t total_time = time(NULL) - __begin_time;
+
+    if(!__args.is_verbose()) {
         for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
             hash_rate += (*it)->get_current_hash_rate();
             avg_hash_rate_cblocks += (*it)->get_avg_hash_rate_cblocks();
@@ -216,13 +218,13 @@ void miner::__display_report() {
            "Avg. (Cblocks): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
            "Avg. (Gblocks): " << setw(6) << avg_hash_rate_gblocks << " H/s  " <<
            "Count: " << setw(4) << (hash_count_cblocks + hash_count_gblocks) << "  " <<
-           "Time: " << setw(4) << __total_time << "  " <<
+           "Time: " << setw(4) << total_time << "  " <<
            "Shares: " << setw(3) << __confirmed << " " <<
            "Finds: " << setw(3) << __found << " " <<
            "Rejected: " << setw(3) << __rejected;
     }
     else {
-        ss << fixed << setprecision(2) << "--> Time: " << setw(4) << __total_time << "  " <<
+        ss << fixed << setprecision(2) << "--> Time: " << setw(4) << total_time << "  " <<
            "Shares: " << setw(3) << __confirmed << " " <<
            "Finds: " << setw(3) << __found << " " <<
            "Rejected: " << setw(3) << __rejected << endl;
@@ -238,13 +240,18 @@ void miner::__display_report() {
                "Hash rate: " << setw(6)<< (*it)->get_current_hash_rate() << " H/s   " <<
                "Avg. (Cblocks): " << setw(6) << (*it)->get_avg_hash_rate_cblocks() << " H/s  " <<
                "Avg. (Gblocks): " << setw(6) << (*it)->get_avg_hash_rate_gblocks() << "  " <<
-               "Count: " << setw(4) << ((*it)->get_hash_count_cblocks() + (*it)->get_hash_count_gblocks()) << endl;
+               "Count: " << setw(4) << ((*it)->get_hash_count_cblocks() + (*it)->get_hash_count_gblocks());
+
+            if(hashers.size() > 1)
+                ss << endl;
         }
-        ss << fixed << setprecision(2) << "--> ALL  " <<
-           "Hash rate: " << setw(6) << hash_rate << " H/s   " <<
-           "Avg. (Cblocks): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
-           "Avg. (Gblocks): " << setw(6) << avg_hash_rate_gblocks << "  " <<
-           "Count: " << setw(4) << (hash_count_cblocks + hash_count_gblocks);
+        if(hashers.size() > 1) {
+            ss << fixed << setprecision(2) << "--> ALL  " <<
+               "Hash rate: " << setw(6) << hash_rate << " H/s   " <<
+               "Avg. (Cblocks): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
+               "Avg. (Gblocks): " << setw(6) << avg_hash_rate_gblocks << "  " <<
+               "Count: " << setw(4) << (hash_count_cblocks + hash_count_gblocks);
+        }
     }
 
     LOG(ss.str());

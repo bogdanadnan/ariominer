@@ -106,6 +106,9 @@
     <ClCompile Include="..\..\crypt\random_generator.cpp">
       <Filter>crypt</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\autotune\autotune.cpp">
+      <Filter>autotune</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\app\arguments.h">
@@ -222,6 +225,9 @@
     <ClInclude Include="..\..\crypt\random_generator.h">
       <Filter>crypt</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\autotune\autotune.h">
+      <Filter>autotune</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="app">
@@ -283,6 +289,9 @@
     </Filter>
     <Filter Include="http\http_parser">
       <UniqueIdentifier>{afe78bb6-d5f8-42ad-9af2-1a7bb0ef3ba3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="autotune">
+      <UniqueIdentifier>{ec1e35f4-8819-4d00-b402-9ee889cf5429}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

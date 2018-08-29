@@ -14,16 +14,23 @@ public:
     bool is_help();
     bool is_verbose();
     bool is_miner();
+    bool is_autotune();
     bool is_proxy();
 
     string pool();
     string wallet();
     string name();
-    int cpu_intensity();
-    int gpu_intensity_cblocks();
-    int gpu_intensity_gblocks();
+    double cpu_intensity();
+    vector<double> &gpu_intensity_cblocks();
+    vector<double> &gpu_intensity_gblocks();
     vector<string> gpu_filter();
     int proxy_port();
+    string argon2_profile();
+
+    double gpu_intensity_start();
+    double gpu_intensity_stop();
+    double gpu_intensity_step();
+    int autotune_step_time();
 
     int update_interval();
     int report_interval();
@@ -36,7 +43,7 @@ public:
 
 private:
     void __init();
-    vector<string> __parse_filter(const string &filter);
+    vector<string> __parse_multiarg(const string &arg);
 
     string __error_message;
     bool __error_flag;
@@ -45,17 +52,25 @@ private:
     int __verbose_flag;
     int __miner_flag;
     int __proxy_flag;
+    int __autotune_flag;
 
     string __pool;
     string __wallet;
     string __name;
-    int __cpu_intensity;
-    int __gpu_intensity_cblocks;
-    int __gpu_intensity_gblocks;
+    double __cpu_intensity;
+    vector<double> __gpu_intensity_cblocks;
+    vector<double> __gpu_intensity_gblocks;
     vector<string> __gpu_filter;
     int __proxy_port;
     int __update_interval;
     int __report_interval;
+
+    double __gpu_intensity_start;
+    double __gpu_intensity_stop;
+    double __gpu_intensity_step;
+    int __autotune_step_time;
+
+    string __argon2profile;
 
     string __optimization;
 

@@ -20,7 +20,7 @@ set(SOURCE
         hash/argon2/defs.h
         hash/argon2/argon2profile_4_4_16384.c hash/argon2/argon2profile_1_1_524288.c
         hash/argon2/blake2/blake2b.c hash/argon2/blake2/blake2.h
-        hash/gpu/opencl_kernel.cpp hash/gpu/opencl_kernel.h crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h)
+        hash/gpu/opencl_kernel.cpp hash/gpu/opencl_kernel.h crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h autotune/autotune.cpp autotune/autotune.h)
 
 set(ARGON2_FILL_BLOCKS_SRC
         hash/cpu/argon2_opt/implementation.c
@@ -42,6 +42,8 @@ set(OPENCL_TEST_SRC
 set (CMAKE_CXX_STANDARD 11)
 set (ArioMiner_VERSION_MAJOR 0)
 set (ArioMiner_VERSION_MINOR 1)
+set (ArioMiner_VERSION_REVISION 2)
+
 set (CMAKE_MACOSX_RPATH 0)
 
 configure_file (

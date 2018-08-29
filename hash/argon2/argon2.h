@@ -7,7 +7,7 @@
 
 #include "defs.h"
 
-typedef void (*argon2_blocks_filler_ptr)(void *, int, argon2profile *, void *);
+typedef void *(*argon2_blocks_filler_ptr)(void *, int, argon2profile *, void *);
 
 class argon2 {
 public:
@@ -16,6 +16,7 @@ public:
     vector<string> generate_hashes(const argon2profile &profile, const string &base, string salt_);
 
     void set_seed_memory(uint8_t *memory);
+    uint8_t *get_output_memory();
     void set_seed_memory_offset(size_t offset);
     void set_lane_length(int length); // in blocks
     void set_threads(int threads);
@@ -28,6 +29,7 @@ private:
     argon2_blocks_filler_ptr __filler;
     int __threads;
     uint8_t *__seed_memory;
+	uint8_t *__output_memory;
     size_t __seed_memory_offset;
     int __lane_length;
     void *__user_data;

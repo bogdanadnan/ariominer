@@ -27,7 +27,7 @@ struct ariopool_submit_result : public ariopool_result {
 
 class ariopool_client : public http {
 public:
-    ariopool_client(const string &pool_address, const string &worker_id, const string &wallet_address);
+    ariopool_client(arguments &args);
 
     ariopool_update_result update(double hash_rate_cblocks, double hash_rate_gblocks);
     ariopool_submit_result submit(const string &hash, const string &nonce, const string &public_key);
@@ -40,6 +40,7 @@ private:
     string __worker_id;
     string __client_wallet_address;
     string __used_wallet_address;
+    string __force_argon2profile;
 
     bool __force_hashrate_report;
 

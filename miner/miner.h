@@ -34,7 +34,7 @@ private:
     uint32_t __confirmed;
     uint32_t __rejected;
 
-    uint64_t __total_time;
+    time_t __begin_time;
 
     arguments &__args;
     ariopool_client __client;

@@ -7,5 +7,6 @@
 
 #define ArioMiner_VERSION_MAJOR "@ArioMiner_VERSION_MAJOR@"
 #define ArioMiner_VERSION_MINOR "@ArioMiner_VERSION_MINOR@"
+#define ArioMiner_VERSION_REVISION "@ArioMiner_VERSION_REVISION@"
 
 #endif //ARIOMINER_CONFIG_H_IN_H

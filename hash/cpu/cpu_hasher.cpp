@@ -28,19 +28,16 @@ cpu_hasher::cpu_hasher() : hasher() {
     __threads_count = 0;
     __running = false;
     __argon2_blocks_filler_ptr = NULL;
+    __dll_handle = NULL;
     _description = __detect_features_and_make_description();
 }
 
 cpu_hasher::~cpu_hasher() {
-    __running = false;
-    for(vector<thread*>::iterator it = __runners.begin();it != __runners.end();++it) {
-        (*it)->join();
-        delete *it;
-    }
+    this->cleanup();
 }
 
 bool cpu_hasher::configure(arguments &args) {
-    int intensity = args.cpu_intensity();
+    double intensity = args.cpu_intensity();
     if(args.optimization() != "") {
         _description += "Overiding detected optimization feature with " + args.optimization() + ".\n";
         __optimization = args.optimization();
@@ -211,9 +208,20 @@ void *cpu_hasher::__allocate_memory(void *&buffer) {
 void cpu_hasher::__load_argon2_block_filler() {
     string module_path = arguments::get_app_folder();
     module_path += "/modules/argon2_fill_blocks_" + __optimization + ".opt";
-    void *handle = dlopen(module_path.c_str(), RTLD_LAZY);
-    if(handle != NULL)
-        __argon2_blocks_filler_ptr = (argon2_blocks_filler_ptr)dlsym(handle, "fill_memory_blocks");
+    __dll_handle = dlopen(module_path.c_str(), RTLD_LAZY);
+    if(__dll_handle != NULL)
+        __argon2_blocks_filler_ptr = (argon2_blocks_filler_ptr)dlsym(__dll_handle, "fill_memory_blocks");
+}
+
+void cpu_hasher::cleanup() {
+    __running = false;
+    for(vector<thread*>::iterator it = __runners.begin();it != __runners.end();++it) {
+        (*it)->join();
+        delete *it;
+    }
+    __runners.clear();
+    if(__dll_handle != NULL)
+        dlclose(__dll_handle);
 }
 
 REGISTER_HASHER(cpu_hasher);

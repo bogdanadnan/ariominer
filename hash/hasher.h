@@ -15,9 +15,16 @@ struct hash_data {
     string nonce;
     string salt;
     string base;
+    string block;
     string hash;
     string profile_name;
     bool *realloc_flag;
+};
+
+struct hash_timing {
+    uint64_t time_info;
+    size_t hash_count;
+    int profile; //0 CPU 1 GPU
 };
 
 #define REGISTER_HASHER(x)          x __##x
@@ -28,6 +35,7 @@ public:
     virtual ~hasher();
 
     virtual bool configure(arguments &args) = 0;
+    virtual void cleanup() = 0;
 
     string get_type();
     string get_info();
@@ -36,7 +44,7 @@ public:
     hash_data get_input();
     argon2profile *get_argon2profile();
     bool should_pause();
-    int get_intensity();
+    double get_intensity();
 
     double get_current_hash_rate();
     double get_avg_hash_rate_cblocks();
@@ -51,7 +59,7 @@ public:
     static vector<hasher*> get_active_hashers();
 
 protected:
-    int _intensity;
+    double _intensity;
     string _type;
     string _description;
 
@@ -61,14 +69,6 @@ private:
     string __make_nonce();
 
     static vector<hasher*> *__registered_hashers;
-
-    double __hash_rate;
-    double __avg_hash_rate_cblocks;
-    double __avg_hash_rate_gblocks;
-    uint32_t __total_hash_count_cblocks;
-    uint32_t __total_hash_count_gblocks;
-    uint32_t __hash_count_cblocks;
-    uint32_t __hash_count_gblocks;
 
     mutex __input_mutex;
     string __public_key;
@@ -80,10 +80,16 @@ private:
     mutex __hashes_mutex;
     vector<hash_data> __hashes;
 
-    uint64_t __begin_round_time;
-    uint64_t __cblocks_time;
-    uint64_t __gblocks_time;
     uint64_t __hashrate_time;
+    size_t __hashrate_hashcount;
+    double __hashrate;
+
+    size_t __total_hash_count_cblocks;
+    size_t __total_hash_count_gblocks;
+
+    size_t __hash_count;
+    uint64_t __begin_round_time;
+    list<hash_timing> __hash_timings;
 };
 
 #endif //ARIOMINER_HASHER_H

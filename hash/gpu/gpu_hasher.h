@@ -22,8 +22,10 @@ struct kernel_arguments {
     cl_mem memory_chunk_5;
     cl_mem address_profile_1_1_524288;
     cl_mem address_profile_4_4_16384;
-    cl_mem seed_memory;
-    cl_mem out_memory;
+    cl_mem segments_profile_1_1_524288;
+    cl_mem segments_profile_4_4_16384;
+    cl_mem seed_memory[2];
+    cl_mem out_memory[2];
 };
 
 struct argon2profile_info {
@@ -48,6 +50,8 @@ struct gpu_device_info {
     cl_program program;
     cl_kernel kernel;
 
+    int device_index;
+
     kernel_arguments arguments;
     argon2profile_info profile_info;
 
@@ -67,13 +71,14 @@ public:
     ~gpu_hasher();
 
     virtual bool configure(arguments &args);
+    virtual void cleanup();
 
 private:
     gpu_device_info __get_device_info(cl_platform_id platform, cl_device_id device);
-    bool __setup_device_info(gpu_device_info &device, int intensity_cpu, int intensity_gpu);
+    bool __setup_device_info(gpu_device_info &device, double intensity_cpu, double intensity_gpu);
     vector<gpu_device_info> __query_opencl_devices(cl_int &error, string &error_message);
 
-    void __run(gpu_device_info *device);
+    void __run(gpu_device_info *device, int thread_id);
 
     vector<gpu_device_info> __devices;
 

@@ -18,6 +18,8 @@ public:
     http_data(const string &uri, const string &data) {
         host = uri;
 
+        protocol = "http";
+
         if(host.find("http://") != string::npos) {
             host = host.erase(0, 7);
             protocol = "http";
@@ -139,18 +141,19 @@ string http::__get_response(const string &url, const string &post_data) {
         addr.sin_port = htons(query.port);
         inet_pton(AF_INET, ips[i].c_str(), &addr.sin_addr);
 
-#ifdef _WIN64
-        DWORD sock_timeout = 10000;
-#else
-        const struct timeval sock_timeout={.tv_sec=10, .tv_usec=0};
-#endif
-        if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO,(char *)&sock_timeout,sizeof(sock_timeout)) != 0) {
-            return "";
-        };
-
         if(connect(sockfd,(struct sockaddr *) &addr, sizeof (addr)) != 0) {
+            close(sockfd);
             continue;
         }
+
+#ifdef _WIN64
+        u_long nonblock = 1;
+        ioctlsocket(sockfd, FIONBIO, &nonblock);
+#else
+        int flags;
+        flags = fcntl(sockfd,F_GETFL,0);
+        fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+#endif
 
         string request = query.action + " " + query.path + ((query.query == "") ? "" : ("?" + query.query)) + " HTTP/1.1\r\nHost: " + query.host + "\r\n";
         if(query.payload != "") {
@@ -160,13 +163,18 @@ string http::__get_response(const string &url, const string &post_data) {
 
         char *buff = (char *)request.c_str();
         int sz = request.size();
+        int n = 0;
+
         while(sz > 0) {
-            int n = send(sockfd, buff, sz, 0);
-            if(n < 0) {
-                return "";
-            }
+            n = send(sockfd, buff, sz, 0);
+            if(n < 0) break;
             buff+=n;
             sz-=n;
+        }
+
+        if(n < 0) {
+            close(sockfd);
+            continue;
         }
 
         http_parser_settings settings;
@@ -177,17 +185,37 @@ string http::__get_response(const string &url, const string &post_data) {
         http_parser_init(&parser, HTTP_RESPONSE);
         parser.data = (void *)&reply;
 
-        char buffer[2048];
-        int n = recv(sockfd, buffer, 2048, 0);
+        fd_set fds;
+        timeval tv;
 
-        if(n > 0)
-            http_parser_execute(&parser, &settings, buffer, n);
+        time_t timestamp = time(NULL);
+        while(time(NULL) - timestamp < 10) {
+            FD_ZERO(&fds);
+            FD_SET(sockfd, &fds);
 
-#ifdef _WIN64
-        closesocket(sockfd);
-#else
+            tv.tv_sec = 0;
+            tv.tv_usec = 100000;
+
+            n = select(sockfd + 1, &fds, NULL, NULL, &tv);
+            if(n == 0)
+                continue;
+            else if(n < 0)
+                break;
+            else {
+                char buffer[2048];
+                n = recv(sockfd, buffer, 2048, 0);
+                if (n > 0)
+                    http_parser_execute(&parser, &settings, buffer, n);
+                else if(n <= 0)
+                    break;
+
+                if (reply != "")
+                    break;
+            }
+        }
+
         close(sockfd);
-#endif
+
         if(reply != "")
             break;
     }

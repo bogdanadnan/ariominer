@@ -7,7 +7,11 @@
 
 
 class proxy {
+public:
+    proxy(arguments &args);
+    ~proxy();
 
+    void run();
 };
 
 

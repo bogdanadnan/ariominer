@@ -7,5 +7,5 @@
 uint64_t microseconds() {
     struct timeval time;
     gettimeofday(&time, NULL);
-    return time.tv_sec * 1000000 + time.tv_usec;
+    return (uint64_t)time.tv_sec * 1000000 + (uint64_t)time.tv_usec;
 }
