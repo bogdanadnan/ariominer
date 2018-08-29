@@ -5,6 +5,8 @@
 #include "../common/common.h"
 #include "arguments.h"
 #include "../miner/miner.h"
+#include "../autotune/autotune.h"
+#include "../proxy/proxy.h"
 
 int main(int argc, char *argv[]) {
     srand((uint32_t)time(NULL));
@@ -26,6 +28,14 @@ int main(int argc, char *argv[]) {
     if(args.is_miner()) {
         miner m(args);
         m.run();
+    }
+    else if(args.is_autotune()) {
+        autotune a(args);
+        a.run();
+    }
+    else if(args.is_proxy()) {
+        proxy p(args);
+        p.run();
     }
 
     return 0;

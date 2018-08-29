@@ -39,13 +39,17 @@ arguments::arguments(int argc, char **argv) {
             {"force-cpu-optimization", required_argument, NULL, 'o'},
             {"update-interval", required_argument, NULL, 'u'},
             {"report-interval", required_argument, NULL, 'r'},
-            {"force-block-type", required_argument, NULL, 'b'},
+            {"block-type", required_argument, NULL, 'b'},
+            {"intensity-start", required_argument, NULL, 'y'},
+            {"intensity-stop", required_argument, NULL, 'z'},
+            {"intensity-step", required_argument, NULL, 'q'},
+            {"autotune-step-time", required_argument, NULL, 't'},
             {0, 0, 0, 0}
         };
 
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:x:d:o:u:r:b:",
+        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:x:d:o:u:r:b:y:z:q",
                          options, &option_index);
 
         switch (c)
@@ -75,6 +79,8 @@ arguments::arguments(int argc, char **argv) {
                         __miner_flag = 1;
                     else if(strcmp(optarg, "proxy") == 0)
                         __proxy_flag = 1;
+                    else if(strcmp(optarg, "autotune") == 0)
+                        __autotune_flag = 1;
                     else {
                         sprintf(buff, "%s: invalid arguments",
                                 argv[0]);
@@ -210,6 +216,38 @@ arguments::arguments(int argc, char **argv) {
                     __report_interval = 1000000 * atoi(optarg);
                 }
                 break;
+            case 'y':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    __gpu_intensity_start = atof(optarg);
+                }
+                break;
+            case 'z':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    __gpu_intensity_stop = atof(optarg);
+                }
+                break;
+            case 'q':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    __gpu_intensity_step = atof(optarg);
+                }
+                break;
+            case 't':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    __autotune_step_time = atoi(optarg);
+                }
+                break;
             case ':':
                 __error_flag = true;
                 break;
@@ -240,57 +278,89 @@ bool arguments::valid(string &error) {
     if(__error_flag)
         return false;
 
-    if(__miner_flag == false) {
-        error = "Only miner mode supported for the moment";
-        return false;
-    }
+    if(__miner_flag == 1) {
+        if (__pool.empty()) {
+            error = "Pool address is mandatory.";
+            return false;
+        }
 
-    if(__pool.empty()) {
-        error = "Pool address is mandatory.";
-        return false;
-    }
+        if (__pool.find("https://") == 0) {
+            error = "Only HTTP protocol is allowed for pool connection, HTTPS is not supported.";
+            return false;
+        }
 
-    if(__pool.find("https://") == 0) {
-        error = "Only HTTP protocol is allowed for pool connection, HTTPS is not supported.";
-        return false;
-    }
+        if (__wallet.empty()) {
+            error = "Wallet is mandatory.";
+            return false;
+        }
 
-    if(__wallet.empty()) {
-        error = "Wallet is mandatory.";
-        return false;
-    }
+        if (__name.empty()) {
+            error = "Worker name is mandatory.";
+            return false;
+        }
 
-    if(__name.empty()) {
-        error = "Worker name is mandatory.";
-        return false;
-    }
+        if (__cpu_intensity < 0 || __cpu_intensity > 100) {
+            error = "CPU intensity must be between 0 - disabled and 100 - full load.";
+            return false;
+        }
 
-    if(__cpu_intensity < 0 || __cpu_intensity > 100) {
-        error = "CPU intensity must be between 0 - disabled and 100 - full load.";
-        return false;
-    }
+        for (vector<double>::iterator it = __gpu_intensity_cblocks.begin(); it != __gpu_intensity_cblocks.end(); it++) {
+            if (*it < 0 || *it > 100) {
+                error = "GPU intensity for CPU blocks must be between 0 - disabled and 100 - full load.";
+                return false;
+            }
+        }
 
-    for(vector<double>::iterator it=__gpu_intensity_cblocks.begin();it != __gpu_intensity_cblocks.end();it++) {
-        if (*it < 0 || *it > 100) {
-            error = "GPU intensity for CPU blocks must be between 0 - disabled and 100 - full load.";
+        for (vector<double>::iterator it = __gpu_intensity_gblocks.begin(); it != __gpu_intensity_gblocks.end(); it++) {
+            if (*it < 0 || *it > 100) {
+                error = "GPU intensity for GPU blocks must be between 0 - disabled and 100 - full load.";
+                return false;
+            }
+        }
+
+        if (__update_interval < 2000000) {
+            error = "Pool update interval must be at least 2 sec.";
+            return false;
+        }
+
+        if (__report_interval < 1000000) {
+            error = "Reporting interval must be at least 1 sec.";
             return false;
         }
     }
+    else if(__autotune_flag == 1) {
+        if (__argon2profile.empty()) {
+            error = "Block type is mandatory in autotune mode.";
+            return false;
+        }
 
-    for(vector<double>::iterator it=__gpu_intensity_gblocks.begin();it != __gpu_intensity_gblocks.end();it++) {
-        if (*it < 0 || *it > 100) {
-            error = "GPU intensity for GPU blocks must be between 0 - disabled and 100 - full load.";
+        if (__gpu_intensity_start < 1 || __gpu_intensity_start > 100) {
+            error = "GPU autotune start intensity must be between 1 and 100.";
+            return false;
+        }
+
+        if (__gpu_intensity_stop < 1 || __gpu_intensity_stop > 100) {
+            error = "GPU autotune stop intensity must be between 1 and 100.";
+            return false;
+        }
+
+        if (__gpu_intensity_step < 1 || __gpu_intensity_step > 10) {
+            error = "GPU autotune step intensity must be between 1 and 10.";
+            return false;
+        }
+
+        if (__gpu_intensity_start > __gpu_intensity_stop) {
+            error = "GPU autotune start intensity must be lower than GPU autotune stop intensity.";
+            return false;
+        }
+
+        if (__autotune_step_time < 10) {
+            error = "GPU autotune step time must be at least 10 seconds.";
             return false;
         }
     }
-
-    if(__update_interval < 2000000) {
-        error = "Pool update interval must be at least 2 sec.";
-        return false;
-    }
-
-    if(__report_interval < 1000000) {
-        error = "Reporting interval must be at least 1 sec.";
+    else {
+        error = "Only miner or autotune mode are supported for the moment";
         return false;
     }
 
@@ -307,6 +377,10 @@ bool arguments::is_verbose() {
 
 bool arguments::is_miner() {
     return __miner_flag == 1;
+}
+
+bool arguments::is_autotune() {
+    return __autotune_flag == 1;
 }
 
 bool arguments::is_proxy() {
@@ -361,6 +435,22 @@ string arguments::argon2_profile() {
     return __argon2profile;
 }
 
+double arguments::gpu_intensity_start() {
+    return __gpu_intensity_start;
+}
+
+double arguments::gpu_intensity_stop() {
+    return __gpu_intensity_stop;
+}
+
+double arguments::gpu_intensity_step() {
+    return __gpu_intensity_step;
+}
+
+int arguments::autotune_step_time() {
+    return __autotune_step_time;
+}
+
 string arguments::get_help() {
     return
             "\nArionum CPU/GPU Miner v." ArioMiner_VERSION_MAJOR "." ArioMiner_VERSION_MINOR "." ArioMiner_VERSION_REVISION "\n"
@@ -377,6 +467,7 @@ string arguments::get_help() {
             "   --verbose: print more informative text during run\n"
             "   --mode <mode>: start in specific mode - arguments: miner / proxy\n"
             "           - miner: this instance will mine for arionum\n"
+            "           - autotune: for finding best intensity for GPU mining\n"
             "           - proxy: this instance will act as a hub for multiple miners,\n"
             "                    useful to aggregate multiple miners into a single instance\n"
             "                    reducing the load on the pool\n"
@@ -404,7 +495,7 @@ string arguments::get_help() {
             "   --force-cpu-optimization: miner specific option, what type of CPU optimization to use\n"
             "                    values: REF, SSE2, SSSE3, AVX2, AVX512F\n"
             "                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
-            "   --force-block-type: miner specific option, override block type sent by pool\n"
+            "   --block-type: miner specific option, override block type sent by pool\n"
             "                    useful for tunning intensity; values: CPU, GPU\n"
             "                    don't use for regular mining, shares submitted during opposite block type will be rejected\n"
             "   --update-interval: how often should we update mining settings from pool, in seconds\n"
@@ -412,6 +503,11 @@ string arguments::get_help() {
             "                    this is optional, defaults to 2 sec and can't be set lower than that\n"
             "   --report-interval: how often should we display mining reports, in seconds\n"
             "                    this is optional, defaults to 10 sec\n"
+            "   --intensity-start: autotune specific option, start intensity for autotuning (default 1)\n"
+            "   --intensity-stop: autotune specific option, stop intensity for autotuning (default 100)\n"
+            "   --intensity-step: autotune specific option, intensity steps for autotuning (default 1)\n"
+            "   --autotune-step-time: autotune specific option, how much time should wait in a step\n"
+            "                    before measuring h/s, in seconds (minimum 10, default 20)\n"
             "\n"
             "(*) Mining intensity depends on the number of CPU/GPU cores and available memory. Full load (100) is dynamically calculated by the application. You can use fractional numbers for better tunning.\n"
             ;
@@ -430,6 +526,11 @@ void arguments::__init() {
     __proxy_port = 8088;
     __update_interval = 2000000;
     __report_interval = 10000000;
+
+    __gpu_intensity_start = 1;
+    __gpu_intensity_stop = 100;
+    __gpu_intensity_step = 1;
+    __autotune_step_time = 20;
 
     __optimization = "";
     __argon2profile = "";

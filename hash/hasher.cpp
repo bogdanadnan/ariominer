@@ -112,17 +112,11 @@ double hasher::get_intensity() {
 }
 
 double hasher::get_current_hash_rate() {
-    uint64_t timestamp = microseconds();
-
-    if(timestamp - __hashrate_time > 5000000) { //we calculate hashrate every 5 seconds
-        __hashes_mutex.lock();
-        __hashrate = __hashrate_hashcount / ((timestamp - __hashrate_time) / 1000000.0);
-        __hashrate_hashcount = 0;
-        __hashes_mutex.unlock();
-        __hashrate_time = timestamp;
-    }
-
-    return __hashrate;
+    double hashrate = 0;
+    __hashes_mutex.lock();
+    hashrate = __hashrate;
+    __hashes_mutex.unlock();
+    return hashrate;
 }
 
 double hasher::get_avg_hash_rate_cblocks() {
@@ -197,6 +191,15 @@ void hasher::_store_hash(const hash_data &hash) {
     else {
         __total_hash_count_gblocks++;
     }
+
+    uint64_t timestamp = microseconds();
+
+    if(timestamp - __hashrate_time > 5000000) { //we calculate hashrate every 5 seconds
+        __hashrate = __hashrate_hashcount / ((timestamp - __hashrate_time) / 1000000.0);
+        __hashrate_hashcount = 0;
+        __hashrate_time = timestamp;
+    }
+
     __hashes_mutex.unlock();
 }
 
@@ -243,4 +246,3 @@ string hasher::__make_nonce() {
 }
 
 vector<hasher*> *hasher::__registered_hashers = NULL;
-

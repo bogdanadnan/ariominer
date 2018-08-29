@@ -14,6 +14,7 @@ public:
     bool is_help();
     bool is_verbose();
     bool is_miner();
+    bool is_autotune();
     bool is_proxy();
 
     string pool();
@@ -25,6 +26,11 @@ public:
     vector<string> gpu_filter();
     int proxy_port();
     string argon2_profile();
+
+    double gpu_intensity_start();
+    double gpu_intensity_stop();
+    double gpu_intensity_step();
+    int autotune_step_time();
 
     int update_interval();
     int report_interval();
@@ -46,6 +52,7 @@ private:
     int __verbose_flag;
     int __miner_flag;
     int __proxy_flag;
+    int __autotune_flag;
 
     string __pool;
     string __wallet;
@@ -57,6 +64,11 @@ private:
     int __proxy_port;
     int __update_interval;
     int __report_interval;
+
+    double __gpu_intensity_start;
+    double __gpu_intensity_stop;
+    double __gpu_intensity_step;
+    int __autotune_step_time;
 
     string __argon2profile;
 
