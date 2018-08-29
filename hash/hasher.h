@@ -63,7 +63,8 @@ protected:
     string _type;
     string _description;
 
-    void _store_hash(const hash_data &hash);
+	void _store_hash(const hash_data &hash);
+	void _store_hash(const vector<hash_data> &hashes);
 
 private:
     string __make_nonce();

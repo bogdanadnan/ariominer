@@ -180,27 +180,52 @@ vector<hash_data> hasher::get_hashes() {
 }
 
 void hasher::_store_hash(const hash_data &hash) {
-//    LOG(hash.hash);
-    __hashes_mutex.lock();
-    __hashes.push_back(hash);
-    __hash_count++;
-    __hashrate_hashcount++;
-    if(hash.profile_name == "1_1_524288") {
-        __total_hash_count_cblocks++;
-    }
-    else {
-        __total_hash_count_gblocks++;
-    }
+	//    LOG(hash.hash);
+	__hashes_mutex.lock();
+	__hashes.push_back(hash);
+	__hash_count++;
+	__hashrate_hashcount++;
+	if (hash.profile_name == "1_1_524288") {
+		__total_hash_count_cblocks++;
+	}
+	else {
+		__total_hash_count_gblocks++;
+	}
 
-    uint64_t timestamp = microseconds();
+	uint64_t timestamp = microseconds();
 
-    if(timestamp - __hashrate_time > 5000000) { //we calculate hashrate every 5 seconds
-        __hashrate = __hashrate_hashcount / ((timestamp - __hashrate_time) / 1000000.0);
-        __hashrate_hashcount = 0;
-        __hashrate_time = timestamp;
-    }
+	if (timestamp - __hashrate_time > 5000000) { //we calculate hashrate every 5 seconds
+		__hashrate = __hashrate_hashcount / ((timestamp - __hashrate_time) / 1000000.0);
+		__hashrate_hashcount = 0;
+		__hashrate_time = timestamp;
+	}
 
-    __hashes_mutex.unlock();
+	__hashes_mutex.unlock();
+}
+
+void hasher::_store_hash(const vector<hash_data> &hashes) {
+	if (hashes.size() == 0) return;
+
+	__hashes_mutex.lock();
+	__hashes.insert(__hashes.end(), hashes.begin(), hashes.end());
+	__hash_count+=hashes.size();
+	__hashrate_hashcount+=hashes.size();
+	if (hashes[0].profile_name == "1_1_524288") {
+		__total_hash_count_cblocks+=hashes.size();
+	}
+	else {
+		__total_hash_count_gblocks+=hashes.size();
+	}
+
+	uint64_t timestamp = microseconds();
+
+	if (timestamp - __hashrate_time > 5000000) { //we calculate hashrate every 5 seconds
+		__hashrate = __hashrate_hashcount / ((timestamp - __hashrate_time) / 1000000.0);
+		__hashrate_hashcount = 0;
+		__hashrate_time = timestamp;
+	}
+
+	__hashes_mutex.unlock();
 }
 
 vector<hasher *> hasher::get_hashers() {
