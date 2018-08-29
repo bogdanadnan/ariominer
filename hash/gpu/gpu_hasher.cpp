@@ -725,26 +725,28 @@ void gpu_hasher::cleanup() {
     vector<cl_platform_id> platforms;
 
     for(vector<gpu_device_info>::iterator it=__devices.begin(); it != __devices.end(); it++) {
-        clReleaseMemObject(it->arguments.memory_chunk_0);
-        clReleaseMemObject(it->arguments.memory_chunk_1);
-        clReleaseMemObject(it->arguments.memory_chunk_2);
-        clReleaseMemObject(it->arguments.memory_chunk_3);
-        clReleaseMemObject(it->arguments.memory_chunk_4);
-        clReleaseMemObject(it->arguments.memory_chunk_5);
-        clReleaseMemObject(it->arguments.address_profile_1_1_524288);
-        clReleaseMemObject(it->arguments.address_profile_4_4_16384);
-        clReleaseMemObject(it->arguments.segments_profile_1_1_524288);
-        clReleaseMemObject(it->arguments.segments_profile_4_4_16384);
-        clReleaseMemObject(it->arguments.seed_memory[0]);
-        clReleaseMemObject(it->arguments.seed_memory[1]);
-        clReleaseMemObject(it->arguments.out_memory[0]);
-        clReleaseMemObject(it->arguments.out_memory[1]);
+		if (it->profile_info.threads_profile_1_1_524288 != 0 || it->profile_info.threads_profile_4_4_16384 != 0) {
+			clReleaseMemObject(it->arguments.memory_chunk_0);
+			clReleaseMemObject(it->arguments.memory_chunk_1);
+			clReleaseMemObject(it->arguments.memory_chunk_2);
+			clReleaseMemObject(it->arguments.memory_chunk_3);
+			clReleaseMemObject(it->arguments.memory_chunk_4);
+			clReleaseMemObject(it->arguments.memory_chunk_5);
+			clReleaseMemObject(it->arguments.address_profile_1_1_524288);
+			clReleaseMemObject(it->arguments.address_profile_4_4_16384);
+			clReleaseMemObject(it->arguments.segments_profile_1_1_524288);
+			clReleaseMemObject(it->arguments.segments_profile_4_4_16384);
+			clReleaseMemObject(it->arguments.seed_memory[0]);
+			clReleaseMemObject(it->arguments.seed_memory[1]);
+			clReleaseMemObject(it->arguments.out_memory[0]);
+			clReleaseMemObject(it->arguments.out_memory[1]);
 
-        clReleaseKernel(it->kernel);
-        clReleaseProgram(it->program);
-        clReleaseCommandQueue(it->queue);
-        clReleaseContext(it->context);
-    }
+			clReleaseKernel(it->kernel);
+			clReleaseProgram(it->program);
+			clReleaseCommandQueue(it->queue);
+			clReleaseContext(it->context);
+		}
+	}
     __devices.clear();
 }
 

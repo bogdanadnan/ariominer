@@ -257,13 +257,21 @@ arguments::arguments(int argc, char **argv) {
         }
     }
 
-    if(__gpu_intensity_cblocks.size() == 0)
-        __gpu_intensity_cblocks.push_back(100);
+	if (__miner_flag) {
+		if (__gpu_intensity_cblocks.size() == 0)
+			__gpu_intensity_cblocks.push_back(100);
 
-    if(__gpu_intensity_gblocks.size() == 0)
-        __gpu_intensity_gblocks.push_back(100);
+		if (__gpu_intensity_gblocks.size() == 0)
+			__gpu_intensity_gblocks.push_back(100);
+	}
+	else if (__autotune_flag) {
+		__gpu_intensity_cblocks.clear();
+		__gpu_intensity_cblocks.push_back(__gpu_intensity_start);
+		__gpu_intensity_gblocks.clear();
+		__gpu_intensity_gblocks.push_back(__gpu_intensity_start);
+	}
 
-    if (optind < argc)
+	if (optind < argc)
     {
         sprintf(buff, "%s: invalid arguments",
                           argv[0]);
