@@ -11,6 +11,7 @@ public:
     ~cpu_hasher();
 
     virtual bool configure(arguments &args);
+    virtual void cleanup();
 
 private:
     string __detect_features_and_make_description();
@@ -25,6 +26,7 @@ private:
     int __threads_count;
     vector<thread*> __runners;
     bool __running;
+    void *__dll_handle;
     argon2_blocks_filler_ptr __argon2_blocks_filler_ptr;
 };
 

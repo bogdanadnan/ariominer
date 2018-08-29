@@ -71,6 +71,7 @@ public:
     ~gpu_hasher();
 
     virtual bool configure(arguments &args);
+    virtual void cleanup();
 
 private:
     gpu_device_info __get_device_info(cl_platform_id platform, cl_device_id device);

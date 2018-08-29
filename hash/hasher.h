@@ -35,6 +35,7 @@ public:
     virtual ~hasher();
 
     virtual bool configure(arguments &args) = 0;
+    virtual void cleanup() = 0;
 
     string get_type();
     string get_info();
