@@ -413,6 +413,8 @@ vector<gpu_device_info> gpu_hasher::__query_opencl_devices(cl_int &error, string
         return vector<gpu_device_info>();
     }
 
+    int counter = 0;
+
     for(uint32_t i=0; i < platform_count; i++) {
         device_count = 0;
         clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, 0, NULL, &device_count);
@@ -437,7 +439,9 @@ vector<gpu_device_info> gpu_hasher::__query_opencl_devices(cl_int &error, string
                 error_message = info.error_message;
             }
             else {
+                info.device_index = counter;
                 result.push_back(info);
+                counter++;
             }
         }
 
@@ -466,8 +470,19 @@ gpu_hasher::~gpu_hasher() {
 
 bool gpu_hasher::configure(arguments &args) {
     int index = 1;
-    double intensity_cpu = args.gpu_intensity_cblocks();
-    double intensity_gpu = args.gpu_intensity_gblocks();
+    double intensity_cpu = 0;
+    double intensity_gpu = 0;
+
+    for(vector<double>::iterator it = args.gpu_intensity_cblocks().begin(); it != args.gpu_intensity_cblocks().end(); it++) {
+        intensity_cpu += *it;
+    }
+    intensity_cpu /= args.gpu_intensity_cblocks().size();
+
+    for(vector<double>::iterator it = args.gpu_intensity_gblocks().begin(); it != args.gpu_intensity_gblocks().end(); it++) {
+        intensity_gpu += *it;
+    }
+    intensity_gpu /= args.gpu_intensity_gblocks().size();
+
     vector<string> filter = args.gpu_filter();
 
     int total_threads_profile_4_4_16384 = 0;
@@ -514,9 +529,21 @@ bool gpu_hasher::configure(arguments &args) {
             }
         }
 
+        double device_intensity_cpu = 0;
+        if(args.gpu_intensity_cblocks().size() == 1 || d->device_index >= args.gpu_intensity_cblocks().size())
+            device_intensity_cpu = args.gpu_intensity_cblocks()[0];
+        else
+            device_intensity_cpu = args.gpu_intensity_cblocks()[d->device_index];
+
+        double device_intensity_gpu = 0;
+        if(args.gpu_intensity_gblocks().size() == 1 || d->device_index >= args.gpu_intensity_gblocks().size())
+            device_intensity_gpu = args.gpu_intensity_gblocks()[0];
+        else
+            device_intensity_gpu = args.gpu_intensity_gblocks()[d->device_index];
+
         _description += ss.str();
 
-        if(!(__setup_device_info(*d, intensity_cpu, intensity_gpu))) {
+        if(!(__setup_device_info(*d, device_intensity_cpu, device_intensity_gpu))) {
             _description += d->error_message;
             _description += "\n";
             continue;

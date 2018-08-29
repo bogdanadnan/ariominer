@@ -127,7 +127,10 @@ arguments::arguments(int argc, char **argv) {
                     __help_flag = 1;
                 }
                 else {
-                    __gpu_intensity_gblocks = atof(optarg);
+                    vector<string> gblocks_intensity = __parse_multiarg(optarg);
+                    for(vector<string>::iterator it = gblocks_intensity.begin(); it != gblocks_intensity.end(); it++) {
+                        __gpu_intensity_gblocks.push_back(atof(it->c_str()));
+                    }
                 }
                 break;
             case 'x':
@@ -135,7 +138,10 @@ arguments::arguments(int argc, char **argv) {
                     __help_flag = 1;
                 }
                 else {
-                    __gpu_intensity_cblocks = atof(optarg);
+                    vector<string> cblocks_intensity = __parse_multiarg(optarg);
+                    for(vector<string>::iterator it = cblocks_intensity.begin(); it != cblocks_intensity.end(); it++) {
+                        __gpu_intensity_cblocks.push_back(atof(it->c_str()));
+                    }
                 }
                 break;
             case 'd':
@@ -195,6 +201,12 @@ arguments::arguments(int argc, char **argv) {
         }
     }
 
+    if(__gpu_intensity_cblocks.size() == 0)
+        __gpu_intensity_cblocks.push_back(100);
+
+    if(__gpu_intensity_gblocks.size() == 0)
+        __gpu_intensity_gblocks.push_back(100);
+
     if (optind < argc)
     {
         sprintf(buff, "%s: invalid arguments",
@@ -240,14 +252,18 @@ bool arguments::valid(string &error) {
         return false;
     }
 
-    if(__gpu_intensity_cblocks < 0 || __gpu_intensity_cblocks > 100) {
-        error = "GPU intensity for CPU blocks must be between 0 - disabled and 100 - full load.";
-        return false;
+    for(vector<double>::iterator it=__gpu_intensity_cblocks.begin();it != __gpu_intensity_cblocks.end();it++) {
+        if (*it < 0 || *it > 100) {
+            error = "GPU intensity for CPU blocks must be between 0 - disabled and 100 - full load.";
+            return false;
+        }
     }
 
-    if(__gpu_intensity_gblocks < 0 || __gpu_intensity_gblocks > 100) {
-        error = "GPU intensity for GPU blocks must be between 0 - disabled and 100 - full load.";
-        return false;
+    for(vector<double>::iterator it=__gpu_intensity_gblocks.begin();it != __gpu_intensity_gblocks.end();it++) {
+        if (*it < 0 || *it > 100) {
+            error = "GPU intensity for GPU blocks must be between 0 - disabled and 100 - full load.";
+            return false;
+        }
     }
 
     if(__update_interval < 2000000) {
@@ -299,11 +315,11 @@ double arguments::cpu_intensity() {
     return __cpu_intensity;
 }
 
-double arguments::gpu_intensity_cblocks() {
+vector<double> &arguments::gpu_intensity_cblocks() {
     return __gpu_intensity_cblocks;
 }
 
-double arguments::gpu_intensity_gblocks() {
+vector<double> &arguments::gpu_intensity_gblocks() {
     return __gpu_intensity_gblocks;
 }
 
@@ -355,12 +371,14 @@ string arguments::get_help() {
             "   --gpu-intensity-cblocks: miner specific option, mining intensity on GPU\n"
             "                    value from 0 (disabled) to 100 (full load)\n"
             "                    this is optional, defaults to 100 (*)\n"
+            "                    you can add more entries separated by comma for each GPU\n"
             "   --gpu-intensity-gblocks: miner specific option, mining intensity on GPU\n"
             "                    value from 0 (disabled) to 100 (full load)\n"
             "                    this is optional, defaults to 100 (*)\n"
+            "                    you can add more entries separated by comma for each GPU\n"
             "   --gpu-filter: miner specific option, filter string for device selection\n"
             "                    it will select only devices that have in description the specified string\n"
-            "                    this is optional, defaults to \"\"\n"
+            "                    this is optional, defaults to \"\"; you can add more entries separated by comma\n"
             "   --force-cpu-optimization: miner specific option, what type of CPU optimization to use\n"
             "                    values: REF, SSE2, SSSE3, AVX2, AVX512F\n"
             "                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
@@ -384,8 +402,6 @@ void arguments::__init() {
     __wallet = "";
     __name = "";
     __cpu_intensity = 100;
-    __gpu_intensity_cblocks = 100;
-    __gpu_intensity_gblocks = 100;
     __proxy_port = 8088;
     __update_interval = 2000000;
     __report_interval = 10000000;

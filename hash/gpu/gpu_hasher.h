@@ -50,6 +50,8 @@ struct gpu_device_info {
     cl_program program;
     cl_kernel kernel;
 
+    int device_index;
+
     kernel_arguments arguments;
     argon2profile_info profile_info;
 

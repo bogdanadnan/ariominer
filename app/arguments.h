@@ -20,8 +20,8 @@ public:
     string wallet();
     string name();
     double cpu_intensity();
-    double gpu_intensity_cblocks();
-    double gpu_intensity_gblocks();
+    vector<double> &gpu_intensity_cblocks();
+    vector<double> &gpu_intensity_gblocks();
     vector<string> gpu_filter();
     int proxy_port();
 
@@ -50,8 +50,8 @@ private:
     string __wallet;
     string __name;
     double __cpu_intensity;
-    double __gpu_intensity_cblocks;
-    double __gpu_intensity_gblocks;
+    vector<double> __gpu_intensity_cblocks;
+    vector<double> __gpu_intensity_gblocks;
     vector<string> __gpu_filter;
     int __proxy_port;
     int __update_interval;
