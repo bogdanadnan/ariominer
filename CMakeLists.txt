@@ -1,5 +1,10 @@
 cmake_minimum_required (VERSION 2.6)
 project (ArioMiner)
+
+include (TargetArch.cmake)
+
+target_architecture (ARCH)
+
 set(SOURCE
         hash/cpu/cpu_hasher.cpp hash/cpu/cpu_hasher.h
         hash/gpu/gpu_hasher.cpp hash/gpu/gpu_hasher.h
@@ -63,29 +68,37 @@ find_package (Threads)
 add_subdirectory(hash/cpu/cpu_features)
 
 add_executable(ariominer ${SOURCE})
-#add_executable(opencl_test ${OPENCL_TEST_SRC})
 
 add_library(argon2_fill_blocks_REF SHARED ${ARGON2_FILL_BLOCKS_SRC})
+set_target_properties(argon2_fill_blocks_REF
+        PROPERTIES
+        PREFIX ""
+        SUFFIX ".opt"
+        LIBRARY_OUTPUT_DIRECTORY modules
+        )
+target_compile_options(argon2_fill_blocks_REF PRIVATE -DBUILD_REF -O3)
+add_dependencies(ariominer argon2_fill_blocks_REF)
+
+if(ARCH STREQUAL "x86_64")
 add_library(argon2_fill_blocks_SSE2 SHARED ${ARGON2_FILL_BLOCKS_SRC})
 add_library(argon2_fill_blocks_SSSE3 SHARED ${ARGON2_FILL_BLOCKS_SRC})
 add_library(argon2_fill_blocks_AVX2 SHARED ${ARGON2_FILL_BLOCKS_SRC})
 add_library(argon2_fill_blocks_AVX512F SHARED ${ARGON2_FILL_BLOCKS_SRC})
-
-add_dependencies(ariominer argon2_fill_blocks_REF argon2_fill_blocks_SSE2 argon2_fill_blocks_SSSE3 argon2_fill_blocks_AVX2 argon2_fill_blocks_AVX512F)
-
 set_target_properties(argon2_fill_blocks_REF argon2_fill_blocks_SSE2 argon2_fill_blocks_SSSE3 argon2_fill_blocks_AVX2 argon2_fill_blocks_AVX512F
         PROPERTIES
         PREFIX ""
         SUFFIX ".opt"
         LIBRARY_OUTPUT_DIRECTORY modules
         )
-
-target_compile_options(argon2_fill_blocks_REF PRIVATE -DBUILD_REF -O3)
 target_compile_options(argon2_fill_blocks_SSE2 PRIVATE -msse2 -O3)
 target_compile_options(argon2_fill_blocks_SSSE3 PRIVATE -mssse3 -O3)
 target_compile_options(argon2_fill_blocks_AVX2 PRIVATE -mavx2 -O3)
 target_compile_options(argon2_fill_blocks_AVX512F PRIVATE -mavx512f -O3)
-target_compile_options(ariominer PRIVATE -O3)
+add_dependencies(ariominer argon2_fill_blocks_SSE2 argon2_fill_blocks_SSSE3 argon2_fill_blocks_AVX2 argon2_fill_blocks_AVX512F)
+endif(ARCH STREQUAL "x86_64")
 
+target_compile_options(ariominer PRIVATE -O3)
 target_link_libraries(ariominer cpu_features ${OpenCL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+
+#add_executable(opencl_test ${OPENCL_TEST_SRC})
 #target_link_libraries(opencl_test ${OpenCL_LIBRARY})
