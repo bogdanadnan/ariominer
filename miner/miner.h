@@ -8,13 +8,15 @@
 #define GOLD_RESULT         240
 
 #include "../http/client.h"
+#include "../app/runner.h"
 
-class miner {
+class miner : public runner {
 public:
     miner(arguments &args);
     ~miner();
 
-    void run();
+    virtual void run();
+    virtual void stop();
 
 private:
     string __calc_duration(const string &base, const string &hash);
@@ -35,6 +37,8 @@ private:
     uint32_t __rejected;
 
     time_t __begin_time;
+
+    bool __running;
 
     arguments &__args;
     ariopool_client __client;

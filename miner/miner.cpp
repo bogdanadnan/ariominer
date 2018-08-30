@@ -22,6 +22,7 @@ miner::miner(arguments &args) : __args(args), __client(args) {
     __confirmed = 0;
     __rejected = 0;
     __begin_time = time(NULL);
+    __running = false;
 
     vector<hasher*> hashers = hasher::get_hashers();
     for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
@@ -46,63 +47,68 @@ miner::~miner() {
 }
 
 void miner::run() {
-    uint64_t  last_update, last_report;
+    uint64_t last_update, last_report;
     last_update = last_report = 0;
 
-    vector<hasher*> hashers = hasher::get_active_hashers();
+    vector<hasher *> hashers = hasher::get_active_hashers();
 
-    while (true) {
-        for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
+    __running = true;
+
+    while (__running) {
+        for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
             vector<hash_data> hashes = (*it)->get_hashes();
 
-            for(vector<hash_data>::iterator hash=hashes.begin();hash != hashes.end();hash++) {
-                if(hash->block != __blk) //the block expired
+            for (vector<hash_data>::iterator hash = hashes.begin(); hash != hashes.end(); hash++) {
+                if (hash->block != __blk) //the block expired
                     continue;
 //                LOG(hash->hash);
                 string duration = __calc_duration(hash->base, hash->hash);
                 uint64_t result = __calc_compare(duration);
-                if(result > 0 && result <= __limit) {
-                    if(__args.is_verbose()) LOG("--> Submitting nonce: " + hash->nonce + " / " + hash->hash.substr(30));
+                if (result > 0 && result <= __limit) {
+                    if (__args.is_verbose())
+                        LOG("--> Submitting nonce: " + hash->nonce + " / " + hash->hash.substr(30));
                     ariopool_submit_result reply = __client.submit(hash->hash, hash->nonce, __public_key);
-                    if(reply.success) {
-                        if(result <= GOLD_RESULT) {
-                            if(__args.is_verbose()) LOG("--> Block found.");
+                    if (reply.success) {
+                        if (result <= GOLD_RESULT) {
+                            if (__args.is_verbose()) LOG("--> Block found.");
                             __found++;
-                        }
-                        else {
-                            if(__args.is_verbose()) LOG("--> Nonce confirmed.");
+                        } else {
+                            if (__args.is_verbose()) LOG("--> Nonce confirmed.");
                             __confirmed++;
                         }
-                    }
-                    else {
-                        if(__args.is_verbose()) {
+                    } else {
+                        if (__args.is_verbose()) {
                             LOG("--> The nonce did not confirm.");
                             LOG("--> Pool response: ");
                             LOG(reply.pool_response);
                         }
                         __rejected++;
-                        if(hash->realloc_flag != NULL)
+                        if (hash->realloc_flag != NULL)
                             *(hash->realloc_flag) = true;
                     }
                 }
             }
         }
 
-        if(microseconds() - last_update > __args.update_interval()) {
-            if(__update_pool_data()) {
-                for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
+        if (microseconds() - last_update > __args.update_interval()) {
+            if (__update_pool_data()) {
+                for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
                     (*it)->set_input(__public_key, __blk, __difficulty, __argon2profile, __recommendation);
                 }
             }
             last_update = microseconds();
         }
 
-        if(microseconds() - last_report > __args.report_interval()) {
+        if (microseconds() - last_report > __args.report_interval()) {
             __display_report();
             last_report = microseconds();
         }
 
         this_thread::sleep_for(chrono::milliseconds(100));
+    }
+
+    for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
+        (*it)->cleanup();
     }
 }
 
@@ -255,4 +261,9 @@ void miner::__display_report() {
     }
 
     LOG(ss.str());
+}
+
+void miner::stop() {
+    cout << endl << "Received termination request, please wait for cleanup ... " << endl;
+    __running = false;
 }

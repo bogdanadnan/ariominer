@@ -5,13 +5,15 @@
 #ifndef PROJECT_PROXY_H
 #define PROJECT_PROXY_H
 
+#include "../app/runner.h"
 
-class proxy {
+class proxy : public runner {
 public:
     proxy(arguments &args);
     ~proxy();
 
-    void run();
+    virtual void run();
+    virtual void stop();
 };
 
 

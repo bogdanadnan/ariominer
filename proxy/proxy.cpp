@@ -13,3 +13,5 @@ proxy::proxy(arguments &args) { }
 proxy::~proxy() { }
 
 void proxy::run() { }
+
+void proxy::stop() { }

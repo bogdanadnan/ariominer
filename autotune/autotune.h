@@ -5,15 +5,18 @@
 #ifndef ARIOMINER_AUTOTUNE_H
 #define ARIOMINER_AUTOTUNE_H
 
+#include "../app/runner.h"
 
-class autotune {
+class autotune : public runner {
 public:
     autotune(arguments &args);
     ~autotune();
 
-    void run();
+    virtual void run();
+    virtual void stop();
 private:
     arguments &__args;
+    bool __running;
 };
 
 

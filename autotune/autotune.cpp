@@ -9,7 +9,9 @@
 
 #include "autotune.h"
 
-autotune::autotune(arguments &args) : __args(args) { }
+autotune::autotune(arguments &args) : __args(args) {
+    __running = false;
+}
 
 autotune::~autotune() { }
 
@@ -27,7 +29,13 @@ void autotune::run() {
     double best_intensity = 0;
     double best_hashrate = 0;
 
+    __running = true;
+
     for(double intensity = __args.gpu_intensity_start(); intensity <= __args.gpu_intensity_stop(); intensity += __args.gpu_intensity_step()) {
+        if(!__running) {
+            break;
+        }
+
         cout << fixed << setprecision(2) <<"Intensity " << intensity << ": " << flush;
         if(__args.argon2_profile() == "1_1_524288") {
             __args.gpu_intensity_cblocks().clear();
@@ -62,5 +70,16 @@ void autotune::run() {
         cout << fixed << setprecision(2) << hashrate << " h/s" <<endl << flush;
     }
 
+    for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
+        if((*it)->get_type() == "GPU") {
+            (*it)->cleanup();
+        }
+    }
+
     cout << fixed << setprecision(2) << "Best intensity is " << best_intensity << ", running at " << best_hashrate << " h/s." << endl;
+}
+
+void autotune::stop() {
+    cout << endl << "Received termination request, please wait for cleanup ... " << endl;
+    __running = false;
 }
