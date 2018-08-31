@@ -20,6 +20,7 @@
 
 #include "../../argon2/blake2/blake2-impl.h"
 
+#if !defined(__NEON__)
 #include <emmintrin.h>
 #if defined(__SSSE3__)
 #include <tmmintrin.h> /* for _mm_shuffle_epi8 and _mm_alignr_epi8 */
@@ -28,7 +29,11 @@
 #if defined(__XOP__) && (defined(__GNUC__) || defined(__clang__))
 #include <x86intrin.h>
 #endif
+#else
+#include <arm_neon.h>
+#endif
 
+#if !defined(__NEON__)
 #if !defined(__AVX512F__)
 #if !defined(__AVX2__)
 #if !defined(__XOP__)
@@ -468,4 +473,95 @@ static __m512i muladd(__m512i x, __m512i y)
     } while ((void)0, 0)
 
 #endif /* __AVX512F__ */
+
+#else /* __NEON__ */
+
+static BLAKE2_INLINE uint64x2_t fBlaMka(uint64x2_t x, uint64x2_t y) {
+    const uint64x2_t z = vmull_u32(vmovn_u64(x), vmovn_u64(y));
+    return vaddq_u64(vaddq_u64(x, y), vaddq_u64(z, z));
+}
+
+#define vrorq_n_u64_32(x) vreinterpretq_u64_u32(vrev64q_u32(vreinterpretq_u32_u64((x))))
+
+#define vrorq_n_u64_24(x) vcombine_u64( \
+    vreinterpret_u64_u8(vext_u8(vreinterpret_u8_u64(vget_low_u64(x)), vreinterpret_u8_u64(vget_low_u64(x)), 3)), \
+    vreinterpret_u64_u8(vext_u8(vreinterpret_u8_u64(vget_high_u64(x)), vreinterpret_u8_u64(vget_high_u64(x)), 3)))
+
+#define vrorq_n_u64_16(x) vcombine_u64( \
+    vreinterpret_u64_u8(vext_u8(vreinterpret_u8_u64(vget_low_u64(x)), vreinterpret_u8_u64(vget_low_u64(x)), 2)), \
+    vreinterpret_u64_u8(vext_u8(vreinterpret_u8_u64(vget_high_u64(x)), vreinterpret_u8_u64(vget_high_u64(x)), 2)))
+
+#define vrorq_n_u64_63(x) veorq_u64(vaddq_u64(x, x), vshrq_n_u64(x, 63))
+
+#define G1(A0, B0, C0, D0, A1, B1, C1, D1)                                     \
+do {                                                                       \
+    A0 = fBlaMka(A0, B0);                                                  \
+    A1 = fBlaMka(A1, B1);                                                  \
+    \
+    D0 = veorq_u64(D0, A0);                                            \
+    D1 = veorq_u64(D1, A1);                                            \
+    \
+    D0 = vrorq_n_u64_32(D0);                                          \
+    D1 = vrorq_n_u64_32(D1);                                          \
+    \
+    C0 = fBlaMka(C0, D0);                                                  \
+    C1 = fBlaMka(C1, D1);                                                  \
+    \
+    B0 = veorq_u64(B0, C0);                                            \
+    B1 = veorq_u64(B1, C1);                                            \
+    \
+    B0 = vrorq_n_u64_24(B0);                                          \
+    B1 = vrorq_n_u64_24(B1);                                          \
+} while ((void)0, 0)
+
+#define G2(A0, B0, C0, D0, A1, B1, C1, D1)                                     \
+do {                                                                       \
+    A0 = fBlaMka(A0, B0);                                                  \
+    A1 = fBlaMka(A1, B1);                                                  \
+    \
+    D0 = veorq_u64(D0, A0);                                            \
+    D1 = veorq_u64(D1, A1);                                            \
+    \
+    D0 = vrorq_n_u64_16(D0);                                          \
+    D1 = vrorq_n_u64_16(D1);                                          \
+    \
+    C0 = fBlaMka(C0, D0);                                                  \
+    C1 = fBlaMka(C1, D1);                                                  \
+    \
+    B0 = veorq_u64(B0, C0);                                            \
+    B1 = veorq_u64(B1, C1);                                            \
+    \
+    B0 = vrorq_n_u64_63(B0);                                          \
+    B1 = vrorq_n_u64_63(B1);                                          \
+} while ((void)0, 0)
+
+#define DIAGONALIZE(A0, B0, C0, D0, A1, B1, C1, D1) \
+    t0 = vextq_u64(B0, B1, 1); \
+    t1 = vextq_u64(B1, B0, 1); \
+    B0 = t0; B1 = t1; t0 = C0;  C0 = C1; C1 = t0; \
+    t0 = vextq_u64(D1, D0, 1); t1 = vextq_u64(D0, D1, 1); \
+    D0 = t0; D1 = t1;
+
+#define UNDIAGONALIZE(A0, B0, C0, D0, A1, B1, C1, D1) \
+    t0 = vextq_u64(B1, B0, 1); \
+    t1 = vextq_u64(B0, B1, 1); \
+    B0 = t0; B1 = t1; t0 = C0; C0 = C1; C1 = t0; \
+    t0 = vextq_u64(D0, D1, 1); t1 = vextq_u64(D1, D0, 1); \
+    D0 = t0; D1 = t1;
+
+#define BLAKE2_ROUND(A0, A1, B0, B1, C0, C1, D0, D1)                           \
+do {                                                                       \
+    G1(A0, B0, C0, D0, A1, B1, C1, D1);                                    \
+    G2(A0, B0, C0, D0, A1, B1, C1, D1);                                    \
+    \
+    DIAGONALIZE(A0, B0, C0, D0, A1, B1, C1, D1);                           \
+    \
+    G1(A0, B0, C0, D0, A1, B1, C1, D1);                                    \
+    G2(A0, B0, C0, D0, A1, B1, C1, D1);                                    \
+    \
+    UNDIAGONALIZE(A0, B0, C0, D0, A1, B1, C1, D1);                         \
+} while ((void)0, 0)
+
+#endif /* __NEON__ */
+
 #endif /* BLAKE_ROUND_MKA_OPT_H */

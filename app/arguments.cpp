@@ -184,6 +184,7 @@ arguments::arguments(int argc, char **argv) {
                 else {
                     if(strcmp(optarg, "REF") == 0)
                         __optimization = "REF";
+#if defined(__x86_64__) || defined(_WIN64)
                     else if(strcmp(optarg, "SSE2") == 0)
                         __optimization = "SSE2";
                     else if(strcmp(optarg, "SSSE3") == 0)
@@ -192,6 +193,10 @@ arguments::arguments(int argc, char **argv) {
                         __optimization = "AVX2";
                     else if(strcmp(optarg, "AVX512F") == 0)
                         __optimization = "AVX512F";
+#elif defined(__arm__)
+                    else if(strcmp(optarg, "NEON") == 0)
+                        __optimization = "NEON";
+#endif
                     else {
                         sprintf(buff, "%s: invalid arguments",
                                 argv[0]);
@@ -503,7 +508,13 @@ string arguments::get_help() {
             "                    it will select only devices that have in description the specified string\n"
             "                    this is optional, defaults to \"\"; you can add more entries separated by comma\n"
             "   --force-cpu-optimization: miner specific option, what type of CPU optimization to use\n"
+#if defined(__x86_64__) || defined(_WIN64)
             "                    values: REF, SSE2, SSSE3, AVX2, AVX512F\n"
+#elif defined(__arm__)
+            "                    values: REF, NEON\n"
+#else
+            "                    values: REF\n"
+#endif
             "                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
             "   --block-type: miner specific option, override block type sent by pool\n"
             "                    useful for tunning intensity; values: CPU, GPU\n"

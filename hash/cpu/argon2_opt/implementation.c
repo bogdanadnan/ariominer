@@ -8,7 +8,7 @@
 
 #include "../../argon2/defs.h"
 
-#if !defined(BUILD_REF) && (defined(__x86_64__) || defined(_WIN64))
+#if !defined(BUILD_REF) && (defined(__x86_64__) || defined(_WIN64) || defined(__NEON__))
 #include "blamka-round-opt.h"
 #else
 #include "blamka-round-ref.h"
@@ -113,6 +113,49 @@ static void fill_block(__m256i *state, const block *ref_block,
         }
     }
 }
+#elif defined(__NEON__)
+static void fill_block(uint64x2_t *state, const block *ref_block,
+                       block *next_block, int with_xor) {
+    uint64x2_t block_XY[ARGON2_OWORDS_IN_BLOCK];
+    uint64x2_t t0, t1;
+
+    unsigned int i;
+
+    if (with_xor) {
+        for (i = 0; i < ARGON2_OWORDS_IN_BLOCK; i++) {
+            state[i] = veorq_u64(state[i], vld1q_u64(ref_block->v + i*2));
+            block_XY[i] = veorq_u64(state[i], vld1q_u64(next_block->v + i*2));
+        }
+    } else {
+        for (i = 0; i < ARGON2_OWORDS_IN_BLOCK; i++) {
+            block_XY[i] = state[i] = veorq_u64(state[i], vld1q_u64(ref_block->v + i*2));
+        }
+    }
+
+    for (i = 0; i < 8; ++i) {
+        BLAKE2_ROUND(state[8 * i + 0], state[8 * i + 1], state[8 * i + 2],
+                     state[8 * i + 3], state[8 * i + 4], state[8 * i + 5],
+                     state[8 * i + 6], state[8 * i + 7]);
+    }
+
+    for (i = 0; i < 8; ++i) {
+        BLAKE2_ROUND(state[8 * 0 + i], state[8 * 1 + i], state[8 * 2 + i],
+                     state[8 * 3 + i], state[8 * 4 + i], state[8 * 5 + i],
+                     state[8 * 6 + i], state[8 * 7 + i]);
+    }
+
+    if(next_block != NULL) {
+        for (i = 0; i < ARGON2_OWORDS_IN_BLOCK; i++) {
+            state[i] = veorq_u64(state[i], block_XY[i]);
+            vst1q_u64(next_block->v + i*2, state[i]);
+        }
+    }
+    else {
+        for (i = 0; i < ARGON2_OWORDS_IN_BLOCK; i++) {
+            state[i] = veorq_u64(state[i], block_XY[i]);
+        }
+    }
+}
 #else
 static void fill_block(__m128i *state, const block *ref_block,
                        block *next_block, int with_xor) {
@@ -214,6 +257,8 @@ void *fill_memory_blocks(void *memory, int threads, argon2profile *profile, void
     __m256i state[ARGON2_HWORDS_IN_BLOCK];
 #elif defined(__x86_64__) || defined(_WIN64)
     __m128i state[ARGON2_OWORDS_IN_BLOCK];
+#elif defined(__NEON__)
+    uint64x2_t state[ARGON2_OWORDS_IN_BLOCK];
 #endif
 #else
     block state_;

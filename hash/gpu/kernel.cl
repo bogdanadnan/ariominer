@@ -266,6 +266,8 @@ __kernel void fill_blocks(__global ulong *chunk_0,
         int with_xor = curr_seg[2];
 
         for(; addr < stop_addr; addr += 3) {
+            barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
+
             if(addr[0] != -1) {
                 next_block = memory + addr[0] * BLOCK_SIZE_ULONG;
             }

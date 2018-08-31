@@ -117,16 +117,24 @@ string cpu_hasher::__detect_features_and_make_description() {
         ss << "none";
     }
     ss << endl;
-
-    ss << "Selecting " << __optimization << " as candidate for hashing algorithm." << endl;
 #endif
 #if defined(__arm__)
+    cpu_features::ArmFeatures features = cpu_features::GetArmInfo().features;
     ss << "ARM processor" << endl;
-    ss << "Optimization features: none" << endl;
+    ss << "Optimization features: ";
 
     __optimization = "REF";
-    ss << "Will use " << __optimization << " for hashing algorithm." << endl;
+
+    if(features.neon) {
+        ss << "NEON";
+        __optimization = "NEON";
+    }
+    else {
+        ss << "none";
+    }
+    ss << endl;
 #endif
+    ss << "Selecting " << __optimization << " as candidate for hashing algorithm." << endl;
 
     __available_processing_thr = thread::hardware_concurrency();
     ss << "Parallelism: " << __available_processing_thr << " concurent threads supported." << endl;
