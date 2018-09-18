@@ -90,9 +90,10 @@ add_dependencies(ariominer argon2_fill_blocks_REF)
 if(ARCH STREQUAL "x86_64")
     add_library(argon2_fill_blocks_SSE2 SHARED ${ARGON2_FILL_BLOCKS_SRC})
     add_library(argon2_fill_blocks_SSSE3 SHARED ${ARGON2_FILL_BLOCKS_SRC})
+    add_library(argon2_fill_blocks_AVX SHARED ${ARGON2_FILL_BLOCKS_SRC})
     add_library(argon2_fill_blocks_AVX2 SHARED ${ARGON2_FILL_BLOCKS_SRC})
     add_library(argon2_fill_blocks_AVX512F SHARED ${ARGON2_FILL_BLOCKS_SRC})
-    set_target_properties(argon2_fill_blocks_REF argon2_fill_blocks_SSE2 argon2_fill_blocks_SSSE3 argon2_fill_blocks_AVX2 argon2_fill_blocks_AVX512F
+    set_target_properties(argon2_fill_blocks_REF argon2_fill_blocks_SSE2 argon2_fill_blocks_SSSE3 argon2_fill_blocks_AVX argon2_fill_blocks_AVX2 argon2_fill_blocks_AVX512F
             PROPERTIES
             PREFIX ""
             SUFFIX ".opt"
@@ -100,9 +101,10 @@ if(ARCH STREQUAL "x86_64")
             )
     target_compile_options(argon2_fill_blocks_SSE2 PRIVATE -msse2 -O3)
     target_compile_options(argon2_fill_blocks_SSSE3 PRIVATE -mssse3 -O3)
+    target_compile_options(argon2_fill_blocks_AVX PRIVATE -mavx -O3)
     target_compile_options(argon2_fill_blocks_AVX2 PRIVATE -mavx2 -O3)
     target_compile_options(argon2_fill_blocks_AVX512F PRIVATE -mavx512f -O3)
-    add_dependencies(ariominer argon2_fill_blocks_SSE2 argon2_fill_blocks_SSSE3 argon2_fill_blocks_AVX2 argon2_fill_blocks_AVX512F)
+    add_dependencies(ariominer argon2_fill_blocks_SSE2 argon2_fill_blocks_SSSE3 argon2_fill_blocks_AVX argon2_fill_blocks_AVX2 argon2_fill_blocks_AVX512F)
 endif(ARCH STREQUAL "x86_64")
 
 if(ARCH STREQUAL "arm")
@@ -116,7 +118,7 @@ if(ARCH STREQUAL "arm")
     target_compile_options(argon2_fill_blocks_NEON PRIVATE -D__NEON__ -mfpu=neon -funsafe-math-optimizations -O3)
 endif(ARCH STREQUAL "arm")
 
-target_compile_options(ariominer PRIVATE -O3 -march=native)
+target_compile_options(ariominer PRIVATE -O3 -mtune=native -march=native)
 target_link_libraries(ariominer cpu_features ${OpenCL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
 #add_executable(opencl_test ${OPENCL_TEST_SRC})

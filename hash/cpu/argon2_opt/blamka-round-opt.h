@@ -26,7 +26,7 @@
 #include <tmmintrin.h> /* for _mm_shuffle_epi8 and _mm_alignr_epi8 */
 #endif
 
-#if defined(__XOP__) && (defined(__GNUC__) || defined(__clang__))
+#if (defined(__XOP__) || defined(__AVX__)) && (defined(__GNUC__) || defined(__clang__))
 #include <x86intrin.h>
 #endif
 #else
@@ -338,7 +338,7 @@ static BLAKE2_INLINE __m128i fBlaMka(__m128i x, __m128i y) {
 
 #define ror64(x, n) _mm512_ror_epi64((x), (n))
 
-static __m512i muladd(__m512i x, __m512i y)
+static BLAKE2_INLINE __m512i muladd(__m512i x, __m512i y)
 {
     __m512i z = _mm512_mul_epu32(x, y);
     return _mm512_add_epi64(_mm512_add_epi64(x, y), _mm512_add_epi64(z, z));

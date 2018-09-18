@@ -103,6 +103,10 @@ string cpu_hasher::__detect_features_and_make_description() {
             ss << "SSSE3 ";
             __optimization = "SSSE3";
         }
+        if (features.avx) {
+            ss << "AVX ";
+            __optimization = "AVX";
+        }
         if (features.avx2) {
             ss << "AVX2 ";
             __optimization = "AVX2";

@@ -189,6 +189,8 @@ arguments::arguments(int argc, char **argv) {
                         __optimization = "SSE2";
                     else if(strcmp(optarg, "SSSE3") == 0)
                         __optimization = "SSSE3";
+                    else if(strcmp(optarg, "AVX") == 0)
+                        __optimization = "AVX";
                     else if(strcmp(optarg, "AVX2") == 0)
                         __optimization = "AVX2";
                     else if(strcmp(optarg, "AVX512F") == 0)
@@ -509,7 +511,7 @@ string arguments::get_help() {
             "                    this is optional, defaults to \"\"; you can add more entries separated by comma\n"
             "   --force-cpu-optimization: miner specific option, what type of CPU optimization to use\n"
 #if defined(__x86_64__) || defined(_WIN64)
-            "                    values: REF, SSE2, SSSE3, AVX2, AVX512F\n"
+            "                    values: REF, SSE2, SSSE3, AVX, AVX2, AVX512F\n"
 #elif defined(__arm__)
             "                    values: REF, NEON\n"
 #else

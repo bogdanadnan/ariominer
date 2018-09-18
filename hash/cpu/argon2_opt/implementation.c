@@ -113,6 +113,68 @@ static void fill_block(__m256i *state, const block *ref_block,
         }
     }
 }
+#elif defined(__AVX__)
+
+#define I2D(x) _mm256_castsi256_pd(x)
+#define D2I(x) _mm256_castpd_si256(x)
+
+static void fill_block(__m128i *state, const block *ref_block,
+                       block *next_block, int with_xor) {
+    __m128i block_XY[ARGON2_OWORDS_IN_BLOCK];
+    unsigned int i;
+
+    __m256i t;
+    __m256i *s256 = (__m256i *) state, *block256 = (__m256i *) block_XY;
+
+    if (with_xor) {
+        for (i = 0; i < ARGON2_OWORDS_IN_BLOCK / 2; i++) {
+            t = D2I(_mm256_xor_pd(I2D(_mm256_loadu_si256(s256 + i)), \
+                I2D(_mm256_loadu_si256((const __m256i *)ref_block->v + i))));
+            _mm256_storeu_si256(s256 + i, t);
+            t = D2I(_mm256_xor_pd(I2D(t), \
+                I2D(_mm256_loadu_si256((const __m256i *)next_block->v + i))));
+            _mm256_storeu_si256(block256 + i, t);
+        }
+    } else {
+        for (i = 0; i < ARGON2_OWORDS_IN_BLOCK / 2; i++) {
+            t = D2I(_mm256_xor_pd(I2D(_mm256_loadu_si256(s256 + i)), \
+                I2D(_mm256_loadu_si256((const __m256i *)ref_block->v + i))));
+            _mm256_storeu_si256(s256 + i, t);
+            _mm256_storeu_si256(block256 + i, t);
+        }
+    }
+
+    for (i = 0; i < 8; ++i) {
+        BLAKE2_ROUND(state[8 * i + 0], state[8 * i + 1], state[8 * i + 2],
+            state[8 * i + 3], state[8 * i + 4], state[8 * i + 5],
+            state[8 * i + 6], state[8 * i + 7]);
+    }
+
+    for (i = 0; i < 8; ++i) {
+        BLAKE2_ROUND(state[8 * 0 + i], state[8 * 1 + i], state[8 * 2 + i],
+            state[8 * 3 + i], state[8 * 4 + i], state[8 * 5 + i],
+            state[8 * 6 + i], state[8 * 7 + i]);
+    }
+
+    if(next_block != NULL) {
+        for (i = 0; i < ARGON2_OWORDS_IN_BLOCK / 2; i++) {
+            t = D2I(_mm256_xor_pd(I2D(_mm256_loadu_si256(s256 + i)), \
+                I2D(_mm256_loadu_si256(block256 + i))));
+
+            _mm256_storeu_si256(s256 + i, t);
+            _mm256_storeu_si256((__m256i *)next_block->v + i, t);
+        }
+    }
+    else {
+        for (i = 0; i < ARGON2_OWORDS_IN_BLOCK / 2; i++) {
+            t = D2I(_mm256_xor_pd(I2D(_mm256_loadu_si256(s256 + i)), \
+                I2D(_mm256_loadu_si256(block256 + i))));
+
+            _mm256_storeu_si256(s256 + i, t);
+        }
+    }
+
+}
 #elif defined(__NEON__)
 static void fill_block(uint64x2_t *state, const block *ref_block,
                        block *next_block, int with_xor) {
