@@ -8,7 +8,7 @@ MESSAGE( STATUS "Target architecture is: " ${ARCH} )
 
 set(SOURCE
         hash/cpu/cpu_hasher.cpp hash/cpu/cpu_hasher.h
-        hash/gpu/gpu_hasher.cpp hash/gpu/gpu_hasher.h
+        hash/gpu/opencl/opencl_hasher.cpp hash/gpu/opencl/opencl_hasher.h
         hash/hasher.cpp hash/hasher.h
         http/http.cpp http/http.h
         http/client.cpp http/client.h
@@ -26,7 +26,14 @@ set(SOURCE
         hash/argon2/defs.h
         hash/argon2/argon2profile_4_4_16384.c hash/argon2/argon2profile_1_1_524288.c
         hash/argon2/blake2/blake2b.c hash/argon2/blake2/blake2.h
-        hash/gpu/opencl_kernel.cpp hash/gpu/opencl_kernel.h crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h autotune/autotune.cpp autotune/autotune.h app/runner.h)
+        hash/gpu/opencl/opencl_kernel.cpp hash/gpu/opencl/opencl_kernel.h
+        crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h
+        autotune/autotune.cpp autotune/autotune.h
+        app/runner.h
+        hash/argon2/blake2/blake2b-round.h
+        hash/argon2/blake2/blake2b-load-sse41.h
+        hash/argon2/blake2/blake2b-load-sse2.h
+        hash/argon2/blake2/blake2-config.h)
 
 set(ARGON2_FILL_BLOCKS_SRC
         hash/cpu/argon2_opt/implementation.c

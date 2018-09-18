@@ -9,7 +9,7 @@
 #include "argon2/argon2.h"
 
 #include "hasher.h"
-#include "gpu/gpu_hasher.h"
+#include "gpu/opencl/opencl_hasher.h"
 #include "cpu/cpu_hasher.h"
 
 hasher::hasher() {
@@ -84,7 +84,7 @@ void hasher::set_input(const string &public_key, const string &blk, const string
     }
 }
 
-hash_data hasher::get_input() {
+hash_data hasher::_get_input() {
     string tmp_public_key = "";
     string tmp_blk = "";
     string tmp_difficulty = "";
@@ -107,10 +107,6 @@ hash_data hasher::get_input() {
     return new_hash;
 }
 
-double hasher::get_intensity() {
-    return _intensity;
-}
-
 double hasher::get_current_hash_rate() {
     double hashrate = 0;
     __hashes_mutex.lock();
@@ -128,7 +124,7 @@ double hasher::get_avg_hash_rate_cblocks() {
             total_hashes += it->hash_count;
         }
     }
-    if(strcmp(get_argon2profile()->profile_name, "1_1_524288") == 0) {
+    if(strcmp(_get_argon2profile()->profile_name, "1_1_524288") == 0) {
         total_time += (microseconds() - __begin_round_time);
         __hashes_mutex.lock();
         total_hashes += __hash_count;
@@ -149,7 +145,7 @@ double hasher::get_avg_hash_rate_gblocks() {
             total_hashes += it->hash_count;
         }
     }
-    if(strcmp(get_argon2profile()->profile_name, "4_4_16384") == 0) {
+    if(strcmp(_get_argon2profile()->profile_name, "4_4_16384") == 0) {
         total_time += (microseconds() - __begin_round_time);
         __hashes_mutex.lock();
         total_hashes += __hash_count;
@@ -180,7 +176,6 @@ vector<hash_data> hasher::get_hashes() {
 }
 
 void hasher::_store_hash(const hash_data &hash) {
-	//    LOG(hash.hash);
 	__hashes_mutex.lock();
 	__hashes.push_back(hash);
 	__hash_count++;
@@ -235,23 +230,22 @@ vector<hasher *> hasher::get_hashers() {
 vector<hasher *> hasher::get_active_hashers() {
     vector<hasher *> filtered;
     for(vector<hasher*>::iterator it = __registered_hashers->begin();it != __registered_hashers->end();++it) {
-        if((*it)->get_intensity() != 0)
+        if((*it)->_intensity != 0)
             filtered.push_back(*it);
     }
     return filtered;
 }
 
-argon2profile *hasher::get_argon2profile() {
+argon2profile *hasher::_get_argon2profile() {
     argon2profile * profile = NULL;
     __input_mutex.lock();
     profile = __argon2profile;
     __input_mutex.unlock();
 
     return profile;
-//    return &argon2profile_4_4_16384;
 }
 
-bool hasher::should_pause() {
+bool hasher::_should_pause() {
     bool pause = false;
     __input_mutex.lock();
     pause = __pause;

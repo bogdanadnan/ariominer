@@ -13,7 +13,7 @@
 #include <CL/opencl.h>
 #endif // !__APPLE__
 
-struct kernel_arguments {
+struct opencl_kernel_arguments {
     cl_mem memory_chunk_0;
     cl_mem memory_chunk_1;
     cl_mem memory_chunk_2;
@@ -35,11 +35,10 @@ struct argon2profile_info {
     uint32_t threads_per_chunk_profile_4_4_16384;
 };
 
-struct gpu_device_info {
-    gpu_device_info(cl_int err, const string &err_msg) {
+struct opencl_device_info {
+    opencl_device_info(cl_int err, const string &err_msg) {
         error = err;
         error_message = err_msg;
-        device_lock = new mutex();
     }
 
     cl_platform_id platform;
@@ -52,7 +51,7 @@ struct gpu_device_info {
 
     int device_index;
 
-    kernel_arguments arguments;
+    opencl_kernel_arguments arguments;
     argon2profile_info profile_info;
 
     string device_string;
@@ -62,25 +61,26 @@ struct gpu_device_info {
     cl_int error;
     string error_message;
 
-    mutex *device_lock;
+    mutex device_lock;
 };
 
-class gpu_hasher : public hasher {
+class opencl_hasher : public hasher {
 public:
-    gpu_hasher();
-    ~gpu_hasher();
+    opencl_hasher();
+    ~opencl_hasher();
 
+    virtual bool initialize();
     virtual bool configure(arguments &args);
     virtual void cleanup();
 
 private:
-    gpu_device_info __get_device_info(cl_platform_id platform, cl_device_id device);
-    bool __setup_device_info(gpu_device_info &device, double intensity_cpu, double intensity_gpu);
-    vector<gpu_device_info> __query_opencl_devices(cl_int &error, string &error_message);
+    opencl_device_info *__get_device_info(cl_platform_id platform, cl_device_id device);
+    bool __setup_device_info(opencl_device_info *device, double intensity_cpu, double intensity_gpu);
+    vector<opencl_device_info*> __query_opencl_devices(cl_int &error, string &error_message);
 
-    void __run(gpu_device_info *device, int thread_id);
+    void __run(opencl_device_info *device, int thread_id);
 
-    vector<gpu_device_info> __devices;
+    vector<opencl_device_info*> __devices;
 
     bool __running;
     vector<thread*> __runners;

@@ -27,13 +27,19 @@ miner::miner(arguments &args) : __args(args), __client(args) {
     vector<hasher*> hashers = hasher::get_hashers();
     for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
         if((*it)->get_type() == "CPU") {
-            (*it)->configure(__args);
+            if((*it)->initialize()) {
+                (*it)->configure(__args);
+            }
         }
         else if((*it)->get_type() == "GPU") {
-            (*it)->configure(__args);
+            if((*it)->initialize()) {
+                (*it)->configure(__args);
+            }
         }
         else {
-            (*it)->configure(__args);
+            if((*it)->initialize()) {
+                (*it)->configure(__args);
+            }
         }
 
         LOG("Compute unit: " + (*it)->get_type());
@@ -235,7 +241,6 @@ void miner::__display_report() {
            "Finds: " << setw(3) << __found << " " <<
            "Rejected: " << setw(3) << __rejected << endl;
         for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
-            if((*it)->get_intensity() == 0) continue;
             hash_rate += (*it)->get_current_hash_rate();
             avg_hash_rate_cblocks += (*it)->get_avg_hash_rate_cblocks();
             hash_count_cblocks += (*it)->get_hash_count_cblocks();

@@ -2,7 +2,7 @@
 // Created by Haifa Bogdan Adnan on 06/08/2018.
 //
 
-#include "../../common/common.h"
+#include "../../../common/common.h"
 
 #include "opencl_kernel.h"
 

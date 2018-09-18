@@ -13,6 +13,10 @@ class argon2 {
 public:
     argon2(argon2_blocks_filler_ptr filler, void *seed_memory, void *user_data);
 
+    void initialize_seeds(const argon2profile &profile, const string &base, string salt_);
+    void fill_blocks(const argon2profile &profile);
+    vector<string> encode_hashes(const argon2profile &profile);
+    
     vector<string> generate_hashes(const argon2profile &profile, const string &base, string salt_);
 
     void set_seed_memory(uint8_t *memory);
@@ -33,7 +37,7 @@ private:
     size_t __seed_memory_offset;
     int __lane_length;
     void *__user_data;
-
+    vector<string> __salts;
 };
 
 

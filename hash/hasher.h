@@ -34,17 +34,13 @@ public:
     hasher();
     virtual ~hasher();
 
+    virtual bool initialize() = 0;
     virtual bool configure(arguments &args) = 0;
     virtual void cleanup() = 0;
 
     string get_type();
     string get_info();
     void set_input(const string &public_key, const string &blk, const string &difficulty, const string &argon2profile_string, const string &recommendation);
-
-    hash_data get_input();
-    argon2profile *get_argon2profile();
-    bool should_pause();
-    double get_intensity();
 
     double get_current_hash_rate();
     double get_avg_hash_rate_cblocks();
@@ -66,6 +62,9 @@ protected:
 	void _store_hash(const hash_data &hash);
 	void _store_hash(const vector<hash_data> &hashes);
 
+    hash_data _get_input();
+    argon2profile *_get_argon2profile();
+    bool _should_pause();
 private:
     string __make_nonce();
 

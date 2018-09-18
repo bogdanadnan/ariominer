@@ -29,7 +29,6 @@ cpu_hasher::cpu_hasher() : hasher() {
     __running = false;
     __argon2_blocks_filler_ptr = NULL;
     __dll_handle = NULL;
-    _description = __detect_features_and_make_description();
 }
 
 cpu_hasher::~cpu_hasher() {
@@ -168,7 +167,7 @@ void cpu_hasher::__run() {
     bool should_realloc = false;
 
     while(__running) {
-        if(should_pause()) {
+        if(_should_pause()) {
             this_thread::sleep_for(chrono::milliseconds(100));
             continue;
         }
@@ -187,19 +186,22 @@ void cpu_hasher::__run() {
             should_realloc = false;
         }
 
-        hash_data input = get_input();
-        argon2profile *profile = get_argon2profile();
+        hash_data input = _get_input();
+        argon2profile *profile = _get_argon2profile();
 
         if(!input.base.empty()) {
             hash_factory.set_seed_memory_offset(profile->memsize);
             hash_factory.set_threads((int)(argon2profile_default->memsize / profile->memsize));
 
             vector<string> hashes = hash_factory.generate_hashes(*profile, input.base, input.salt);
+
+            vector<hash_data> stored_hashes;
             for(vector<string>::iterator it = hashes.begin(); it != hashes.end(); ++it) {
                 input.hash = *it;
                 input.realloc_flag = &should_realloc;
-                _store_hash(input);
+                stored_hashes.push_back(input);
             }
+            _store_hash(stored_hashes);
         }
     }
 
@@ -230,6 +232,11 @@ void cpu_hasher::cleanup() {
     __runners.clear();
     if(__dll_handle != NULL)
         dlclose(__dll_handle);
+}
+
+bool cpu_hasher::initialize() {
+    _description = __detect_features_and_make_description();
+    return true;
 }
 
 REGISTER_HASHER(cpu_hasher);

@@ -10,6 +10,7 @@ public:
     cpu_hasher();
     ~cpu_hasher();
 
+    virtual bool initialize();
     virtual bool configure(arguments &args);
     virtual void cleanup();
 

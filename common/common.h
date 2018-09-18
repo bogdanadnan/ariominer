@@ -11,6 +11,7 @@
 
 #include <string>
 #include <vector>
+#include <queue>
 #include <list>
 #include <iostream>
 #include <sstream>

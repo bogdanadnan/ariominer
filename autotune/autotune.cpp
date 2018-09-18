@@ -16,13 +16,17 @@ autotune::autotune(arguments &args) : __args(args) {
 autotune::~autotune() { }
 
 void autotune::run() {
-    vector<hasher*> hashers = hasher::get_hashers();
-    for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
+    vector<hasher*> all_hashers = hasher::get_hashers();
+    vector<hasher*> hashers;
+    for(vector<hasher*>::iterator it = all_hashers.begin();it != all_hashers.end();++it) {
         if((*it)->get_type() == "GPU") {
-            (*it)->configure(__args);
-            (*it)->set_input("test_public_key", "test_blk", "test_difficulty", __args.argon2_profile(), "mine");
-            LOG("Compute unit: " + (*it)->get_type());
-            LOG((*it)->get_info());
+            if((*it)->initialize()) {
+                (*it)->configure(__args);
+                (*it)->set_input("test_public_key", "test_blk", "test_difficulty", __args.argon2_profile(), "mine");
+                LOG("Compute unit: " + (*it)->get_type());
+                LOG((*it)->get_info());
+                hashers.push_back(*it);
+            }
         }
     }
 
@@ -47,19 +51,16 @@ void autotune::run() {
         }
 
         for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
-            if((*it)->get_type() == "GPU") {
-                (*it)->cleanup();
-                (*it)->configure(__args);
-            }
+            (*it)->cleanup();
+            (*it)->initialize();
+            (*it)->configure(__args);
         }
 
         this_thread::sleep_for(chrono::milliseconds(__args.autotune_step_time() * 1000));
 
         double hashrate = 0;
         for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
-            if((*it)->get_type() == "GPU") {
-                hashrate += (*it)->get_current_hash_rate();
-            }
+            hashrate += (*it)->get_current_hash_rate();
         }
 
         if(hashrate > best_hashrate) {
@@ -71,9 +72,7 @@ void autotune::run() {
     }
 
     for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
-        if((*it)->get_type() == "GPU") {
-            (*it)->cleanup();
-        }
+        (*it)->cleanup();
     }
 
     cout << fixed << setprecision(2) << "Best intensity is " << best_intensity << ", running at " << best_hashrate << " h/s." << endl;
