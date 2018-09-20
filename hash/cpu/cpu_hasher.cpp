@@ -37,9 +37,9 @@ cpu_hasher::~cpu_hasher() {
 
 bool cpu_hasher::configure(arguments &args) {
     double intensity = args.cpu_intensity();
-    if(args.optimization() != "") {
-        _description += "Overiding detected optimization feature with " + args.optimization() + ".\n";
-        __optimization = args.optimization();
+    if(args.cpu_optimization() != "") {
+        _description += "Overiding detected optimization feature with " + args.cpu_optimization() + ".\n";
+        __optimization = args.cpu_optimization();
     }
 
     __load_argon2_block_filler();

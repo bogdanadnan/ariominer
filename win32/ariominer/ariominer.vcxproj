@@ -48,7 +48,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_NVIDIA|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>Intel C++ Compiler 18.0</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Intel|x64'" Label="Configuration">
@@ -74,6 +74,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.2.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -175,7 +176,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>OpenCL.lib;psapi.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>OpenCL.lib;cudart_static.lib;psapi.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions> /NODEFAULTLIB:libcpmt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -270,8 +271,9 @@
     <ClCompile Include="..\..\hash\cpu\cpu_features\src\stack_line_reader.c" />
     <ClCompile Include="..\..\hash\cpu\cpu_features\src\string_view.c" />
     <ClCompile Include="..\..\hash\cpu\cpu_hasher.cpp" />
-    <ClCompile Include="..\..\hash\gpu\gpu_hasher.cpp" />
-    <ClCompile Include="..\..\hash\gpu\opencl_kernel.cpp" />
+    <ClCompile Include="..\..\hash\gpu\cuda\cuda_hasher.cpp" />
+    <ClCompile Include="..\..\hash\gpu\opencl\opencl_hasher.cpp" />
+    <ClCompile Include="..\..\hash\gpu\opencl\opencl_kernel.cpp" />
     <ClCompile Include="..\..\hash\hasher.cpp" />
     <ClCompile Include="..\..\http\client.cpp" />
     <ClCompile Include="..\..\http\http.cpp" />
@@ -291,8 +293,12 @@
     <ClInclude Include="..\..\crypt\random_generator.h" />
     <ClInclude Include="..\..\crypt\sha512.h" />
     <ClInclude Include="..\..\hash\argon2\argon2.h" />
+    <ClInclude Include="..\..\hash\argon2\blake2\blake2-config.h" />
     <ClInclude Include="..\..\hash\argon2\blake2\blake2-impl.h" />
     <ClInclude Include="..\..\hash\argon2\blake2\blake2.h" />
+    <ClInclude Include="..\..\hash\argon2\blake2\blake2b-load-sse2.h" />
+    <ClInclude Include="..\..\hash\argon2\blake2\blake2b-load-sse41.h" />
+    <ClInclude Include="..\..\hash\argon2\blake2\blake2b-round.h" />
     <ClInclude Include="..\..\hash\argon2\defs.h" />
     <ClInclude Include="..\..\hash\cpu\cpu_features\include\cpuinfo_aarch64.h" />
     <ClInclude Include="..\..\hash\cpu\cpu_features\include\cpuinfo_arm.h" />
@@ -308,8 +314,9 @@
     <ClInclude Include="..\..\hash\cpu\cpu_features\include\internal\stack_line_reader.h" />
     <ClInclude Include="..\..\hash\cpu\cpu_features\include\internal\string_view.h" />
     <ClInclude Include="..\..\hash\cpu\cpu_hasher.h" />
-    <ClInclude Include="..\..\hash\gpu\gpu_hasher.h" />
-    <ClInclude Include="..\..\hash\gpu\opencl_kernel.h" />
+    <ClInclude Include="..\..\hash\gpu\cuda\cuda_hasher.h" />
+    <ClInclude Include="..\..\hash\gpu\opencl\opencl_hasher.h" />
+    <ClInclude Include="..\..\hash\gpu\opencl\opencl_kernel.h" />
     <ClInclude Include="..\..\hash\hasher.h" />
     <ClInclude Include="..\..\http\client.h" />
     <ClInclude Include="..\..\http\http.h" />
@@ -325,9 +332,21 @@
     <ClInclude Include="..\win64_compatibility_layer.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="..\..\hash\gpu\cuda\cuda_kernel.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_NVIDIA|x64'">false</ExcludedFromBuild>
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug_NVIDIA|x64'">nvcc.exe -ccbin "$(VCInstallDir)bin" -c -D_DEBUG -DWIN32 -D_CONSOLE -D_MBCS -Xcompiler /EHsc,/W3,/nologo,/Wp64,/Od,/Zi,/MTd -I"$(CUDA_INC_PATH)" -I./ -o $(ConfigurationName)\cuda_kernel.obj cuda_kernel.cu</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug_NVIDIA|x64'">$(ConfigurationName)\cuda_kernel.obj</Outputs>
+      <TargetMachinePlatform Condition="'$(Configuration)|$(Platform)'=='Debug_NVIDIA|x64'">64</TargetMachinePlatform>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug_NVIDIA|x64'">_MSC_VER=1915</Defines>
+      <NvccCompilation Condition="'$(Configuration)|$(Platform)'=='Debug_NVIDIA|x64'">compile</NvccCompilation>
+      <InterleaveSourceInPTX Condition="'$(Configuration)|$(Platform)'=='Debug_NVIDIA|x64'">false</InterleaveSourceInPTX>
+      <PtxAsOptionV Condition="'$(Configuration)|$(Platform)'=='Debug_NVIDIA|x64'">false</PtxAsOptionV>
+    </CudaCompile>
     <None Include="..\tdr_delay.reg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.2.targets" />
   </ImportGroup>
 </Project>

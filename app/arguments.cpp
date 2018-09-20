@@ -36,8 +36,9 @@ arguments::arguments(int argc, char **argv) {
             {"gpu-intensity-gblocks", required_argument, NULL, 'g'},
             {"gpu-intensity-cblocks", required_argument, NULL, 'x'},
             {"gpu-filter", required_argument, NULL, 'd'},
-            {"force-cpu-optimization", required_argument, NULL, 'o'},
-            {"update-interval", required_argument, NULL, 'u'},
+			{"force-cpu-optimization", required_argument, NULL, 'o'},
+			{"force-gpu-optimization", required_argument, NULL, 'f'},
+			{"update-interval", required_argument, NULL, 'u'},
             {"report-interval", required_argument, NULL, 'r'},
             {"block-type", required_argument, NULL, 'b'},
             {"intensity-start", required_argument, NULL, 'y'},
@@ -49,7 +50,7 @@ arguments::arguments(int argc, char **argv) {
 
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:x:d:o:u:r:b:y:z:q",
+        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:x:d:o:f:u:r:b:y:z:q",
                          options, &option_index);
 
         switch (c)
@@ -177,37 +178,54 @@ arguments::arguments(int argc, char **argv) {
                     }
                 }
                 break;
-            case 'o':
-                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
-                    __help_flag = 1;
-                }
-                else {
-                    if(strcmp(optarg, "REF") == 0)
-                        __optimization = "REF";
+			case 'o':
+				if (strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+					__help_flag = 1;
+				}
+				else {
+					if (strcmp(optarg, "REF") == 0)
+						__cpu_optimization = "REF";
 #if defined(__x86_64__) || defined(_WIN64)
-                    else if(strcmp(optarg, "SSE2") == 0)
-                        __optimization = "SSE2";
-                    else if(strcmp(optarg, "SSSE3") == 0)
-                        __optimization = "SSSE3";
-                    else if(strcmp(optarg, "AVX") == 0)
-                        __optimization = "AVX";
-                    else if(strcmp(optarg, "AVX2") == 0)
-                        __optimization = "AVX2";
-                    else if(strcmp(optarg, "AVX512F") == 0)
-                        __optimization = "AVX512F";
+					else if (strcmp(optarg, "SSE2") == 0)
+						__cpu_optimization = "SSE2";
+					else if (strcmp(optarg, "SSSE3") == 0)
+						__cpu_optimization = "SSSE3";
+					else if (strcmp(optarg, "AVX") == 0)
+						__cpu_optimization = "AVX";
+					else if (strcmp(optarg, "AVX2") == 0)
+						__cpu_optimization = "AVX2";
+					else if (strcmp(optarg, "AVX512F") == 0)
+						__cpu_optimization = "AVX512F";
 #elif defined(__arm__)
-                    else if(strcmp(optarg, "NEON") == 0)
-                        __optimization = "NEON";
+					else if (strcmp(optarg, "NEON") == 0)
+						__cpu_optimization = "NEON";
 #endif
-                    else {
-                        sprintf(buff, "%s: invalid arguments",
-                                argv[0]);
-                        __error_message = buff;
-                        __error_flag = true;
-                    }
-                }
-                break;
-            case 'u':
+					else {
+						sprintf(buff, "%s: invalid arguments",
+							argv[0]);
+						__error_message = buff;
+						__error_flag = true;
+					}
+				}
+				break;
+			case 'f':
+				if (strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+					__help_flag = 1;
+				}
+				else {
+					if (strcmp(optarg, "OPENCL") == 0)
+						__gpu_optimization = "OPENCL";
+					else if (strcmp(optarg, "CUDA") == 0)
+						__gpu_optimization = "CUDA";
+					else {
+						sprintf(buff, "%s: invalid arguments",
+							argv[0]);
+						__error_message = buff;
+						__error_flag = true;
+					}
+				}
+			break;
+			case 'u':
                 if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
                     __help_flag = 1;
                 }
@@ -434,8 +452,12 @@ vector<string> arguments::gpu_filter() {
     return __gpu_filter;
 }
 
-string arguments::optimization() {
-    return __optimization;
+string arguments::cpu_optimization() {
+	return __cpu_optimization;
+}
+
+string arguments::gpu_optimization() {
+	return __gpu_optimization;
 }
 
 int arguments::update_interval() {
@@ -509,16 +531,19 @@ string arguments::get_help() {
             "   --gpu-filter: miner specific option, filter string for device selection\n"
             "                    it will select only devices that have in description the specified string\n"
             "                    this is optional, defaults to \"\"; you can add more entries separated by comma\n"
-            "   --force-cpu-optimization: miner specific option, what type of CPU optimization to use\n"
+			"   --force-cpu-optimization: miner specific option, what type of CPU optimization to use\n"
 #if defined(__x86_64__) || defined(_WIN64)
-            "                    values: REF, SSE2, SSSE3, AVX, AVX2, AVX512F\n"
+			"                    values: REF, SSE2, SSSE3, AVX, AVX2, AVX512F\n"
 #elif defined(__arm__)
-            "                    values: REF, NEON\n"
+			"                    values: REF, NEON\n"
 #else
-            "                    values: REF\n"
+			"                    values: REF\n"
 #endif
-            "                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
-            "   --block-type: miner specific option, override block type sent by pool\n"
+			"                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
+			"   --force-gpu-optimization: what type of GPU optimization to use\n"
+			"                    values: OPENCL, CUDA\n"
+			"                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
+			"   --block-type: miner specific option, override block type sent by pool\n"
             "                    useful for tunning intensity; values: CPU, GPU\n"
             "                    don't use for regular mining, shares submitted during opposite block type will be rejected\n"
             "   --update-interval: how often should we update mining settings from pool, in seconds\n"
@@ -555,7 +580,8 @@ void arguments::__init() {
     __gpu_intensity_step = 1;
     __autotune_step_time = 20;
 
-    __optimization = "";
+    __cpu_optimization = "";
+	__gpu_optimization = "";
     __argon2profile = "";
 
     __error_flag = false;

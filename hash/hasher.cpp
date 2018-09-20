@@ -15,7 +15,9 @@
 hasher::hasher() {
     _intensity = 0;
     _type = "";
+	_subtype = "";
     _description = "";
+	_priority = 0;
 
     __public_key = "";
     __blk = "";
@@ -43,7 +45,15 @@ hasher::~hasher() {
 };
 
 string hasher::get_type() {
-    return _type;
+	return _type;
+}
+
+string hasher::get_subtype() {
+	return _subtype;
+}
+
+int hasher::get_priority() {
+	return _priority;
 }
 
 string hasher::get_info() {

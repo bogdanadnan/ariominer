@@ -64,12 +64,6 @@
     <ClCompile Include="..\..\hash\cpu\cpu_hasher.cpp">
       <Filter>hash\cpu</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hash\gpu\gpu_hasher.cpp">
-      <Filter>hash\gpu</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\hash\gpu\opencl_kernel.cpp">
-      <Filter>hash\gpu</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\hash\hasher.cpp">
       <Filter>hash</Filter>
     </ClCompile>
@@ -108,6 +102,15 @@
     </ClCompile>
     <ClCompile Include="..\..\autotune\autotune.cpp">
       <Filter>autotune</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\hash\gpu\opencl\opencl_hasher.cpp">
+      <Filter>hash\gpu\opencl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\hash\gpu\opencl\opencl_kernel.cpp">
+      <Filter>hash\gpu\opencl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\hash\gpu\cuda\cuda_hasher.cpp">
+      <Filter>hash\gpu\cuda</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -174,12 +177,6 @@
     <ClInclude Include="..\..\hash\cpu\cpu_hasher.h">
       <Filter>hash\cpu</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hash\gpu\gpu_hasher.h">
-      <Filter>hash\gpu</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\hash\gpu\opencl_kernel.h">
-      <Filter>hash\gpu</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\hash\hasher.h">
       <Filter>hash</Filter>
     </ClInclude>
@@ -227,6 +224,27 @@
     </ClInclude>
     <ClInclude Include="..\..\autotune\autotune.h">
       <Filter>autotune</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\hash\gpu\opencl\opencl_hasher.h">
+      <Filter>hash\gpu\opencl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\hash\gpu\opencl\opencl_kernel.h">
+      <Filter>hash\gpu\opencl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\hash\argon2\blake2\blake2b-load-sse2.h">
+      <Filter>hash\argon2\blake2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\hash\argon2\blake2\blake2b-load-sse41.h">
+      <Filter>hash\argon2\blake2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\hash\argon2\blake2\blake2b-round.h">
+      <Filter>hash\argon2\blake2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\hash\argon2\blake2\blake2-config.h">
+      <Filter>hash\argon2\blake2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\hash\gpu\cuda\cuda_hasher.h">
+      <Filter>hash\gpu\cuda</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -293,10 +311,21 @@
     <Filter Include="autotune">
       <UniqueIdentifier>{ec1e35f4-8819-4d00-b402-9ee889cf5429}</UniqueIdentifier>
     </Filter>
+    <Filter Include="hash\gpu\opencl">
+      <UniqueIdentifier>{7343f7bf-7c6a-4a3b-bb00-bab44b9148f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="hash\gpu\cuda">
+      <UniqueIdentifier>{2aa53cd3-80db-4a0d-b772-dfd2e6f029f3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\tdr_delay.reg">
       <Filter>resources</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\..\hash\gpu\cuda\cuda_kernel.cu">
+      <Filter>hash\gpu\cuda</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

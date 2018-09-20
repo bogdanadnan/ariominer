@@ -25,27 +25,33 @@ miner::miner(arguments &args) : __args(args), __client(args) {
     __running = false;
 
     vector<hasher*> hashers = hasher::get_hashers();
-    for(vector<hasher*>::iterator it = hashers.begin();it != hashers.end();++it) {
-        if((*it)->get_type() == "CPU") {
-            if((*it)->initialize()) {
-                (*it)->configure(__args);
-            }
-        }
-        else if((*it)->get_type() == "GPU") {
-            if((*it)->initialize()) {
-                (*it)->configure(__args);
-            }
-        }
-        else {
-            if((*it)->initialize()) {
-                (*it)->configure(__args);
-            }
-        }
+	for (vector<hasher*>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
+		if ((*it)->get_type() == "CPU") {
+			if ((*it)->initialize()) {
+				(*it)->configure(__args);
+			}
+			LOG("Compute unit: " + (*it)->get_type());
+			LOG((*it)->get_info());
+		}
+	}
 
-        LOG("Compute unit: " + (*it)->get_type());
-        LOG((*it)->get_info());
-    }
-    LOG("\n");
+	hasher *selected_gpu_hasher = NULL;
+	for (vector<hasher*>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
+		if ((*it)->get_type() == "GPU") {
+			if ((*it)->initialize()) {
+				if ((*it)->get_subtype() == args.gpu_optimization() || selected_gpu_hasher == NULL || selected_gpu_hasher->get_priority() < (*it)->get_priority()) {
+					selected_gpu_hasher = *it;
+				}
+			}
+		}
+	}
+	if (selected_gpu_hasher != NULL) {
+		selected_gpu_hasher->configure(__args);
+		LOG("Compute unit: " + selected_gpu_hasher->get_type());
+		LOG(selected_gpu_hasher->get_info());
+	}
+
+	LOG("\n");
 }
 
 miner::~miner() {

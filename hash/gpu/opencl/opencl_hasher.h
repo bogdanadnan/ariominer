@@ -2,8 +2,8 @@
 // Created by Haifa Bogdan Adnan on 03/08/2018.
 //
 
-#ifndef PROJECT_GPU_HASHER_H
-#define PROJECT_GPU_HASHER_H
+#ifndef ARIOMINER_OPENCL_HASHER_H
+#define ARIOMINER_OPENCL_HASHER_H
 
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 
@@ -86,4 +86,4 @@ private:
     vector<thread*> __runners;
 };
 
-#endif //PROJECT_GPU_HASHER_H
+#endif //ARIOMINER_OPENCL_HASHER_H

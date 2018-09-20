@@ -24,6 +24,7 @@
 #include <chrono>
 
 #include <cmath>
+#include <signal.h>
 
 #ifndef _WIN64
 #include <unistd.h>
@@ -33,7 +34,6 @@
 #include<netdb.h>
 #include<arpa/inet.h>
 #include <fcntl.h>
-#include <signal.h>
 #else
 #include <WinSock2.h>
 #include <WS2tcpip.h>

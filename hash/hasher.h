@@ -39,6 +39,8 @@ public:
     virtual void cleanup() = 0;
 
     string get_type();
+	string get_subtype();
+	int get_priority();
     string get_info();
     void set_input(const string &public_key, const string &blk, const string &difficulty, const string &argon2profile_string, const string &recommendation);
 
@@ -57,6 +59,8 @@ public:
 protected:
     double _intensity;
     string _type;
+	string _subtype;
+	int _priority;
     string _description;
 
 	void _store_hash(const hash_data &hash);

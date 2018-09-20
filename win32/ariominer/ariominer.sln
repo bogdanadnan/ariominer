@@ -10,17 +10,27 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
+		Debug-AVX|x64 = Debug-AVX|x64
 		Release|x64 = Release|x64
+		Release-AVX|x64 = Release-AVX|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{907DB311-1F34-4C68-9929-606992D97A88}.Debug|x64.ActiveCfg = Debug_NVIDIA|x64
 		{907DB311-1F34-4C68-9929-606992D97A88}.Debug|x64.Build.0 = Debug_NVIDIA|x64
+		{907DB311-1F34-4C68-9929-606992D97A88}.Debug-AVX|x64.ActiveCfg = Debug_Intel|x64
+		{907DB311-1F34-4C68-9929-606992D97A88}.Debug-AVX|x64.Build.0 = Debug_Intel|x64
 		{907DB311-1F34-4C68-9929-606992D97A88}.Release|x64.ActiveCfg = Release_Intel|x64
 		{907DB311-1F34-4C68-9929-606992D97A88}.Release|x64.Build.0 = Release_Intel|x64
+		{907DB311-1F34-4C68-9929-606992D97A88}.Release-AVX|x64.ActiveCfg = Release_NVIDIA|x64
+		{907DB311-1F34-4C68-9929-606992D97A88}.Release-AVX|x64.Build.0 = Release_NVIDIA|x64
 		{971243BA-4A01-427A-B7CD-517ED125BEAF}.Debug|x64.ActiveCfg = Debug-REF|x64
 		{971243BA-4A01-427A-B7CD-517ED125BEAF}.Debug|x64.Build.0 = Debug-REF|x64
+		{971243BA-4A01-427A-B7CD-517ED125BEAF}.Debug-AVX|x64.ActiveCfg = Debug-AVX|x64
+		{971243BA-4A01-427A-B7CD-517ED125BEAF}.Debug-AVX|x64.Build.0 = Debug-AVX|x64
 		{971243BA-4A01-427A-B7CD-517ED125BEAF}.Release|x64.ActiveCfg = Debug-AVX2|x64
 		{971243BA-4A01-427A-B7CD-517ED125BEAF}.Release|x64.Build.0 = Debug-AVX2|x64
+		{971243BA-4A01-427A-B7CD-517ED125BEAF}.Release-AVX|x64.ActiveCfg = Release-AVX|x64
+		{971243BA-4A01-427A-B7CD-517ED125BEAF}.Release-AVX|x64.Build.0 = Release-AVX|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

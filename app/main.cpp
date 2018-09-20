@@ -39,14 +39,19 @@ int main(int argc, char *argv[]) {
     }
 */
 
-    struct sigaction sigIntHandler;
+#ifdef _WIN64
+	signal(SIGINT, shutdown);
+	signal(SIGTERM, shutdown);
+	signal(SIGABRT, shutdown);
+#else
+	struct sigaction sigIntHandler;
 
     sigIntHandler.sa_handler = shutdown;
     sigemptyset(&sigIntHandler.sa_mask);
     sigIntHandler.sa_flags = 0;
 
     sigaction(SIGINT, &sigIntHandler, NULL);
-
+#endif
     arguments args(argc, argv);
 
     if(args.is_help()) {

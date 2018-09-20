@@ -35,7 +35,8 @@ public:
     int update_interval();
     int report_interval();
 
-    string optimization();
+	string cpu_optimization();
+	string gpu_optimization();
 
     string get_help();
 
@@ -72,7 +73,8 @@ private:
 
     string __argon2profile;
 
-    string __optimization;
+	string __cpu_optimization;
+	string __gpu_optimization;
 
     static string __argv_0;
 };
