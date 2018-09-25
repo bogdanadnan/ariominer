@@ -5,6 +5,8 @@
 #ifndef ARIOMINER_OPENCL_HASHER_H
 #define ARIOMINER_OPENCL_HASHER_H
 
+#if defined(WITH_OPENCL)
+
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 
 #if defined(__APPLE__) || defined(__MACOSX)
@@ -85,5 +87,7 @@ private:
     bool __running;
     vector<thread*> __runners;
 };
+
+#endif //WITH_OPENCL
 
 #endif //ARIOMINER_OPENCL_HASHER_H

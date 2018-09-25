@@ -9,8 +9,6 @@
 #include "argon2/argon2.h"
 
 #include "hasher.h"
-#include "gpu/opencl/opencl_hasher.h"
-#include "cpu/cpu_hasher.h"
 
 hasher::hasher() {
     _intensity = 0;
@@ -275,3 +273,4 @@ string hasher::__make_nonce() {
 }
 
 vector<hasher*> *hasher::__registered_hashers = NULL;
+

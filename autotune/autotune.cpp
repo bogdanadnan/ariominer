@@ -21,8 +21,12 @@ void autotune::run() {
 	for (vector<hasher*>::iterator it = all_hashers.begin(); it != all_hashers.end(); ++it) {
 		if ((*it)->get_type() == "GPU") {
 			if ((*it)->initialize()) {
-				if ((*it)->get_subtype() == __args.gpu_optimization() || selected_hasher == NULL || selected_hasher->get_priority() < (*it)->get_priority()) {
+				if (selected_hasher == NULL || selected_hasher->get_priority() < (*it)->get_priority()) {
 					selected_hasher = *it;
+				}
+				if ((*it)->get_subtype() == __args.gpu_optimization()) {
+					selected_hasher = *it;
+					break;
 				}
 			}
 		}

@@ -39,9 +39,13 @@ miner::miner(arguments &args) : __args(args), __client(args) {
 	for (vector<hasher*>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
 		if ((*it)->get_type() == "GPU") {
 			if ((*it)->initialize()) {
-				if ((*it)->get_subtype() == args.gpu_optimization() || selected_gpu_hasher == NULL || selected_gpu_hasher->get_priority() < (*it)->get_priority()) {
-					selected_gpu_hasher = *it;
-				}
+                if (selected_gpu_hasher == NULL || selected_gpu_hasher->get_priority() < (*it)->get_priority()) {
+                    selected_gpu_hasher = *it;
+                }
+                if ((*it)->get_subtype() == args.gpu_optimization()) {
+                    selected_gpu_hasher = *it;
+                    break;
+                }
 			}
 		}
 	}

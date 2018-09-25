@@ -11,6 +11,8 @@
 #include "opencl_hasher.h"
 #include "opencl_kernel.h"
 
+#if defined(WITH_OPENCL)
+
 #define KERNEL_WORKGROUP_SIZE   32
 
 opencl_device_info *opencl_hasher::__get_device_info(cl_platform_id platform, cl_device_id device) {
@@ -564,16 +566,16 @@ bool opencl_hasher::configure(arguments &args) {
     return true;
 }
 
-struct gpumgmt_thread_data {
+struct opencl_gpumgmt_thread_data {
     int thread_id;
     opencl_device_info *device;
 };
 
-void *kernel_filler(void *memory, int threads, argon2profile *profile, void *user_data) {
+void *opencl_kernel_filler(void *memory, int threads, argon2profile *profile, void *user_data) {
 	//    uint64_t start_log = microseconds();
 	//    printf("Waiting for lock: %lld\n", microseconds() - start_log);
 	//    start_log = microseconds();
-	gpumgmt_thread_data *gpumgmt_thread = (gpumgmt_thread_data *)user_data;
+	opencl_gpumgmt_thread_data *gpumgmt_thread = (opencl_gpumgmt_thread_data *)user_data;
     opencl_device_info *device = gpumgmt_thread->device;
 
     cl_int error;
@@ -654,11 +656,11 @@ void *kernel_filler(void *memory, int threads, argon2profile *profile, void *use
 void opencl_hasher::__run(opencl_device_info *device, int thread_id) {
 	void *memory = malloc(8 * ARGON2_BLOCK_SIZE * max(device->profile_info.threads_profile_1_1_524288, device->profile_info.threads_profile_4_4_16384));
 	
-	gpumgmt_thread_data thread_data;
+	opencl_gpumgmt_thread_data thread_data;
     thread_data.device = device;
     thread_data.thread_id = thread_id;
 
-    argon2 hash_factory(kernel_filler, memory, &thread_data);
+    argon2 hash_factory(opencl_kernel_filler, memory, &thread_data);
     hash_factory.set_lane_length(2);
 
     while(__running) {
@@ -765,3 +767,5 @@ bool opencl_hasher::initialize() {
 }
 
 REGISTER_HASHER(opencl_hasher);
+
+#endif // WITH_OPENCL

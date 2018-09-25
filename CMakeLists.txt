@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8)
 project (ArioMiner)
 
 include (TargetArch.cmake)
@@ -8,7 +8,6 @@ MESSAGE( STATUS "Target architecture is: " ${ARCH} )
 
 set(SOURCE
         hash/cpu/cpu_hasher.cpp hash/cpu/cpu_hasher.h
-        hash/gpu/opencl/opencl_hasher.cpp hash/gpu/opencl/opencl_hasher.h
         hash/hasher.cpp hash/hasher.h
         http/http.cpp http/http.h
         http/client.cpp http/client.h
@@ -26,7 +25,9 @@ set(SOURCE
         hash/argon2/defs.h
         hash/argon2/argon2profile_4_4_16384.c hash/argon2/argon2profile_1_1_524288.c
         hash/argon2/blake2/blake2b.c hash/argon2/blake2/blake2.h
+        hash/gpu/opencl/opencl_hasher.cpp hash/gpu/opencl/opencl_hasher.h
         hash/gpu/opencl/opencl_kernel.cpp hash/gpu/opencl/opencl_kernel.h
+        hash/gpu/cuda/cuda_hasher.cpp hash/gpu/cuda/cuda_hasher.h
         crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h
         autotune/autotune.cpp autotune/autotune.h
         app/runner.h
@@ -35,6 +36,9 @@ set(SOURCE
         hash/argon2/blake2/blake2b-load-sse2.h
         hash/argon2/blake2/blake2-config.h)
 
+set(CUDA_KERNEL
+        hash/gpu/cuda/cuda_kernel.cu)
+
 set(ARGON2_FILL_BLOCKS_SRC
         hash/cpu/argon2_opt/implementation.c
         hash/cpu/argon2_opt/blamka-round-opt.h
@@ -42,20 +46,10 @@ set(ARGON2_FILL_BLOCKS_SRC
         hash/argon2/defs.h
         hash/argon2/blake2/blake2-impl.h)
 
-set(OPENCL_TEST_SRC
-        opencl_testing/main.cpp
-        hash/argon2/argon2.cpp hash/argon2/argon2.h
-        hash/argon2/defs.h
-        hash/argon2/argon2profile_4_4_16384.c hash/argon2/argon2profile_1_1_524288.c
-        hash/argon2/blake2/blake2b.c hash/argon2/blake2/blake2.h
-        http/mongoose/mongoose.c
-        http/mongoose/mongoose.h
-        )
-
 set (CMAKE_CXX_STANDARD 11)
 set (ArioMiner_VERSION_MAJOR 0)
-set (ArioMiner_VERSION_MINOR 1)
-set (ArioMiner_VERSION_REVISION 2)
+set (ArioMiner_VERSION_MINOR 2)
+set (ArioMiner_VERSION_REVISION 0)
 
 set (CMAKE_MACOSX_RPATH 0)
 
@@ -67,15 +61,34 @@ configure_file (
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories(hash/cpu/cpu_features/include)
 
-find_package(OpenCL REQUIRED)
-include_directories(${OpenCL_INCLUDE_DIRS})
-link_directories(${OpenCL_LIBRARY})
-
 find_package (Threads)
 
 add_subdirectory(hash/cpu/cpu_features)
 
-add_executable(ariominer ${SOURCE})
+
+if(NOT WITHOUT_CUDA)
+    add_definitions(-DWITH_CUDA)
+    find_package(CUDA REQUIRED)
+    set(
+            CUDA_NVCC_FLAGS
+            ${CUDA_NVCC_FLAGS};
+#            -g -G
+            -O3
+    )
+    cuda_add_executable(ariominer ${SOURCE} ${CUDA_KERNEL})
+else()
+    add_executable(ariominer ${SOURCE})
+endif()
+
+if(NOT WITHOUT_OPENCL)
+    add_definitions(-DWITH_OPENCL)
+    find_package(OpenCL REQUIRED)
+    include_directories(${OpenCL_INCLUDE_DIR})
+    target_link_libraries(ariominer ${OpenCL_LIBRARY})
+endif()
+
+target_link_libraries(ariominer cpu_features ${CMAKE_THREAD_LIBS_INIT})
+target_compile_options(ariominer PRIVATE -O3 -mtune=native -march=native)
 
 add_library(argon2_fill_blocks_REF SHARED ${ARGON2_FILL_BLOCKS_SRC})
 set_target_properties(argon2_fill_blocks_REF
@@ -117,9 +130,3 @@ if(ARCH STREQUAL "arm")
             )
     target_compile_options(argon2_fill_blocks_NEON PRIVATE -D__NEON__ -mfpu=neon -funsafe-math-optimizations -O3)
 endif(ARCH STREQUAL "arm")
-
-target_compile_options(ariominer PRIVATE -O3 -mtune=native -march=native)
-target_link_libraries(ariominer cpu_features ${OpenCL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
-
-#add_executable(opencl_test ${OPENCL_TEST_SRC})
-#target_link_libraries(opencl_test ${OpenCL_LIBRARY})
