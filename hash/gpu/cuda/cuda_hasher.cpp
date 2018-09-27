@@ -237,12 +237,11 @@ vector<cuda_device_info *> cuda_hasher::__query_cuda_devices(cudaError_t &error,
 }
 
 void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
-	void *memory = malloc(8 * ARGON2_BLOCK_SIZE * max(device->threads_profile_1_1_524288, device->threads_profile_4_4_16384));
-
 	cuda_gpumgmt_thread_data thread_data;
 	thread_data.device = device;
 	thread_data.thread_id = thread_id;
 
+	void *memory = device->arguments.host_seed_memory[thread_id];
 	argon2 hash_factory(cuda_kernel_filler, memory, &thread_data);
 	hash_factory.set_lane_length(2);
 
@@ -289,7 +288,6 @@ void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
 		}
 //        printf("Total time: %lld\n", microseconds() - start_log);
 	}
-	free(memory);
 }
 
 REGISTER_HASHER(cuda_hasher);

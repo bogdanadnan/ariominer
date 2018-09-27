@@ -90,42 +90,125 @@ __device__ uint64_t fBlaMka(uint64_t x, uint64_t y) {
 //    c = fBlaMka(c, d);          \
 //    b = rotate(b ^ c, 1);       \
 
-#define G1(data, vec)           \
+#define COMPUTE_PTX            \
+	     ".reg .u64 d1, d2, a, b, c, d;\n\t"     \
+		 ".reg .u32 s1, s2, s3, s4;\n\t"     \
+		 "add.u64 d1, %0, %1;\n\t"     \
+		 "cvt.u32.u64 s1, %0;\n\t"     \
+		 "cvt.u32.u64 s2, %1;\n\t"     \
+		 "mul.lo.u32 s3, s1, s2;\n\t"     \
+		 "mul.hi.u32 s4, s1, s2;\n\t"     \
+		 "mov.b64 a, {s3, s4};\n\t"     \
+		 "shl.b64 d2, a, 1;\n\t"     \
+		 "add.u64 a, d1, d2;\n\t"     \
+		 "xor.b64 d1, %3, a;\n\t"     \
+		 "mov.b64 {s1, s2}, d1;\n\t"     \
+		 "mov.b64 d, {s2, s1};\n\t"     \
+		 "add.u64 d1, %2, d;\n\t"     \
+		 "cvt.u32.u64 s1, %2;\n\t"     \
+		 "mul.lo.u32 s3, s1, s2;\n\t"     \
+		 "mul.hi.u32 s4, s1, s2;\n\t"     \
+		 "mov.b64 c, {s3, s4};\n\t"     \
+		 "shl.b64 d2, c, 1;\n\t"     \
+		 "add.u64 c, d1, d2;\n\t"     \
+		 "xor.b64 d1, %1, c;\n\t"     \
+		 "mov.b64 {s3, s4}, d1;\n\t"     \
+		 "prmt.b32 s2, s3, s4, 0x6543;\n\t"     \
+		 "prmt.b32 s1, s3, s4, 0x2107;\n\t"     \
+		 "mov.b64 b, {s2, s1};\n\t"     \
+		 "add.u64 d1, a, b;\n\t"     \
+		 "cvt.u32.u64 s1, a;\n\t"     \
+		 "mul.lo.u32 s3, s1, s2;\n\t"     \
+		 "mul.hi.u32 s4, s1, s2;\n\t"     \
+		 "mov.b64 a, {s3, s4};\n\t"     \
+		 "shl.b64 d2, a, 1;\n\t"     \
+		 "add.u64 %0, d1, d2;\n\t"     \
+		 "xor.b64 d1, d, %0;\n\t"     \
+		 "mov.b64 {s3, s4}, d1;\n\t"     \
+		 "prmt.b32 s2, s3, s4, 0x5432;\n\t"     \
+		 "prmt.b32 s1, s3, s4, 0x1076;\n\t"     \
+		 "mov.b64 %3, {s2, s1};\n\t"     \
+		 "add.u64 d1, c, %3;\n\t"     \
+		 "cvt.u32.u64 s1, c;\n\t"     \
+		 "mul.lo.u32 s3, s1, s2;\n\t"     \
+		 "mul.hi.u32 s4, s1, s2;\n\t"     \
+		 "mov.b64 c, {s3, s4};\n\t"     \
+		 "shl.b64 d2, c, 1;\n\t"     \
+		 "add.u64 %2, d1, d2;\n\t"     \
+		 "xor.b64 d1, b, %2;\n\t"     \
+		 "shl.b64 a, d1, 1;\n\t"     \
+		 "shr.b64 b, d1, 63;\n\t"     \
+		 "add.u64 %1, a, b;\n\t"
+
+#define G_VEC(data, vec)           \
 {                           \
-    a = data[vec[0]]; \
     b = data[vec[1]]; \
     c = data[vec[2]]; \
     d = data[vec[3]]; \
-    a = fBlaMka(a, b);          \
-    d = rotr_32(d ^ a);      \
-    c = fBlaMka(c, d);          \
-    b = rotr_24(b ^ c);      \
-    a = fBlaMka(a, b);          \
-    d = rotr_16(d ^ a);      \
-    c = fBlaMka(c, d);          \
-    b = rotr_63(b ^ c);       \
+	asm ("{"  \
+			COMPUTE_PTX \
+		 "}" : "+l"(a), "+l"(b), "+l"(c), "+l"(d)); \
+    data[vec[0]] = a; \
     data[vec[1]] = b; \
     data[vec[2]] = c; \
     data[vec[3]] = d; \
 }
 
-#define G2(data, vec)           \
+#define G1(data)           \
 {                           \
-    b = data[vec[1]]; \
-    c = data[vec[2]]; \
-    d = data[vec[3]]; \
-    a = fBlaMka(a, b);          \
-    d = rotr_32(d ^ a);      \
-    c = fBlaMka(c, d);          \
-    b = rotr_24(b ^ c);      \
-    a = fBlaMka(a, b);          \
-    d = rotr_16(d ^ a);      \
-    c = fBlaMka(c, d);          \
-    b = rotr_63(b ^ c);       \
-    data[vec[0]] = a; \
-    data[vec[1]] = b; \
-    data[vec[2]] = c; \
-    data[vec[3]] = d; \
+    a = data[i1_0]; \
+    b = data[i1_1]; \
+    c = data[i1_2]; \
+    d = data[i1_3]; \
+	asm ("{"  \
+			COMPUTE_PTX \
+		 "}" : "+l"(a), "+l"(b), "+l"(c), "+l"(d)); \
+	data[i1_1] = b; \
+    data[i1_2] = c; \
+    data[i1_3] = d; \
+}
+
+
+#define G2(data)           \
+{ \
+    b = data[i2_1]; \
+    c = data[i2_2]; \
+    d = data[i2_3]; \
+	asm ("{"  \
+			COMPUTE_PTX \
+		 "}" : "+l"(a), "+l"(b), "+l"(c), "+l"(d)); \
+    data[i2_0] = a; \
+    data[i2_1] = b; \
+    data[i2_2] = c; \
+    data[i2_3] = d; \
+}
+
+#define G3(data)           \
+{                           \
+    a = data[i3_0]; \
+    b = data[i3_1]; \
+    c = data[i3_2]; \
+    d = data[i3_3]; \
+	asm ("{"  \
+			COMPUTE_PTX \
+		 "}" : "+l"(a), "+l"(b), "+l"(c), "+l"(d)); \
+	data[i3_1] = b; \
+    data[i3_2] = c; \
+    data[i3_3] = d; \
+}
+
+#define G4(data)           \
+{                           \
+    b = data[i4_1]; \
+    c = data[i4_2]; \
+    d = data[i4_3]; \
+	asm ("{"  \
+			COMPUTE_PTX \
+		 "}" : "+l"(a), "+l"(b), "+l"(c), "+l"(d)); \
+    data[i4_0] = a; \
+    data[i4_1] = b; \
+    data[i4_2] = c; \
+    data[i4_3] = d; \
 }
 
 #define copy_block(dst, src) for(int i=0;i<4;i++) (dst)[i] = (src)[i]
@@ -207,34 +290,34 @@ __constant__ int offsets_round_2[32][4] = {
 __constant__ int offsets_round_3[32][4] = {
 		{ 0, 32, 64, 96 },
 		{ 1, 33, 65, 97 },
-		{ 16, 48, 80, 112 },
-		{ 17, 49, 81, 113 },
 		{ 2, 34, 66, 98 },
 		{ 3, 35, 67, 99 },
-		{ 18, 50, 82, 114 },
-		{ 19, 51, 83, 115 },
 		{ 4, 36, 68, 100 },
 		{ 5, 37, 69, 101 },
-		{ 20, 52, 84, 116 },
-		{ 21, 53, 85, 117 },
 		{ 6, 38, 70, 102 },
 		{ 7, 39, 71, 103 },
-		{ 22, 54, 86, 118 },
-		{ 23, 55, 87, 119 },
 		{ 8, 40, 72, 104 },
 		{ 9, 41, 73, 105 },
-		{ 24, 56, 88, 120 },
-		{ 25, 57, 89, 121 },
 		{ 10, 42, 74, 106 },
 		{ 11, 43, 75, 107 },
-		{ 26, 58, 90, 122 },
-		{ 27, 59, 91, 123 },
 		{ 12, 44, 76, 108 },
 		{ 13, 45, 77, 109 },
-		{ 28, 60, 92, 124 },
-		{ 29, 61, 93, 125 },
 		{ 14, 46, 78, 110 },
 		{ 15, 47, 79, 111 },
+		{ 16, 48, 80, 112 },
+		{ 17, 49, 81, 113 },
+		{ 18, 50, 82, 114 },
+		{ 19, 51, 83, 115 },
+		{ 20, 52, 84, 116 },
+		{ 21, 53, 85, 117 },
+		{ 22, 54, 86, 118 },
+		{ 23, 55, 87, 119 },
+		{ 24, 56, 88, 120 },
+		{ 25, 57, 89, 121 },
+		{ 26, 58, 90, 122 },
+		{ 27, 59, 91, 123 },
+		{ 28, 60, 92, 124 },
+		{ 29, 61, 93, 125 },
 		{ 30, 62, 94, 126 },
 		{ 31, 63, 95, 127 },
 };
@@ -242,34 +325,34 @@ __constant__ int offsets_round_3[32][4] = {
 __constant__ int offsets_round_4[32][4] = {
 		{ 0, 33, 80, 113 },
 		{ 1, 48, 81, 96 },
-		{ 16, 49, 64, 97 },
-		{ 17, 32, 65, 112 },
 		{ 2, 35, 82, 115 },
 		{ 3, 50, 83, 98 },
-		{ 18, 51, 66, 99 },
-		{ 19, 34, 67, 114 },
 		{ 4, 37, 84, 117 },
 		{ 5, 52, 85, 100 },
-		{ 20, 53, 68, 101 },
-		{ 21, 36, 69, 116 },
 		{ 6, 39, 86, 119 },
 		{ 7, 54, 87, 102 },
-		{ 22, 55, 70, 103 },
-		{ 23, 38, 71, 118 },
 		{ 8, 41, 88, 121 },
 		{ 9, 56, 89, 104 },
-		{ 24, 57, 72, 105 },
-		{ 25, 40, 73, 120 },
 		{ 10, 43, 90, 123 },
 		{ 11, 58, 91, 106 },
-		{ 26, 59, 74, 107 },
-		{ 27, 42, 75, 122 },
 		{ 12, 45, 92, 125 },
 		{ 13, 60, 93, 108 },
-		{ 28, 61, 76, 109 },
-		{ 29, 44, 77, 124 },
 		{ 14, 47, 94, 127 },
 		{ 15, 62, 95, 110 },
+		{ 16, 49, 64, 97 },
+		{ 17, 32, 65, 112 },
+		{ 18, 51, 66, 99 },
+		{ 19, 34, 67, 114 },
+		{ 20, 53, 68, 101 },
+		{ 21, 36, 69, 116 },
+		{ 22, 55, 70, 103 },
+		{ 23, 38, 71, 118 },
+		{ 24, 57, 72, 105 },
+		{ 25, 40, 73, 120 },
+		{ 26, 59, 74, 107 },
+		{ 27, 42, 75, 122 },
+		{ 28, 61, 76, 109 },
+		{ 29, 44, 77, 124 },
 		{ 30, 63, 78, 111 },
 		{ 31, 46, 79, 126 },
 };
@@ -321,6 +404,57 @@ __global__ void fill_blocks(uint64_t *scratchpad,
 
 	uint64_t *local_state = state + segment * BLOCK_SIZE_ULONG;
 
+	int off = (id >> 2 << 4);
+	int i0_0 = off;
+	int i0_1 = off + 4;
+	int i0_2 = off + 8;
+	int i0_3 = off + 12;
+
+	int id0_x3 = id & 0x3;
+	int id1_x3 = (id+1) & 0x3;
+	int id2_x3 = (id+2) & 0x3;
+	int id3_x3 = (id+3) & 0x3;
+
+	int i1_0 = i0_0 + id0_x3;
+	int i1_1 = i0_1 + id0_x3;
+	int i1_2 = i0_2 + id0_x3;
+	int i1_3 = i0_3 + id0_x3;
+
+	int i2_0 = i0_0 + id0_x3;
+	int i2_1 = i0_1 + id1_x3;
+	int i2_2 = i0_2 + id2_x3;
+	int i2_3 = i0_3 + id3_x3;
+
+	int i3_0 = id;
+	int i3_1 = id + 32;
+	int i3_2 = id + 64;
+	int i3_3 = id + 96;
+
+	int i4_0 = id;
+	int i4_1 = id + ((~(id % 2)) & 1) * 33 + (id % 2) * ((id / 16) * 15 + ((~(id / 16)) & 1) * 47);
+	int i4_2 = id + (id / 16) * 48 + ((~(id / 16)) & 1) * 80;
+	int i4_3 = id + ((~(id % 2)) & 1) * ((id / 16) * 81 + ((~(id / 16)) & 1) * 113) + (id % 2) * 95;
+
+/*	int i1_0 = offsets_round_1[id][0];
+	int i1_1 = offsets_round_1[id][1];
+	int i1_2 = offsets_round_1[id][2];
+	int i1_3 = offsets_round_1[id][3];
+
+	int i2_0 = offsets_round_2[id][0];
+	int i2_1 = offsets_round_2[id][1];
+	int i2_2 = offsets_round_2[id][2];
+	int i2_3 = offsets_round_2[id][3];
+
+	int i3_0 = offsets_round_3[id][0];
+	int i3_1 = offsets_round_3[id][1];
+	int i3_2 = offsets_round_3[id][2];
+	int i3_3 = offsets_round_3[id][3];
+
+	int i4_0 = offsets_round_4[id][0];
+	int i4_1 = offsets_round_4[id][1];
+	int i4_2 = offsets_round_4[id][2];
+	int i4_3 = offsets_round_4[id][3]; */
+
 	for(int s=0; s<segments_in_lane; s++) {
 		int *curr_seg = segments  + 3 * (s * parallelism + segment);
 		int *addr = addresses + 3 * curr_seg[0];
@@ -347,13 +481,13 @@ __global__ void fill_blocks(uint64_t *scratchpad,
 				xor_block(buffer, &next_block[offset]);
 			}
 
-			G1(local_state, offsets_round_1[id]);
+			G1(local_state);
 			__syncthreads();
-			G2(local_state, offsets_round_2[id]);
+			G2(local_state);
 			__syncthreads();
-			G1(local_state, offsets_round_3[id]);
+			G3(local_state);
 			__syncthreads();
-			G2(local_state, offsets_round_4[id]);
+			G4(local_state);
 			__syncthreads();
 
 			xor_block(buffer, &local_state[offset]);
@@ -466,6 +600,17 @@ void cuda_allocate(cuda_device_info *device) {
 	device->error = cudaMalloc(&device->arguments.out_memory[1], max_threads * 8 * ARGON2_BLOCK_SIZE);
 	if(device->error != cudaSuccess) {
 		device->error_message = "Error allocating memory.";
+		return;
+	}
+
+	device->error = cudaMallocHost(&device->arguments.host_seed_memory[0], max_threads * 8 * ARGON2_BLOCK_SIZE);
+	if(device->error != cudaSuccess) {
+		device->error_message = "Error allocating pinned memory.";
+		return;
+	}
+	device->error = cudaMallocHost(&device->arguments.host_seed_memory[1], max_threads * 8 * ARGON2_BLOCK_SIZE);
+	if(device->error != cudaSuccess) {
+		device->error_message = "Error allocating pinned memory.";
 		return;
 	}
 }

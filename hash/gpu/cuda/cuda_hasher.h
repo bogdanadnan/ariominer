@@ -19,6 +19,8 @@ struct cuda_kernel_arguments {
 		seed_memory[1] = NULL;
 		out_memory[0] = NULL;
 		out_memory[1] = NULL;
+		host_seed_memory[0] = NULL;
+		host_seed_memory[1] = NULL;
 	}
 
 	size_t memory_size;
@@ -30,6 +32,7 @@ struct cuda_kernel_arguments {
 	int32_t *segments_profile_4_4_16384;
 	uint64_t *seed_memory[2];
 	uint64_t *out_memory[2];
+	uint64_t *host_seed_memory[2];
 };
 
 struct cuda_device_info {
