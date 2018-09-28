@@ -128,12 +128,11 @@ bool cuda_hasher::configure(arguments &args) {
 	__running = true;
 	for(vector<cuda_device_info *>::iterator d = __devices.begin(); d != __devices.end(); d++) {
 		if((*d)->threads_profile_1_1_524288 != 0 || (*d)->threads_profile_4_4_16384 != 0) {
-			__runners.push_back(new thread([&](cuda_device_info *device) {
-				this->__run(device, 0);
-			}, (*d)));
-			__runners.push_back(new thread([&](cuda_device_info *device) {
-				this->__run(device, 1);
-			}, (*d)));
+			for(int i=0;i<(*d)->device_threads;i++) {
+				__runners.push_back(new thread([&](cuda_device_info *device, int index) {
+					this->__run(device, index);
+				}, (*d), i));
+			}
 		}
 	}
 
@@ -189,8 +188,8 @@ cuda_device_info *cuda_hasher::__get_device_info(int device_index) {
 }
 
 bool cuda_hasher::__setup_device_info(cuda_device_info *device, double intensity_cpu, double intensity_gpu) {
-	double cblocks_mem_size = device->free_mem_size * 0.9 * intensity_cpu / 100.0;
-	double gblocks_mem_size = device->free_mem_size * 0.9 * intensity_gpu / 100.0;
+	double cblocks_mem_size = device->max_mem_size * intensity_cpu / 100.0;
+	double gblocks_mem_size = device->max_mem_size * intensity_gpu / 100.0;
 
 	device->threads_profile_1_1_524288 = floor(cblocks_mem_size / argon2profile_1_1_524288.memsize);
 	device->threads_profile_4_4_16384 = floor(gblocks_mem_size / argon2profile_4_4_16384.memsize);
@@ -198,7 +197,30 @@ bool cuda_hasher::__setup_device_info(cuda_device_info *device, double intensity
 	cblocks_mem_size = device->threads_profile_1_1_524288 * argon2profile_1_1_524288.memsize;
 	gblocks_mem_size = device->threads_profile_4_4_16384 * argon2profile_4_4_16384.memsize;
 
-	device->arguments.memory_size = max(cblocks_mem_size, gblocks_mem_size);
+	double memory_size = max(cblocks_mem_size, gblocks_mem_size);
+
+	//we should not allocate more than 2G per thread and not less than 2 threads
+	device->device_threads = ceil(memory_size / 2147483648.0);
+	if(device->device_threads < 2)
+		device->device_threads = 2;
+	device->arguments.set_threads(device->device_threads);
+	device->threads_per_stream = new cuda_threads_per_stream[device->device_threads];
+
+	int threads_per_stream_1_1_524288 = device->threads_profile_1_1_524288 / device->device_threads;
+	int threads_per_stream_4_4_16384 = device->threads_profile_4_4_16384 / device->device_threads;
+	int threads_left_1_1_524288 = device->threads_profile_1_1_524288;
+	int threads_left_4_4_16384 = device->threads_profile_4_4_16384;
+
+	for(int i=0;i<device->device_threads;i++) {
+		device->threads_per_stream[i].threads_profile_1_1_524288 = (i <= device->device_threads - 1) ? threads_per_stream_1_1_524288 : threads_left_1_1_524288;
+		device->threads_per_stream[i].threads_profile_4_4_16384 = (i <= device->device_threads - 1) ? threads_per_stream_4_4_16384 : threads_left_4_4_16384;
+
+		threads_left_1_1_524288 -= threads_per_stream_1_1_524288;
+		threads_left_4_4_16384 -= threads_per_stream_4_4_16384;
+
+		device->threads_per_stream[i].memory_size = max(device->threads_per_stream[i].threads_profile_1_1_524288 * argon2profile_1_1_524288.memsize,
+														device->threads_per_stream[i].threads_profile_4_4_16384 * argon2profile_4_4_16384.memsize);
+	}
 
 	cuda_allocate(device);
 
@@ -237,9 +259,14 @@ vector<cuda_device_info *> cuda_hasher::__query_cuda_devices(cudaError_t &error,
 }
 
 void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
+	cudaSetDevice(device->device_index);
+	cudaStream_t current_stream;
+	cudaStreamCreate(&current_stream);
+
 	cuda_gpumgmt_thread_data thread_data;
 	thread_data.device = device;
 	thread_data.thread_id = thread_id;
+	thread_data.cuda_info = &current_stream;
 
 	void *memory = device->arguments.host_seed_memory[thread_id];
 	argon2 hash_factory(cuda_kernel_filler, memory, &thread_data);
@@ -258,20 +285,20 @@ void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
 
 		if(!input.base.empty()) {
 			if(strcmp(profile->profile_name, "1_1_524288") == 0) {
-				if(device->threads_profile_1_1_524288 == 0) {
+				if(device->threads_per_stream[thread_id].threads_profile_1_1_524288 == 0) {
 					this_thread::sleep_for(chrono::milliseconds(100));
 					continue;
 				}
 				hash_factory.set_seed_memory_offset(2 * ARGON2_BLOCK_SIZE);
-				hash_factory.set_threads(device->threads_profile_1_1_524288);
+				hash_factory.set_threads(device->threads_per_stream[thread_id].threads_profile_1_1_524288);
 			}
 			else {
-				if(device->threads_profile_4_4_16384 == 0) {
+				if(device->threads_per_stream[thread_id].threads_profile_4_4_16384 == 0) {
 					this_thread::sleep_for(chrono::milliseconds(100));
 					continue;
 				}
 				hash_factory.set_seed_memory_offset(8 * ARGON2_BLOCK_SIZE);
-				hash_factory.set_threads(device->threads_profile_4_4_16384);
+				hash_factory.set_threads(device->threads_per_stream[thread_id].threads_profile_4_4_16384);
 			}
 
 			vector<string> hashes = hash_factory.generate_hashes(*profile, input.base, input.salt);

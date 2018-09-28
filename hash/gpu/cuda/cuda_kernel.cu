@@ -283,7 +283,7 @@ int offsets[512] = {
 __global__ void fill_blocks_cpu(uint64_t *scratchpad,
 							uint64_t *seed,
 							uint64_t *out,
-							int *addresses,
+							uint64_t *addresses,
 							int *offsets_,
 							int memsize) {
 	__shared__ uint64_t state[BLOCK_SIZE_ULONG];
@@ -329,44 +329,51 @@ __global__ void fill_blocks_cpu(uint64_t *scratchpad,
 	int i4_2 = offsets_[id_4 + 386];
 	int i4_3 = offsets_[id_4 + 387];
 
-	int *stop_addr = addresses + 1572858;
+	uint64_t *stop_addr = addresses + 524286;
 
 	a = seed_dst[i1_0];
 	b = seed_dst[i1_1];
 	c = seed_dst[i1_2];
 	d = seed_dst[i1_3];
 
-	for(; addresses < stop_addr; addresses += 3) {
-		__syncthreads();
+	for(; addresses < stop_addr; addresses += 32) {
+		int64_t store_addr = addresses[local_id];
+		uint64_t i_limit = stop_addr - addresses;
+		if(i_limit > 32) i_limit = 32;
 
-		int addr0 = addresses[0];
-		int addr2 = addresses[2];
+		for(int i=0;i<i_limit;i++) {
+			__syncthreads();
 
-		if(addr0 != -1) {
-			next_block = memory + addr0 * BLOCK_SIZE_ULONG;
-		}
-		ref_block = memory + addr2 * BLOCK_SIZE_ULONG;
+			uint64_t addr = __shfl_sync(0xFFFFFFFF, store_addr, i, 32);
+			int32_t addr0, addr1;
+			asm("mov.b64 {%0, %1}, %2;": "=r"(addr0), "=r"(addr1) : "l"(addr));
 
-		x = a = a ^ ref_block[i1_0];
-		y = b = b ^ ref_block[i1_1];
-		z = c = c ^ ref_block[i1_2];
-		w = d = d ^ ref_block[i1_3];
+			if (addr0 != -1) {
+				next_block = memory + addr0 * BLOCK_SIZE_ULONG;
+			}
+			ref_block = memory + addr1 * BLOCK_SIZE_ULONG;
 
-		G1(state);
-		G2(state);
-		G3(state);
-		G4(state);
+			x = a = a ^ ref_block[i1_0];
+			y = b = b ^ ref_block[i1_1];
+			z = c = c ^ ref_block[i1_2];
+			w = d = d ^ ref_block[i1_3];
 
-		a ^= x;
-		b ^= y;
-		c ^= z;
-		d ^= w;
+			G1(state);
+			G2(state);
+			G3(state);
+			G4(state);
 
-		if(addr0 != -1) {
-			next_block[i1_0] = a;
-			next_block[i1_1] = b;
-			next_block[i1_2] = c;
-			next_block[i1_3] = d;
+			a ^= x;
+			b ^= y;
+			c ^= z;
+			d ^= w;
+
+			if (addr0 != -1) {
+				next_block[i1_0] = a;
+				next_block[i1_1] = b;
+				next_block[i1_2] = c;
+				next_block[i1_3] = d;
+			}
 		}
 	}
 
@@ -376,18 +383,15 @@ __global__ void fill_blocks_cpu(uint64_t *scratchpad,
 	out_mem[i1_3] = d;
 };
 
-__global__ void fill_blocks(uint64_t *scratchpad,
-							uint64_t *out,
-							int *refs_1_1_524288,
-							int *refs_4_4_16384,
-							int *seg_1_1_524288,
-							int *seg_4_4_16384,
-							int *offsets_,
+__global__ void fill_blocks_gpu(uint64_t *scratchpad,
 							uint64_t *seed,
-							int memsize,
-							int addrsize,
-							int parallelism) {
+							uint64_t *out,
+							uint64_t *addresses,
+							int *segments,
+							int *offsets_,
+							int memsize) {
 	__shared__ uint64_t state[4 * BLOCK_SIZE_ULONG];
+
 	uint64_t a, b, c, d, x, y, z, w;
 
 	int hash = blockIdx.x;
@@ -395,21 +399,16 @@ __global__ void fill_blocks(uint64_t *scratchpad,
 
 	int id = local_id % ITEMS_PER_SEGMENT;
 	int segment = local_id / ITEMS_PER_SEGMENT;
-	int offset = id * MEMORY_CHUNK_PER_ITEM;
 
-	int *addresses = parallelism == 1 ? refs_1_1_524288 : refs_4_4_16384;
-	int *segments = parallelism == 1 ? seg_1_1_524288 : seg_4_4_16384;
-	int segments_in_lane = parallelism == 1 ? 1 : 16;
+	int offset = id << 2;
 
 	uint64_t *memory = scratchpad + hash * (memsize >> 3);
 
-	int lane_length = parallelism == 1 ? 0 : 4096;
-
-	uint64_t *out_mem = out + hash * 2 * parallelism * BLOCK_SIZE_ULONG;
-	uint64_t *mem_seed = seed + hash * 2 * parallelism * BLOCK_SIZE_ULONG;
+	uint64_t *out_mem = out + hash * 8 * BLOCK_SIZE_ULONG;
+	uint64_t *mem_seed = seed + hash * 8 * BLOCK_SIZE_ULONG;
 
 	uint64_t *seed_src = mem_seed + segment * 2 * BLOCK_SIZE_ULONG;
-	uint64_t *seed_dst = memory + segment * lane_length * BLOCK_SIZE_ULONG;
+	uint64_t *seed_dst = memory + segment * 4096 * BLOCK_SIZE_ULONG;
 	copy_block(&seed_dst[offset], &seed_src[offset]);
 	seed_src += BLOCK_SIZE_ULONG;
 	seed_dst += BLOCK_SIZE_ULONG;
@@ -442,54 +441,56 @@ __global__ void fill_blocks(uint64_t *scratchpad,
 	int i4_2 = offsets_[id_4 + 386];
 	int i4_3 = offsets_[id_4 + 387];
 
-	for(int s=0; s<segments_in_lane; s++) {
-		int *curr_seg = segments  + 3 * (s * parallelism + segment);
-		int *addr = addresses + 3 * curr_seg[0];
-		int *stop_addr = addresses + 3 * curr_seg[1];
+	for(int s=0; s<16; s++) {
+		int *curr_seg = segments  + 3 * (s * 4 + segment);
+
+		uint64_t *addr = addresses + curr_seg[0];
+		uint64_t *stop_addr = addresses + curr_seg[1];
 		int with_xor = curr_seg[2];
 
-		for(; addr < stop_addr; addr += 3) {
-			__syncthreads();
+		for(; addr < stop_addr; addr += 32) {
+			uint64_t store_addr = addr[id];
 
-			int addr0 = addr[0];
-			int addr1 = addr[1];
-			int addr2 = addr[2];
+			for (int i = 0; i < 32; i++) {
+				__syncthreads();
 
-			if(addr0 != -1) {
+				uint64_t local_addr = __shfl_sync(0xFFFFFFFF, store_addr, i, 32);
+				int16_t addr0, addr1, addr2;
+				asm(".reg .u16 addr3;"
+					"mov.b64 {%0, %1, %2, addr3}, %3;": "=h"(addr0), "=h"(addr1), "=h"(addr2) : "l"(local_addr));
+
 				next_block = memory + addr0 * BLOCK_SIZE_ULONG;
-			}
-			if(addr1 != -1) {
-				prev_block = memory + addr1 * BLOCK_SIZE_ULONG;
-				a = prev_block[i1_0];
-				b = prev_block[i1_1];
-				c = prev_block[i1_2];
-				d = prev_block[i1_3];
-			}
-			ref_block = memory + addr2 * BLOCK_SIZE_ULONG;
+				if (addr1 != -1) {
+					prev_block = memory + addr1 * BLOCK_SIZE_ULONG;
+					a = prev_block[i1_0];
+					b = prev_block[i1_1];
+					c = prev_block[i1_2];
+					d = prev_block[i1_3];
+				}
+				ref_block = memory + addr2 * BLOCK_SIZE_ULONG;
 
-			x = a = a ^ ref_block[i1_0];
-			y = b = b ^ ref_block[i1_1];
-			z = c = c ^ ref_block[i1_2];
-			w = d = d ^ ref_block[i1_3];
+				x = a = a ^ ref_block[i1_0];
+				y = b = b ^ ref_block[i1_1];
+				z = c = c ^ ref_block[i1_2];
+				w = d = d ^ ref_block[i1_3];
 
-			if(with_xor == 1) {
-				x ^= next_block[i1_0];
-				y ^= next_block[i1_1];
-				z ^= next_block[i1_2];
-				w ^= next_block[i1_3];
-			}
+				if (with_xor == 1) {
+					x ^= next_block[i1_0];
+					y ^= next_block[i1_1];
+					z ^= next_block[i1_2];
+					w ^= next_block[i1_3];
+				}
 
-			G1(local_state);
-			G2(local_state);
-			G3(local_state);
-			G4(local_state);
+				G1(local_state);
+				G2(local_state);
+				G3(local_state);
+				G4(local_state);
 
-			a ^= x;
-			b ^= y;
-			c ^= z;
-			d ^= w;
+				a ^= x;
+				b ^= y;
+				c ^= z;
+				d ^= w;
 
-			if(addr0 != -1) {
 				next_block[i1_0] = a;
 				next_block[i1_1] = b;
 				next_block[i1_2] = c;
@@ -499,26 +500,17 @@ __global__ void fill_blocks(uint64_t *scratchpad,
 	}
 
 	__syncthreads();
-	int dst_addr = (parallelism == 1) ? addrsize : (addrsize - 3);
 
-	int result_block = (parallelism == 1) ? 0 : addresses[dst_addr * 3 + 1];
+	int dst_addr = 65528;
+
+	int result_block = ((int16_t*)(&addresses[dst_addr]))[1];
 
 	next_block = memory + result_block * BLOCK_SIZE_ULONG;
-	if(parallelism == 1) {
-		copy_block(&out_mem[offset], &next_block[offset]);
-	}
-	else {
-		copy_block_small(out_mem, next_block);
-	}
+	copy_block_small(out_mem, next_block);
 
-	for(;dst_addr < addrsize; ++dst_addr) {
-		next_block = memory + addresses[dst_addr * 3 + 2] * BLOCK_SIZE_ULONG;
-		if(parallelism == 1) {
-			xor_block(&out_mem[offset], &next_block[offset]);
-		}
-		else {
-			xor_block_small(out_mem, next_block);
-		}
+	for(;dst_addr < 65531; ++dst_addr) {
+		next_block = memory + ((int16_t*)(&addresses[dst_addr]))[2] * BLOCK_SIZE_ULONG;
+		xor_block_small(out_mem, next_block);
 	}
 };
 
@@ -531,29 +523,38 @@ void cuda_allocate(cuda_device_info *device) {
 		return;
 	}
 
-	device->error = cudaMalloc(&device->arguments.memory, device->arguments.memory_size);
+	//optimise address sizes
+	uint32_t *addresses_1_1_524288 = (uint32_t *)malloc(argon2profile_1_1_524288.block_refs_size * 2 * sizeof(int32_t));
+	for(int i=0;i<argon2profile_1_1_524288.block_refs_size;i++) {
+		addresses_1_1_524288[i*2] = argon2profile_1_1_524288.block_refs[i*3];
+		addresses_1_1_524288[i*2+1] = argon2profile_1_1_524288.block_refs[i*3 + 2];
+	}
+	device->error = cudaMalloc(&device->arguments.address_profile_1_1_524288, (argon2profile_1_1_524288.block_refs_size + 2) * 2 * sizeof(int32_t));
 	if(device->error != cudaSuccess) {
 		device->error_message = "Error allocating memory.";
 		return;
 	}
-
-	device->error = cudaMalloc(&device->arguments.address_profile_1_1_524288, argon2profile_1_1_524288.block_refs_size * 3 * sizeof(int32_t));
-	if(device->error != cudaSuccess) {
-		device->error_message = "Error allocating memory.";
-		return;
-	}
-	device->error = cudaMemcpy(device->arguments.address_profile_1_1_524288, argon2profile_1_1_524288.block_refs, argon2profile_1_1_524288.block_refs_size * 3 * sizeof(int32_t), cudaMemcpyHostToDevice);
+	device->error = cudaMemcpy(device->arguments.address_profile_1_1_524288, addresses_1_1_524288, argon2profile_1_1_524288.block_refs_size * 2 * sizeof(int32_t), cudaMemcpyHostToDevice);
 	if(device->error != cudaSuccess) {
 		device->error_message = "Error copying memory.";
 		return;
 	}
+	free(addresses_1_1_524288);
 
-	device->error = cudaMalloc(&device->arguments.address_profile_4_4_16384, argon2profile_4_4_16384.block_refs_size * 3 * sizeof(int32_t));
+	//optimise address sizes
+	int16_t *addresses_4_4_16384 = (int16_t *)malloc(argon2profile_4_4_16384.block_refs_size * 4 * sizeof(int16_t));
+	for(int i=0;i<argon2profile_4_4_16384.block_refs_size;i++) {
+		addresses_4_4_16384[i*4] = argon2profile_4_4_16384.block_refs[i*3];
+		addresses_4_4_16384[i*4 + 1] = argon2profile_4_4_16384.block_refs[i*3 + 1];
+		addresses_4_4_16384[i*4 + 2] = argon2profile_4_4_16384.block_refs[i*3 + 2];
+		addresses_4_4_16384[i*4 + 3] = 0;
+	}
+	device->error = cudaMalloc(&device->arguments.address_profile_4_4_16384, argon2profile_4_4_16384.block_refs_size * 4 * sizeof(int16_t));
 	if(device->error != cudaSuccess) {
 		device->error_message = "Error allocating memory.";
 		return;
 	}
-	device->error = cudaMemcpy(device->arguments.address_profile_4_4_16384, argon2profile_4_4_16384.block_refs, argon2profile_4_4_16384.block_refs_size * 3 * sizeof(int32_t), cudaMemcpyHostToDevice);
+	device->error = cudaMemcpy(device->arguments.address_profile_4_4_16384, addresses_4_4_16384, argon2profile_4_4_16384.block_refs_size * 4 * sizeof(int16_t), cudaMemcpyHostToDevice);
 	if(device->error != cudaSuccess) {
 		device->error_message = "Error copying memory.";
 		return;
@@ -592,67 +593,93 @@ void cuda_allocate(cuda_device_info *device) {
 		return;
 	}
 
-	device->error = cudaMalloc(&device->arguments.seed_memory[0], max_threads * 8 * ARGON2_BLOCK_SIZE);
-	if(device->error != cudaSuccess) {
-		device->error_message = "Error allocating memory.";
-		return;
-	}
-	device->error = cudaMalloc(&device->arguments.seed_memory[1], max_threads * 8 * ARGON2_BLOCK_SIZE);
-	if(device->error != cudaSuccess) {
-		device->error_message = "Error allocating memory.";
-		return;
-	}
-	device->error = cudaMalloc(&device->arguments.out_memory[0], max_threads * 8 * ARGON2_BLOCK_SIZE);
-	if(device->error != cudaSuccess) {
-		device->error_message = "Error allocating memory.";
-		return;
-	}
-	device->error = cudaMalloc(&device->arguments.out_memory[1], max_threads * 8 * ARGON2_BLOCK_SIZE);
-	if(device->error != cudaSuccess) {
-		device->error_message = "Error allocating memory.";
-		return;
-	}
+	for(int i=0;i<device->device_threads;i++) {
+		device->error = cudaMalloc(&device->arguments.memory[i], device->threads_per_stream[i].memory_size);
+		if(device->error != cudaSuccess) {
+			device->error_message = "Error allocating memory.";
+			return;
+		}
 
-	device->error = cudaMallocHost(&device->arguments.host_seed_memory[0], max_threads * 8 * ARGON2_BLOCK_SIZE);
-	if(device->error != cudaSuccess) {
-		device->error_message = "Error allocating pinned memory.";
-		return;
-	}
-	device->error = cudaMallocHost(&device->arguments.host_seed_memory[1], max_threads * 8 * ARGON2_BLOCK_SIZE);
-	if(device->error != cudaSuccess) {
-		device->error_message = "Error allocating pinned memory.";
-		return;
+		size_t accessory_memory_size = max_threads * 8 * ARGON2_BLOCK_SIZE;
+		device->error = cudaMalloc(&device->arguments.seed_memory[i], accessory_memory_size);
+		if (device->error != cudaSuccess) {
+			device->error_message = "Error allocating memory.";
+			return;
+		}
+		device->error = cudaMalloc(&device->arguments.out_memory[i], accessory_memory_size);
+		if (device->error != cudaSuccess) {
+			device->error_message = "Error allocating memory.";
+			return;
+		}
+		device->error = cudaMallocHost(&device->arguments.host_seed_memory[i], accessory_memory_size);
+		if (device->error != cudaSuccess) {
+			device->error_message = "Error allocating pinned memory.";
+			return;
+		}
 	}
 }
 
 void cuda_free(cuda_device_info *device) {
 	cudaSetDevice(device->device_index);
 
-	if(device->arguments.memory != NULL)
-		cudaFree(device->arguments.memory);
-	if(device->arguments.address_profile_1_1_524288 != NULL)
+	if(device->arguments.address_profile_1_1_524288 != NULL) {
 		cudaFree(device->arguments.address_profile_1_1_524288);
-	if(device->arguments.address_profile_4_4_16384 != NULL)
-		cudaFree(device->arguments.address_profile_4_4_16384);
-	if(device->arguments.segments_profile_1_1_524288 != NULL)
-		cudaFree(device->arguments.segments_profile_1_1_524288);
-	if(device->arguments.segments_profile_4_4_16384 != NULL)
-		cudaFree(device->arguments.segments_profile_4_4_16384);
-	if(device->arguments.seed_memory[0] != NULL)
-		cudaFree(device->arguments.seed_memory[0]);
-	if(device->arguments.seed_memory[1] != NULL)
-		cudaFree(device->arguments.seed_memory[1]);
-	if(device->arguments.out_memory[0] != NULL)
-		cudaFree(device->arguments.out_memory[0]);
-	if(device->arguments.out_memory[1] != NULL)
-		cudaFree(device->arguments.out_memory[1]);
-	if(device->arguments.offsets != NULL)
-		cudaFree(device->arguments.offsets);
-	if(device->arguments.host_seed_memory[0] != NULL)
-		cudaFreeHost(device->arguments.host_seed_memory[0]);
-	if(device->arguments.host_seed_memory[1] != NULL)
-		cudaFreeHost(device->arguments.host_seed_memory[1]);
+		device->arguments.address_profile_1_1_524288 = NULL;
+	}
 
+	if(device->arguments.address_profile_4_4_16384 != NULL) {
+		cudaFree(device->arguments.address_profile_4_4_16384);
+		device->arguments.address_profile_4_4_16384 = NULL;
+	}
+
+	if(device->arguments.segments_profile_1_1_524288 != NULL) {
+		cudaFree(device->arguments.segments_profile_1_1_524288);
+		device->arguments.segments_profile_1_1_524288 = NULL;
+	}
+
+	if(device->arguments.segments_profile_4_4_16384 != NULL) {
+		cudaFree(device->arguments.segments_profile_4_4_16384);
+		device->arguments.segments_profile_4_4_16384 = NULL;
+	}
+
+	if(device->arguments.offsets != NULL) {
+		cudaFree(device->arguments.offsets);
+		device->arguments.offsets = NULL;
+	}
+
+	if(device->arguments.memory != NULL) {
+		for(int i=0;i<device->device_threads;i++) {
+			if(device->arguments.memory[i] != NULL)
+				cudaFree(device->arguments.memory[i]);
+			device->arguments.memory[i] = NULL;
+		}
+	}
+
+	if(device->arguments.seed_memory != NULL) {
+		for(int i=0;i<device->device_threads;i++) {
+			if(device->arguments.seed_memory[i] != NULL)
+				cudaFree(device->arguments.seed_memory[i]);
+			device->arguments.seed_memory[i] = NULL;
+		}
+	}
+
+	if(device->arguments.out_memory != NULL) {
+		for(int i=0;i<device->device_threads;i++) {
+			if(device->arguments.out_memory[i] != NULL)
+				cudaFree(device->arguments.out_memory[i]);
+			device->arguments.out_memory[i] = NULL;
+		}
+	}
+
+	if(device->arguments.host_seed_memory != NULL) {
+		for(int i=0;i<device->device_threads;i++) {
+			if(device->arguments.host_seed_memory[i] != NULL)
+				cudaFreeHost(device->arguments.host_seed_memory[i]);
+			device->arguments.host_seed_memory[i] = NULL;
+		}
+	}
+
+	cudaDeviceReset();
 }
 
 void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void *user_data) {
@@ -661,37 +688,32 @@ void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void
 	//    start_log = microseconds();
 	cuda_gpumgmt_thread_data *gpumgmt_thread = (cuda_gpumgmt_thread_data *)user_data;
 	cuda_device_info *device = gpumgmt_thread->device;
+	cudaStream_t *stream = (cudaStream_t *)gpumgmt_thread->cuda_info;
 
 	int mem_seed_count = profile->thr_cost;
 	size_t work_items;
 
 	uint32_t memsize;
-	uint32_t addrsize;
 	uint32_t parallelism;
 
 	if(strcmp(profile->profile_name, "1_1_524288") == 0) {
 		memsize = (uint32_t)argon2profile_1_1_524288.memsize;
-		addrsize = (uint32_t)argon2profile_1_1_524288.block_refs_size;
 		parallelism = argon2profile_1_1_524288.thr_cost;
 	}
 	else {
 		memsize = (uint32_t)argon2profile_4_4_16384.memsize;
-		addrsize = (uint32_t)argon2profile_4_4_16384.block_refs_size;
 		parallelism = argon2profile_4_4_16384.thr_cost;
 	}
 	work_items = KERNEL_WORKGROUP_SIZE * parallelism;
 
-	device->device_lock.lock();
-
-	device->error = cudaMemcpy(device->arguments.seed_memory[gpumgmt_thread->thread_id], memory, threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, cudaMemcpyHostToDevice);
+	device->error = cudaMemcpyAsync(device->arguments.seed_memory[gpumgmt_thread->thread_id], memory, threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, cudaMemcpyHostToDevice, *stream);
 	if (device->error != cudaSuccess) {
 		device->error_message = "Error writing to gpu memory.";
-		device->device_lock.unlock();
 		return NULL;
 	}
 
 	if(parallelism == 1) {
-		fill_blocks_cpu<<<threads, work_items>>>((uint64_t*)device->arguments.memory,
+		fill_blocks_cpu<<<threads, work_items, 0, *stream>>>((uint64_t*)device->arguments.memory[gpumgmt_thread->thread_id],
 				device->arguments.seed_memory[gpumgmt_thread->thread_id],
 				device->arguments.out_memory[gpumgmt_thread->thread_id],
 				device->arguments.address_profile_1_1_524288,
@@ -699,27 +721,26 @@ void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void
 				memsize);
 	}
 	else {
-		fill_blocks << < threads, work_items >> > ((uint64_t *) device->arguments.memory,
+		fill_blocks_gpu<< < threads, work_items, 0, *stream >> > ((uint64_t *) device->arguments.memory[gpumgmt_thread->thread_id],
+				device->arguments.seed_memory[gpumgmt_thread->thread_id],
 				device->arguments.out_memory[gpumgmt_thread->thread_id],
-				device->arguments.address_profile_1_1_524288,
 				device->arguments.address_profile_4_4_16384,
-				device->arguments.segments_profile_1_1_524288,
 				device->arguments.segments_profile_4_4_16384,
 				device->arguments.offsets,
-				device->arguments.seed_memory[gpumgmt_thread->thread_id],
-				memsize,
-				addrsize,
-				parallelism);
+				memsize);
 	}
 
-	device->error = cudaMemcpy(memory, device->arguments.out_memory[gpumgmt_thread->thread_id], threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, cudaMemcpyDeviceToHost);
+	device->error = cudaMemcpyAsync(memory, device->arguments.out_memory[gpumgmt_thread->thread_id], threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, cudaMemcpyDeviceToHost, *stream);
 	if (device->error != cudaSuccess) {
 		device->error_message = "Error reading gpu memory.";
-		device->device_lock.unlock();
 		return NULL;
 	}
 
-	device->device_lock.unlock();
+	device->error = cudaStreamSynchronize(*stream);
+	if (device->error != cudaSuccess) {
+		device->error_message = "Error waiting for gpu sync.";
+		return NULL;
+	}
 
 	return memory;
 }
