@@ -294,20 +294,6 @@ __global__ void fill_blocks_cpu(uint64_t *scratchpad,
 
 	int offset = local_id << 2;
 
-	uint64_t *memory = scratchpad + hash * (memsize >> 3);
-
-	uint64_t *out_mem = out + hash * 2 * BLOCK_SIZE_ULONG;
-	uint64_t *mem_seed = seed + hash * 2 * BLOCK_SIZE_ULONG;
-
-	uint64_t *seed_dst = memory;
-	copy_block(&seed_dst[offset], &mem_seed[offset]);
-	mem_seed += BLOCK_SIZE_ULONG;
-	seed_dst += BLOCK_SIZE_ULONG;
-	copy_block(&seed_dst[offset], &mem_seed[offset]);
-
-	uint64_t *next_block;
-	uint64_t *ref_block;
-
 	int id_4 = local_id << 2;
 	int i1_0 = offsets_[id_4];
 	int i1_1 = offsets_[id_4 + 1];
@@ -329,6 +315,20 @@ __global__ void fill_blocks_cpu(uint64_t *scratchpad,
 	int i4_2 = offsets_[id_4 + 386];
 	int i4_3 = offsets_[id_4 + 387];
 
+	uint64_t *memory = scratchpad + hash * (memsize >> 3);
+
+	uint64_t *out_mem = out + hash * 2 * BLOCK_SIZE_ULONG;
+	uint64_t *mem_seed = seed + hash * 2 * BLOCK_SIZE_ULONG;
+
+	uint64_t *seed_dst = memory;
+	copy_block(&seed_dst[offset], &mem_seed[offset]);
+	mem_seed += BLOCK_SIZE_ULONG;
+	seed_dst += BLOCK_SIZE_ULONG;
+	copy_block(&seed_dst[offset], &mem_seed[offset]);
+
+	uint64_t *next_block;
+	uint64_t *ref_block;
+
 	uint64_t *stop_addr = addresses + 524286;
 
 	a = seed_dst[i1_0];
@@ -342,8 +342,6 @@ __global__ void fill_blocks_cpu(uint64_t *scratchpad,
 		if(i_limit > 32) i_limit = 32;
 
 		for(int i=0;i<i_limit;i++) {
-			__syncthreads();
-
 			uint64_t addr = __shfl_sync(0xFFFFFFFF, store_addr, i, 32);
 			int32_t addr0, addr1;
 			asm("mov.b64 {%0, %1}, %2;": "=r"(addr0), "=r"(addr1) : "l"(addr));
@@ -387,7 +385,7 @@ __global__ void fill_blocks_gpu(uint64_t *scratchpad,
 							uint64_t *seed,
 							uint64_t *out,
 							uint64_t *addresses,
-							int *segments,
+							uint32_t *segments,
 							int *offsets_,
 							int memsize) {
 	__shared__ uint64_t state[4 * BLOCK_SIZE_ULONG];
@@ -401,24 +399,6 @@ __global__ void fill_blocks_gpu(uint64_t *scratchpad,
 	int segment = local_id / ITEMS_PER_SEGMENT;
 
 	int offset = id << 2;
-
-	uint64_t *memory = scratchpad + hash * (memsize >> 3);
-
-	uint64_t *out_mem = out + hash * 8 * BLOCK_SIZE_ULONG;
-	uint64_t *mem_seed = seed + hash * 8 * BLOCK_SIZE_ULONG;
-
-	uint64_t *seed_src = mem_seed + segment * 2 * BLOCK_SIZE_ULONG;
-	uint64_t *seed_dst = memory + segment * 4096 * BLOCK_SIZE_ULONG;
-	copy_block(&seed_dst[offset], &seed_src[offset]);
-	seed_src += BLOCK_SIZE_ULONG;
-	seed_dst += BLOCK_SIZE_ULONG;
-	copy_block(&seed_dst[offset], &seed_src[offset]);
-
-	uint64_t *next_block;
-	uint64_t *prev_block;
-	uint64_t *ref_block;
-
-	uint64_t *local_state = state + segment * BLOCK_SIZE_ULONG;
 
 	int id_4 = id << 2;
 	int i1_0 = offsets_[id_4];
@@ -441,23 +421,45 @@ __global__ void fill_blocks_gpu(uint64_t *scratchpad,
 	int i4_2 = offsets_[id_4 + 386];
 	int i4_3 = offsets_[id_4 + 387];
 
-	for(int s=0; s<16; s++) {
-		int *curr_seg = segments  + 3 * (s * 4 + segment);
+	uint64_t *memory = scratchpad + hash * (memsize >> 3);
 
-		uint64_t *addr = addresses + curr_seg[0];
-		uint64_t *stop_addr = addresses + curr_seg[1];
-		int with_xor = curr_seg[2];
+	uint64_t *out_mem = out + hash * 8 * BLOCK_SIZE_ULONG;
+	uint64_t *mem_seed = seed + hash * 8 * BLOCK_SIZE_ULONG;
+
+	uint64_t *seed_src = mem_seed + segment * 2 * BLOCK_SIZE_ULONG;
+	uint64_t *seed_dst = memory + segment * 4096 * BLOCK_SIZE_ULONG;
+	copy_block(&seed_dst[offset], &seed_src[offset]);
+	seed_src += BLOCK_SIZE_ULONG;
+	seed_dst += BLOCK_SIZE_ULONG;
+	copy_block(&seed_dst[offset], &seed_src[offset]);
+
+	uint64_t *next_block;
+	uint64_t *prev_block;
+	uint64_t *ref_block;
+
+	uint64_t *local_state = state + segment * BLOCK_SIZE_ULONG;
+
+	segments += (segment * 2);
+	uint16_t addr_start_idx, addr_stop_idx;//, prev_blk_idx1, prev_blk_idx2;
+
+	//without xor
+	for(int s=0; s<4; s++) {
+		uint32_t curr_seg = segments[s * 8];
+
+		asm("mov.b32 {%0, %1}, %2;"
+		: "=h"(addr_start_idx), "=h"(addr_stop_idx) : "r"(curr_seg));
+
+		uint64_t *addr = addresses + addr_start_idx;
+		uint64_t *stop_addr = addresses + addr_stop_idx;
 
 		for(; addr < stop_addr; addr += 32) {
 			uint64_t store_addr = addr[id];
 
 			for (int i = 0; i < 32; i++) {
-				__syncthreads();
-
 				uint64_t local_addr = __shfl_sync(0xFFFFFFFF, store_addr, i, 32);
 				int16_t addr0, addr1, addr2;
-				asm(".reg .u16 addr3;"
-					"mov.b64 {%0, %1, %2, addr3}, %3;": "=h"(addr0), "=h"(addr1), "=h"(addr2) : "l"(local_addr));
+				asm("{.reg .u16 addr3;"
+					"mov.b64 {%0, %1, %2, addr3}, %3;}": "=h"(addr0), "=h"(addr1), "=h"(addr2) : "l"(local_addr));
 
 				next_block = memory + addr0 * BLOCK_SIZE_ULONG;
 				if (addr1 != -1) {
@@ -467,6 +469,7 @@ __global__ void fill_blocks_gpu(uint64_t *scratchpad,
 					c = prev_block[i1_2];
 					d = prev_block[i1_3];
 				}
+
 				ref_block = memory + addr2 * BLOCK_SIZE_ULONG;
 
 				x = a = a ^ ref_block[i1_0];
@@ -474,12 +477,63 @@ __global__ void fill_blocks_gpu(uint64_t *scratchpad,
 				z = c = c ^ ref_block[i1_2];
 				w = d = d ^ ref_block[i1_3];
 
-				if (with_xor == 1) {
-					x ^= next_block[i1_0];
-					y ^= next_block[i1_1];
-					z ^= next_block[i1_2];
-					w ^= next_block[i1_3];
+				G1(local_state);
+				G2(local_state);
+				G3(local_state);
+				G4(local_state);
+
+				a ^= x;
+				b ^= y;
+				c ^= z;
+				d ^= w;
+
+				next_block[i1_0] = a;
+				next_block[i1_1] = b;
+				next_block[i1_2] = c;
+				next_block[i1_3] = d;
+			}
+		}
+	}
+
+	// with xor
+	for(int s=4; s<16; s++) {
+		uint32_t curr_seg = segments[s * 8];
+
+		asm("mov.b32 {%0, %1}, %2;"
+		: "=h"(addr_start_idx), "=h"(addr_stop_idx) : "r"(curr_seg));
+
+		uint64_t *addr = addresses + addr_start_idx;
+		uint64_t *stop_addr = addresses + addr_stop_idx;
+
+		for(; addr < stop_addr; addr += 32) {
+			uint64_t store_addr = addr[id];
+
+			for (int i = 0; i < 32; i++) {
+				uint64_t local_addr = __shfl_sync(0xFFFFFFFF, store_addr, i, 32);
+				int16_t addr0, addr1, addr2;
+				asm("{.reg .u16 addr3;"
+					"mov.b64 {%0, %1, %2, addr3}, %3;}": "=h"(addr0), "=h"(addr1), "=h"(addr2) : "l"(local_addr));
+
+				next_block = memory + addr0 * BLOCK_SIZE_ULONG;
+				if (addr1 != -1) {
+					prev_block = memory + addr1 * BLOCK_SIZE_ULONG;
+					a = prev_block[i1_0];
+					b = prev_block[i1_1];
+					c = prev_block[i1_2];
+					d = prev_block[i1_3];
 				}
+
+				ref_block = memory + addr2 * BLOCK_SIZE_ULONG;
+
+				x = a = a ^ ref_block[i1_0];
+				y = b = b ^ ref_block[i1_1];
+				z = c = c ^ ref_block[i1_2];
+				w = d = d ^ ref_block[i1_3];
+
+				x ^= next_block[i1_0];
+				y ^= next_block[i1_1];
+				z ^= next_block[i1_2];
+				w ^= next_block[i1_3];
 
 				G1(local_state);
 				G2(local_state);
@@ -559,28 +613,30 @@ void cuda_allocate(cuda_device_info *device) {
 		device->error_message = "Error copying memory.";
 		return;
 	}
+	free(addresses_4_4_16384);
 
-	device->error = cudaMalloc(&device->arguments.segments_profile_1_1_524288, 3 * sizeof(int32_t));
+	//reorganize segments data
+	uint16_t *segments_4_4_16384 = (uint16_t *)malloc(64 * 4 * sizeof(uint16_t));
+	for(int i=0;i<64;i++) {
+		int seg_start = argon2profile_4_4_16384.segments[i*3];
+		segments_4_4_16384[i*4] = seg_start;
+		segments_4_4_16384[i*4 + 1] = argon2profile_4_4_16384.segments[i*3 + 1];
+		int first_blk_idx = argon2profile_4_4_16384.block_refs[seg_start*3 + 1];
+		segments_4_4_16384[i*4 + 2] = first_blk_idx;
+		int second_blk_idx = argon2profile_4_4_16384.block_refs[seg_start*3 + 4];
+		segments_4_4_16384[i*4 + 3] = second_blk_idx;
+	}
+	device->error = cudaMalloc(&device->arguments.segments_profile_4_4_16384, 64 * 4 * sizeof(uint16_t));
 	if(device->error != cudaSuccess) {
 		device->error_message = "Error allocating memory.";
 		return;
 	}
-	device->error = cudaMemcpy(device->arguments.segments_profile_1_1_524288, argon2profile_1_1_524288.segments, 3 * sizeof(int32_t), cudaMemcpyHostToDevice);
+	device->error = cudaMemcpy(device->arguments.segments_profile_4_4_16384, segments_4_4_16384, 64 * 4 * sizeof(uint16_t), cudaMemcpyHostToDevice);
 	if(device->error != cudaSuccess) {
 		device->error_message = "Error copying memory.";
 		return;
 	}
-
-	device->error = cudaMalloc(&device->arguments.segments_profile_4_4_16384, 64 * 3 * sizeof(int32_t));
-	if(device->error != cudaSuccess) {
-		device->error_message = "Error allocating memory.";
-		return;
-	}
-	device->error = cudaMemcpy(device->arguments.segments_profile_4_4_16384, argon2profile_4_4_16384.segments, 64 * 3 * sizeof(int32_t), cudaMemcpyHostToDevice);
-	if(device->error != cudaSuccess) {
-		device->error_message = "Error copying memory.";
-		return;
-	}
+	free(segments_4_4_16384);
 
 	device->error = cudaMalloc(&device->arguments.offsets, 512 * sizeof(int));
 	if(device->error != cudaSuccess) {
@@ -630,11 +686,6 @@ void cuda_free(cuda_device_info *device) {
 	if(device->arguments.address_profile_4_4_16384 != NULL) {
 		cudaFree(device->arguments.address_profile_4_4_16384);
 		device->arguments.address_profile_4_4_16384 = NULL;
-	}
-
-	if(device->arguments.segments_profile_1_1_524288 != NULL) {
-		cudaFree(device->arguments.segments_profile_1_1_524288);
-		device->arguments.segments_profile_1_1_524288 = NULL;
 	}
 
 	if(device->arguments.segments_profile_4_4_16384 != NULL) {

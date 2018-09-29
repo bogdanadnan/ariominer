@@ -11,7 +11,6 @@ struct cuda_kernel_arguments {
 	cuda_kernel_arguments() {
 		address_profile_1_1_524288 = NULL;
 		address_profile_4_4_16384 = NULL;
-		segments_profile_1_1_524288 = NULL;
 		segments_profile_4_4_16384 = NULL;
 		offsets = NULL;
 
@@ -51,8 +50,7 @@ struct cuda_kernel_arguments {
 
 	uint64_t *address_profile_1_1_524288;
 	uint64_t *address_profile_4_4_16384;
-	int32_t *segments_profile_1_1_524288;
-	int32_t *segments_profile_4_4_16384;
+	uint32_t *segments_profile_4_4_16384;
 	int *offsets;
 
 	void **memory;
