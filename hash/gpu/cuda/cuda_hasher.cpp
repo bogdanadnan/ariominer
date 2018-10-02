@@ -106,9 +106,15 @@ bool cuda_hasher::configure(arguments &args) {
 		else
 			device_intensity_gpu = args.gpu_intensity_gblocks()[(*d)->device_index];
 
+		int host_threads = 0;
+		if(args.gpu_threads().size() == 1 || (*d)->device_index >= args.gpu_threads().size())
+			host_threads = args.gpu_threads()[0];
+		else
+			host_threads = args.gpu_threads()[(*d)->device_index];
+
 		_description += ss.str();
 
-		if(!(__setup_device_info((*d), device_intensity_cpu, device_intensity_gpu))) {
+		if(!(__setup_device_info((*d), device_intensity_cpu, device_intensity_gpu, host_threads))) {
 			_description += (*d)->error_message;
 			_description += "\n";
 			continue;
@@ -187,7 +193,7 @@ cuda_device_info *cuda_hasher::__get_device_info(int device_index) {
     return device_info;
 }
 
-bool cuda_hasher::__setup_device_info(cuda_device_info *device, double intensity_cpu, double intensity_gpu) {
+bool cuda_hasher::__setup_device_info(cuda_device_info *device, double intensity_cpu, double intensity_gpu, int threads) {
 	double cblocks_mem_size = device->max_mem_size * intensity_cpu / 100.0;
 	double gblocks_mem_size = device->max_mem_size * intensity_gpu / 100.0;
 
@@ -197,12 +203,9 @@ bool cuda_hasher::__setup_device_info(cuda_device_info *device, double intensity
 	cblocks_mem_size = device->threads_profile_1_1_524288 * argon2profile_1_1_524288.memsize;
 	gblocks_mem_size = device->threads_profile_4_4_16384 * argon2profile_4_4_16384.memsize;
 
-	double memory_size = max(cblocks_mem_size, gblocks_mem_size);
-
-	//we should not allocate more than 2G per thread and not less than 2 threads
-	device->device_threads = ceil(memory_size / 2147483648.0);
-	if(device->device_threads < 2)
-		device->device_threads = 2;
+	device->device_threads = threads;
+	if(device->device_threads < 1)
+		device->device_threads = 1;
 	device->arguments.set_threads(device->device_threads);
 	device->threads_per_stream = new cuda_threads_per_stream[device->device_threads];
 
@@ -260,6 +263,7 @@ vector<cuda_device_info *> cuda_hasher::__query_cuda_devices(cudaError_t &error,
 
 void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
 	cudaSetDevice(device->device_index);
+
 	cudaStream_t current_stream;
 	cudaStreamCreate(&current_stream);
 

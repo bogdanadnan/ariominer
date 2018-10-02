@@ -49,7 +49,7 @@ struct cuda_kernel_arguments {
 	}
 
 	uint64_t *address_profile_1_1_524288;
-	uint64_t *address_profile_4_4_16384;
+	uint32_t *address_profile_4_4_16384;
 	uint32_t *segments_profile_4_4_16384;
 	int *offsets;
 
@@ -120,7 +120,7 @@ public:
 
 private:
     cuda_device_info *__get_device_info(int device_index);
-    bool __setup_device_info(cuda_device_info *device, double intensity_cpu, double intensity_gpu);
+    bool __setup_device_info(cuda_device_info *device, double intensity_cpu, double intensity_gpu, int threads);
     vector<cuda_device_info*> __query_cuda_devices(cudaError_t &error, string &error_message);
 
     void __run(cuda_device_info *device, int thread_id);

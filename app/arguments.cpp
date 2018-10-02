@@ -36,6 +36,7 @@ arguments::arguments(int argc, char **argv) {
             {"gpu-intensity-gblocks", required_argument, NULL, 'g'},
             {"gpu-intensity-cblocks", required_argument, NULL, 'x'},
             {"gpu-filter", required_argument, NULL, 'd'},
+            {"gpu-threads", required_argument, NULL, 't'},
 			{"force-cpu-optimization", required_argument, NULL, 'o'},
 			{"force-gpu-optimization", required_argument, NULL, 'f'},
 			{"update-interval", required_argument, NULL, 'u'},
@@ -44,13 +45,13 @@ arguments::arguments(int argc, char **argv) {
             {"intensity-start", required_argument, NULL, 'y'},
             {"intensity-stop", required_argument, NULL, 'z'},
             {"intensity-step", required_argument, NULL, 'q'},
-            {"autotune-step-time", required_argument, NULL, 't'},
+            {"autotune-step-time", required_argument, NULL, 's'},
             {0, 0, 0, 0}
         };
 
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:x:d:o:f:u:r:b:y:z:q",
+        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:x:d:o:f:u:r:b:y:z:q:t:s:",
                          options, &option_index);
 
         switch (c)
@@ -149,6 +150,17 @@ arguments::arguments(int argc, char **argv) {
                     vector<string> cblocks_intensity = __parse_multiarg(optarg);
                     for(vector<string>::iterator it = cblocks_intensity.begin(); it != cblocks_intensity.end(); it++) {
                         __gpu_intensity_cblocks.push_back(atof(it->c_str()));
+                    }
+                }
+                break;
+            case 't':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    vector<string> threads = __parse_multiarg(optarg);
+                    for(vector<string>::iterator it = threads.begin(); it != threads.end(); it++) {
+                        __gpu_threads.push_back(atoi(it->c_str()));
                     }
                 }
                 break;
@@ -265,7 +277,7 @@ arguments::arguments(int argc, char **argv) {
                     __gpu_intensity_step = atof(optarg);
                 }
                 break;
-            case 't':
+            case 's':
                 if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
                     __help_flag = 1;
                 }
@@ -286,14 +298,20 @@ arguments::arguments(int argc, char **argv) {
 		if (__gpu_intensity_cblocks.size() == 0)
 			__gpu_intensity_cblocks.push_back(100);
 
-		if (__gpu_intensity_gblocks.size() == 0)
-			__gpu_intensity_gblocks.push_back(100);
+        if (__gpu_intensity_gblocks.size() == 0)
+            __gpu_intensity_gblocks.push_back(100);
+
+        if (__gpu_threads.size() == 0)
+            __gpu_threads.push_back(4);
 	}
 	else if (__autotune_flag) {
 		__gpu_intensity_cblocks.clear();
 		__gpu_intensity_cblocks.push_back(__gpu_intensity_start);
 		__gpu_intensity_gblocks.clear();
 		__gpu_intensity_gblocks.push_back(__gpu_intensity_start);
+
+        if (__gpu_threads.size() == 0)
+            __gpu_threads.push_back(4);
 	}
 
 	if (optind < argc)
@@ -452,6 +470,10 @@ vector<string> arguments::gpu_filter() {
     return __gpu_filter;
 }
 
+vector<int> arguments::gpu_threads() {
+    return __gpu_threads;
+}
+
 string arguments::cpu_optimization() {
 	return __cpu_optimization;
 }
@@ -527,6 +549,9 @@ string arguments::get_help() {
             "   --gpu-intensity-gblocks: miner specific option, mining intensity on GPU\n"
             "                    value from 0 (disabled) to 100 (full load)\n"
             "                    this is optional, defaults to 100 (*)\n"
+            "                    you can add more entries separated by comma for each GPU\n"
+            "   --gpu-threads: miner specific option, how many host threads per GPU\n"
+            "                    this is optional, defaults to 4 (*)\n"
             "                    you can add more entries separated by comma for each GPU\n"
             "   --gpu-filter: miner specific option, filter string for device selection\n"
             "                    it will select only devices that have in description the specified string\n"
@@ -621,3 +646,4 @@ vector<string> arguments::__parse_multiarg(const string &arg) {
 
     return tokens;
 }
+

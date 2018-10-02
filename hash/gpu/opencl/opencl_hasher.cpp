@@ -469,7 +469,7 @@ opencl_hasher::opencl_hasher() {
 }
 
 opencl_hasher::~opencl_hasher() {
-    this->cleanup();
+//    this->cleanup();
 }
 
 bool opencl_hasher::configure(arguments &args) {

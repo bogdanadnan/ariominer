@@ -24,6 +24,7 @@ public:
     vector<double> &gpu_intensity_cblocks();
     vector<double> &gpu_intensity_gblocks();
     vector<string> gpu_filter();
+    vector<int> gpu_threads();
     int proxy_port();
     string argon2_profile();
 
@@ -61,7 +62,8 @@ private:
     double __cpu_intensity;
     vector<double> __gpu_intensity_cblocks;
     vector<double> __gpu_intensity_gblocks;
-    vector<string> __gpu_filter;
+	vector<string> __gpu_filter;
+	vector<int> __gpu_threads;
     int __proxy_port;
     int __update_interval;
     int __report_interval;
