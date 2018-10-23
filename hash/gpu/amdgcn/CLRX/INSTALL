@@ -1,0 +1,147 @@
+-----------------------------------------------------------------------
+                               CLRadeonExtender
+-----------------------------------------------------------------------
+
+1. Installation prerequisities.
+
+CLRadeonExtender doesn't require many libraries and dependencies.
+It can be installed on the 32-bit/64-bit machines.
+Currently, the OpenCL support for AMD Catalyst (for the OpenCL applications)
+is disabled by default (enablement is not recommended in current development
+stage).
+
+This package provides source code and requires:
+
+* C++11 compliant compiler (Clang++ or GCC 4.7 or later, MSVC 2015 or later)
+* any build system supported by CMake (GNU make, NMake, Visual Studio, ...)
+* CMake system (2.8 or later)
+* Threads support (for Linux, recommended NPTL)
+* Unix-like (Linux or BSD) system or Windows system
+
+Optionally for clwrapper (an OpenCL wrapper that replaces AMD Catalyst driver
+behaviour) requires:
+
+* libOpenCL.so or OpenCL.dll
+* OpenCL ICD (for example from AMD Catalyst driver)
+* AMD Catalyst driver or AMDGPU-PRO driver
+
+and documentation requires:
+
+* pod2man utility for Unix manuals
+* markdown_py utility for CLRX Documentation
+* Doxygen for CLRX API Documentation
+
+These utilities is working with the OpenCL kernel binaries compiled for the
+Radeon GPU's based on GCN 1.0/1.1/1.2 architecture. Any binaries compiled
+for older Radeons (VLIW architecture) has not been handled.
+
+2. Compilation
+
+To build system you should create the build directory in source code package:
+
+  mkdir build
+
+and run:
+
+  cmake .. [cmake options]
+
+Optional CMake configuration options for build:
+
+CMAKE_BUILD_TYPE - type of build (Release, Debug, GCCSan, GCCSSP).
+CMAKE_INSTALL_PREFIX - prefix for installation (for example '/usr/local')
+BUILD_32BIT - build 32-bit binaries (works only in the Unix/Linux 64-bit environment)
+BUILD_TESTS - build all tests
+BUILD_SAMPLES - build OpenCL samples
+BUILD_DOCUMENTATION - build project documentation (doxygen, unix manuals, user doc)
+BUILD_DOXYGEN - build doxygen documentation
+BUILD_MANUAL - build Unix manual pages
+BUILD_CLRXDOC - build CLRX user documentation
+BUILD_STATIC_EXE - build with statically linked executables
+GCC5CXX11NEWABI - build with new GCC5 C++11 ABI (required if GCC uses old ABI by default)
+NO_STATIC - no static libraries
+NO_CLWRAPPER - do not build CLRXWrapper
+CPU_ARCH - target CPU architecture (in GCC parameter to -march, for MSVC
+  parameter to /arch:)
+OPENCL_DIST_DIR - an OpenCL directory distribution installation (optional)
+
+You can just add one or many of these options to cmake command:
+
+  cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON
+
+or for Microsoft Visual C++ (for NMake):
+
+  cmake .. -G "NMake Makefiles" [cmake configuration options]
+
+or for Microsoft Visual C++ (for same Visual Studio)
+
+  cmake .. -G "Visual Studio XXXXXX [arch]" [cmake configuration options]
+
+where XXXX - version of Visual Studio (7, 14 2015, ...).
+arch - architecture (Win64, ARM) (optional).
+
+After creating Makefiles scripts you can compile project:
+
+  make or make -jX - where X is number of processors.
+
+or (for NMake)
+
+  nmake
+
+or just execute build option in Visual Studio.
+
+After building you can check whether project is working (if you will build tests):
+
+  ctest
+
+2.1. Windows and MSVC
+
+CLRadeonExtender has been compiled under Windows 8.1 and Microsoft Visual Studio 2015
+Community version.
+
+2.2. FreeBSD
+
+Due to unknown reasons, the compilation under clang++ will be failed. We recommend to use
+gcc compiler to build the CLRadeonExtender. You should prepend cmake command by `CXX=g++`:
+`CXX=g++ cmake .. ....`.
+
+3. Installation
+
+Installation is easy. Just run command:
+
+  make install
+
+or (for NMake)
+
+  nmake install
+  
+4. clwrapper
+
+CLWrapper integrates the CLRX assembler with the AMD Catalyst driver by using
+wrapper mechanism and embeds an assembler to AMD OpenCL implementation.
+Building an assembler programs will be possible by passing an '-xasm' option which
+should be appended to build options, like following example:
+
+clBuildProgram(program, num_devices, devices, "-xasm", NULL, NULL);
+
+Installation is easy. However, it requires some changes on an OpenCL configuration:
+
+Remove amdocl64.icd and/or amdocl32.icd (if 32-bit system)
+from directory '/etc/OpenCL/vendors'
+(before, we recommend to make backup that directory).
+Create the 'clrx.icd' file on /etc/OpenCL/vendors/ with content: 'libCLRXWrapper.so'.
+That's all. Now you can call an assembler through clBuildProgram on your applications.
+
+Important Attention: CLWrapper make some changes on the program environment and changes
+behaviour of the OpenCL routines. This is still the experimental stuff and
+we recommend to not using its on the deployed/production systems.
+
+DO NOT FORGET to revert these changes before uninstallation.
+
+5. Uninstallation
+
+In the build directory is the 'install_manifest.txt' file that contains all installed files.
+You can remove these files by using command:
+
+  rm -f `cat install_manifest.txt`
+
+DO NOT FORGET to keep 'build' directory after installation.

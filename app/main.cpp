@@ -21,24 +21,6 @@ void shutdown(int s){
 int main(int argc, char *argv[]) {
     srand((uint32_t)time(NULL));
 
-/*
-    void *mem = malloc(ARGON2_BLOCK_SIZE * 2);
-    argon2 *hasher = new argon2(NULL, mem, NULL);
-    int counter = 0;
-    uint64_t start = microseconds();
-    while(true) {
-        hasher->initialize_seeds(*argon2profile_default, "test test test test test test", "");
-        hasher->encode_hashes(*argon2profile_default);
-        counter++;
-        uint64_t timestamp = microseconds();
-        if(timestamp - start > 2000000) {
-            cout << counter / ((timestamp - start) / 1000000) << endl;
-            counter = 0;
-            start = timestamp;
-        }
-    }
-*/
-
 #ifdef _WIN64
 	signal(SIGINT, shutdown);
 	signal(SIGTERM, shutdown);

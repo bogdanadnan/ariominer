@@ -1,0 +1,268 @@
+/*
+ *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
+ *  Copyright (C) 2014-2018 Mateusz Szpakowski
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+/*! \file Config.h
+ * \brief Configuration header
+ */
+
+#ifndef __CLRX_CONFIG_H__
+#define __CLRX_CONFIG_H__
+
+/// CLRadeonExtender version
+#define CLRX_VERSION "${CLRX_VERSION}"
+
+/// CLRadeonExtender major version
+#define CLRX_MAJOR_VERSION ${CLRX_MAJOR_VERSION}
+/// CLRadeonExtender minor version
+#define CLRX_MINOR_VERSION ${CLRX_MINOR_VERSION}
+/// CLRadeonExtender micro version
+#define CLRX_MICRO_VERSION ${CLRX_MICRO_VERSION}
+/// CLRadeonExtender revision string
+#define CLRX_REVISION "${CLRX_REVISION}"
+/// CLRadeonExtender version number
+#define CLRX_VERSION_NUMBER (CLRX_MAJOR_VERSION*10000U + CLRX_MINOR_VERSION*100U + \
+                        CLRX_MICRO_VERSION)
+
+#cmakedefine HAVE_GNU11
+
+#cmakedefine HAVE_ELF_H
+
+#cmakedefine HAVE_INT128
+
+#cmakedefine HAVE_CALL_ONCE
+
+#cmakedefine HAVE_OPENGL
+
+/* architecture setup */
+
+#if defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) || \
+        defined(_M_IX86) || defined(__i386) || defined(_X86_)
+#  define HAVE_ARCH_INTEL 1
+#  define HAVE_ARCH_X86 1
+#  define HAVE_32BIT 1
+#endif
+
+#if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || \
+        defined(_M_X64) || defined(_M_AMD64)
+#  define HAVE_ARCH_INTEL 1
+#  define HAVE_ARCH_X86_64 1
+#  define HAVE_64BIT 1
+#endif
+
+#if defined(__powerpc__) || defined(__powerpc) || defined(_M_PPC) || \
+    defined(__POWERPC__) || defined(__ppc)
+#  define HAVE_ARCH_POWERPC 1
+#  if defined(__powerpc64__) || defined(__ppc64__) || _M_PPC>=620 || defined(__arch64__)
+#    define HAVE_ARCH_POWERPC64 1
+#    define HAVE_64BIT 1
+#  else
+#    define HAVE_ARCH_POWERPC32 1
+#    define HAVE_32BIT 1
+#  endif
+#endif
+
+#if defined(__arm__) || defined(__thumb__) || defined(_M_ARM) || defined(_M_ARMT)
+#  define HAVE_ARCH_ARM 1
+#  if defined(__aarch64__)
+#    define HAVE_ARCH_ARM64 1
+#    define HAVE_64BIT 1
+#  else
+#    define HAVE_ARCH_ARM32 1
+#    define HAVE_32BIT 1
+#  endif
+#endif
+
+#if !defined(HAVE_ARCH_ARM) && defined(__aarch64__)
+#  define HAVE_ARCH_ARM 1
+#  define HAVE_ARCH_ARM64 1
+#  define HAVE_64BIT 1
+#endif
+
+#if defined(__sparc__) || defined(__sparc)
+#  define HAVE_ARCH_SPARC 1
+#  if defined(__sparc_v9__) || defined(__sparcv9)
+#    define HAVE_ARCH_SPARC64 1
+#    define HAVE_64BIT 1
+#  else
+#    define HAVE_ARCH_SPARC32 1
+#    define HAVE_32BIT 1
+#  endif
+#endif
+
+/* endianness */
+#if defined(__BIG_ENDIAN__) || defined(__ARMEB__) || defined(__THUMBEB__) || \
+    defined(__AARCH64EB__) || defined(_MIPSEB)  || defined(__MIPSEB__) || \
+    defined(__MIPSEB)
+#  define HAVE_BIG_ENDIAN 1
+#else
+#  define HAVE_LITTLE_ENDIAN 1
+#endif
+
+/* machine bits */
+#if !defined(HAVE_32BIT) && !defined(HAVE_64BIT)
+#  ifdef _WIN64
+#    define HAVE_64BIT 1
+#  else
+#    ifdef _WIN32
+#      define HAVE_32BIT 1
+#    endif
+#  endif
+#endif
+
+#if !defined(HAVE_32BIT) && !defined(HAVE_64BIT)
+#  if defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__==8
+#    define HAVE_64BIT 1
+#  else
+#    define HAVE_32BIT 1
+#  endif
+#endif
+
+/* operating system */
+
+#ifdef __GNU__
+#  define HAVE_GNU 1
+#endif
+
+#if defined(__linux__) || defined(linux)
+#  define HAVE_LINUX 1
+#endif
+
+#if defined(_WIN32) || defined(_WIN64) || defined(__WINDOWS__) || defined(__WIN32__)
+#  define HAVE_WINDOWS 1
+#endif
+
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || \
+        defined(__bsdi__) || defined(__DragonFly__)
+#  define HAVE_BSD 1
+#endif
+
+#if defined(__MINGW32__) || defined(__MINGW64__)
+#  define HAVE_MINGW 1
+#endif
+
+/* config setup */
+
+#ifndef HAVE_WINDOWS
+/// system configuration path
+#  define SYSTEM_CONFIG_PATH "/etc"
+
+#  ifdef HAVE_32BIT
+/// default AMDOCL name
+#    define DEFAULT_AMDOCLNAME "libamdocl32.so"
+#  else
+/// default AMDOCL name
+#    define DEFAULT_AMDOCLNAME "libamdocl64.so"
+#  endif
+
+/// native directory separator character
+#  define CLRX_NATIVE_DIR_SEP '/'
+/// native directory separator string
+#  define CLRX_NATIVE_DIR_SEP_S "/"
+
+/// alternative directory separator character
+#  define CLRX_ALT_DIR_SEP '\\'
+/// alternative directory separator string
+#  define CLRX_ALT_DIR_SEP_S "\\"
+
+#else
+/// system configuration path
+#  define SYSTEM_CONFIG_PATH "c:\\etc"
+
+#  ifdef HAVE_32BIT
+/// default AMDOCL name
+#  define DEFAULT_AMDOCLNAME "amdocl.dll"
+#  else
+/// default AMDOCL name
+#  define DEFAULT_AMDOCLNAME "amdocl64.dll"
+#  endif
+
+/// native directory separator character
+#  define CLRX_NATIVE_DIR_SEP '\\'
+/// native directory separator string
+#  define CLRX_NATIVE_DIR_SEP_S "\\"
+
+/// alternative directory separator character
+#  define CLRX_ALT_DIR_SEP '/'
+/// alternative directory separator string
+#  define CLRX_ALT_DIR_SEP_S "/"
+
+#  ifndef HAVE_MINGW
+#    define strcasecmp(A,B) _stricmp(A,B)
+#    define strncasecmp(A,B,N) _strnicmp(A,B,N)
+#    if defined(_MSC_VER) && _MSC_VER<1900
+#      define snprintf(B,N,F,...) _snprintf(B,N,F,__VA_ARGS__)
+#    endif
+#  endif
+#endif
+
+/* symbols visibility */
+
+#if __GNUC__ >= 4 && !defined(__CYGWIN__) && !defined(HAVE_MINGW)
+#  define CLRX_INTERNAL __attribute__((visibility("hidden")))
+#else
+#  define CLRX_INTERNAL
+#endif
+
+/* types and defs */
+
+/// signed character (signed byte)
+typedef signed char cxchar;
+/// unsigned character (unsigned byte)
+typedef unsigned char cxuchar;
+/// unsigned byte
+typedef unsigned char cxbyte;
+/// signed short
+typedef signed short cxshort;
+/// unsigned short
+typedef unsigned short cxushort;
+/// signed int
+typedef signed int cxint;
+/// unsigned int
+typedef unsigned int cxuint;
+/// signed long
+typedef signed long cxlong;
+/// unsigned long
+typedef unsigned long cxulong;
+/// signed long long
+typedef signed long long cxllong;
+/// unsigned long long
+typedef unsigned long long cxullong;
+#ifdef _MSC_VER
+#  ifdef HAVE_64BIT
+typedef signed long long ssize_t;
+#    define SSIZE_MIN (-9223372036854775808LL)
+#    define SSIZE_MAX (9223372036854775807LL)
+#  else
+typedef signed long ssize_t;
+#    define SSIZE_MIN (-2147483648LL)
+#    define SSIZE_MAX (2147483647LL)
+#  endif
+#  define NOMINMAX
+#endif
+
+#if __cplusplus < 201103L || (__GNUC__ == 4 && __GNUC_MINOR__ < 8) || defined(HAVE_MINGW)
+#  ifndef __STDC_LIMIT_MACROS
+#    define __STDC_LIMIT_MACROS 1
+#  endif
+#  ifndef __STDC_FORMAT_MACROS
+#    define __STDC_FORMAT_MACROS 1
+#  endif
+#endif
+
+#endif

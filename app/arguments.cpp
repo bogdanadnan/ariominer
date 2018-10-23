@@ -227,8 +227,10 @@ arguments::arguments(int argc, char **argv) {
 				else {
 					if (strcmp(optarg, "OPENCL") == 0)
 						__gpu_optimization = "OPENCL";
-					else if (strcmp(optarg, "CUDA") == 0)
-						__gpu_optimization = "CUDA";
+                    else if (strcmp(optarg, "CUDA") == 0)
+                        __gpu_optimization = "CUDA";
+                    else if (strcmp(optarg, "AMDGCN") == 0)
+                        __gpu_optimization = "AMDGCN";
 					else {
 						sprintf(buff, "%s: invalid arguments",
 							argv[0]);
@@ -566,7 +568,7 @@ string arguments::get_help() {
 #endif
 			"                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
 			"   --force-gpu-optimization: what type of GPU optimization to use\n"
-			"                    values: OPENCL, CUDA\n"
+			"                    values: OPENCL, CUDA, AMDGCN\n"
 			"                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
 			"   --block-type: miner specific option, override block type sent by pool\n"
             "                    useful for tunning intensity; values: CPU, GPU\n"

@@ -51,7 +51,7 @@ miner::miner(arguments &args) : __args(args), __client(args) {
 	}
 	if (selected_gpu_hasher != NULL) {
 		selected_gpu_hasher->configure(__args);
-		LOG("Compute unit: " + selected_gpu_hasher->get_type());
+		LOG("Compute unit: " + selected_gpu_hasher->get_type() + " - " + selected_gpu_hasher->get_subtype());
 		LOG(selected_gpu_hasher->get_info());
 	}
 

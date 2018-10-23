@@ -24,7 +24,6 @@ struct opencl_kernel_arguments {
     cl_mem memory_chunk_5;
     cl_mem address_profile_1_1_524288;
     cl_mem address_profile_4_4_16384;
-    cl_mem segments_profile_1_1_524288;
     cl_mem segments_profile_4_4_16384;
     cl_mem seed_memory[2];
     cl_mem out_memory[2];
@@ -49,7 +48,8 @@ struct opencl_device_info {
     cl_command_queue queue;
 
     cl_program program;
-    cl_kernel kernel;
+	cl_kernel kernel_cblocks;
+	cl_kernel kernel_gblocks;
 
     int device_index;
 

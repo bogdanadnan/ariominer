@@ -1,0 +1,216 @@
+
+Change Log
+
+CLRadeonExtender 0.1.8:
+
+* add chapter about binary formats to CLRX documentation
+* add some informations about compilation under FreeBSD
+* add '.nosectdiffs' to disable new section difference behaviour if new ROCm format choosen
+* small optimization in the AsmScope destructor.
+* add extra info about setting up number of the SGPRs register in documentation
+* fixed OpenCL detection for AMDGPU-PRO
+* add '.enum' pseudo-op to simplify defining enumerations
+* add CLRX_VERSION_NUMBER and CLRX_POLICY_UNIFIED_SGPR_COUNT
+* add policy to unify SGPR counting for all binary formats (by default disabled)
+* in documentation fix some some mistakes about building
+* add preliminary support for CPU architectures (untested): SPARC, IA64 and MIPS
+* add new '.dims' syntax for distinguish vector group ids and scalar local ids
+* improve CLZ32/64 for MSVC
+* introduce CTZ32/64
+* while disassemblying determine minimal AMD driver version for GPU device type
+  (better code detection while disassemblying)
+* fixed some types in documentation
+* update list of GPU devices in documentation
+* fix stupid and old bug in ImageMix sample
+* change a GPU device name for VEGA11 to GFX902
+* fixed segfault when attempt to disassemble old Gallium binaries using new Gallium binary format
+* sort the kernels by an offset order by disassemblying
+* better input data checking while disassemblying code
+* add HSALayout mode for AMDCL2 format (similar code layout like in ROCm and Gallium formats)
+* introduce kernel code parts ('.kcode' and '.kcodeend') to AMDCL2
+* check sanity of use LDS in AMD VEGA architecture (can be used only in SCRATCH and GLOBAL)
+* in source code add new types: GPUArchMask, AsmKernelId and AsmSectionId type.
+* allow constant literals in sym regranges
+* fixed symreg ranges checking
+* fixed handling some the symbol names similar to some register names (like exec_masc)
+* add new GPU devices to list (gfx904, gfx905, gfx906 and gfx907)
+* add AMD VEGA 20 instruction set
+* add much stuff to handle register allocation (still it doesn't work and it wasnot finished)
+* add a DTree structure to save memory in storing register allocation structures
+* fixed possible segfault while preparing to write when ASMKERN_INNER is present
+
+CLRadeonExtender 0.1.7:
+
+* update AmdCL2ABI chapter
+* fixed kernel arguments sizes in GalliumCompute binary format
+* add new GPU devices gfx902-gfx905
+* update device tables for Amd Crimson drivers
+* small fixes in DynLibrary interface
+* add relocations to GalliumCompute binary format (for scratch buffer symbols)
+* make getXXXDisasmInputFromBinaryXX as public interface
+* speeding up evaluation of simple expressions without symbols
+* add '.for' and '.while' pseudo-ops ('for' and 'while' loops)
+* fixed some grammar/typos in CLRX documentation
+* add GPU device names from ROCm-OpenCL
+* handle new ROCm binary format with YAML metadatas (assembler and disassembler)
+* add few pseudo-ops to ROCm handling
+* add new pseudo-ops to set parameters in ROCm YAML metadata
+* fixes in GalliumCompute binary generator (for conformant with standards)
+* add '.reqd_work_group_size' pseudo-op (equivalent of '.cws')
+* add support for work_group_size_hint and vec_type hint in Amd OpenCL 2.0 binary format
+* some small bug fixes in ROCm disassembler
+* updates in README.md and INSTALL files
+* small sanitizations in DisasmAmd, DisasmAmdCL2 (argument type checking)
+* change behaviour of '.cws' (.reqd_work_group_size) while setting default values
+* add calculation of section differences in an expressions (for ROCm handling)
+* fixed invalid reads (potential segfault) after undefining symbol
+* fixed old stupid bug: resolve symbol value by using new value (or just if undefined then
+  do not resolve symbol) instead old unresolved symbol value later when expression
+  has been evaluated
+* Add GOT table handling in ROCm binary format
+* add new option '--newROCmBinFormat'
+* add untested support for ROCm in CLHelper and VectorAdd sample
+* add support for multiple OpenCL platforms in CLHelper and samples
+* allow te call_convetion to 0xffffffff in AMDHSA config
+* handle special cases with relatives while evaluating binary/logical operators
+* small fixes in CLRX documentation and Unix manuals
+* developing unfinished AsmRegAlloc
+* add a missing access qualifier to images 'read_write' for AMD OpenCL 2.0
+
+CLRadeonExtender 0.1.6:
+
+* add support for Mesa3D 17.3.0 (GPU detection)
+* fixed segfaults during disassemblying new Gallium binaries with AMD HSA
+* add ability to supply defined symbols during using the CLHelper
+* fixed CLRXDocs mistakes in GcnSrmdInstrs, GcmSmemInstrs, GcnVopXInstrs chapters.
+* add GCN1.4 (VEGA) instruction's descriptons to CLRXDocs
+* add support for GCN 1.4 (VEGA) to samples
+* fixed encoding/decoding of SMEM instructions with SGPR offset (GCN 1.4)
+* add a missing GCN 1.4 instructions
+* fixed encoding/decoding of OP_SEL (GCN 1.4)
+* fixed encoding/decoding of DS_READ_ADDTID_B32 (GCN 1.4)
+* fixed encoding/decoding of TBUFFER_x_D16/BUFFER_x_D16 instructions for GCN 1.4
+* fixed encoding CLAMP VOP3/VOPC instructions (GCN 1.4)
+* allow to use OMOD, NEG, ABS, CLAMP modifiers in VOP3/VINTRP instructions
+* add new VOP3/VINTRP instruction's descriptions to CLRXDocs
+* update GCN timings chapter in CLRXDocs
+
+CLRadeonExtender 0.1.5r1:
+
+* add detection of OpenGL to CMakeLists.txt
+* add more comments in the source code
+* fixed hanging when ROCm code have hundreds or more kernels
+* parameter in modifier can have any value
+* add 'get_version' pseudo-operation
+* add oldModParam mode (old modifier parameter's policy)
+* fixes for ROCm disassembler module
+* fixes for Gallium binary reader (accept new binaries with many kernels)
+* added support for Mesa3D 17.2.x
+* added Mesa3D/Gallium device names for AMD Polaris
+* add new exceptions to code (to distinguish type of exception)
+* fixed position in disassembler code in comments (mainly for Gallium/ROCm)
+* add CLRXCLHelper library to facilitate running assembler code on the OpenCL
+* move some GPU architecture versions tables to GPUId
+* add new testcase GPUId
+
+CLRadeonExtender 0.1.5:
+
+* ignore case in an access qualifier name's (Amd and AmdCL2)
+* improve handling a '\()' and '\@'
+* add SDWA and DPP words to set instruction encoding
+* fixing few CLRXDocs typos
+* fixes for AMD RX VEGA (GFX900)
+* disassembler prints an instruction's position in comments
+* update GcnTimings
+* update VectorAdd and ReverseBits for LLVM 4.0 and Mesa3D 17.0.0
+* updates in ImageMix (correct workSize calculating for kernel)
+* small fixes in disassembler
+* disassembler can correctly disassemble GalliumCompute for LLVM 4.0
+* add '--llvmVersion' to clrxdisasm
+* dump AMD HSA configuration for GalliumCompute and AmdCL2 (like in ROCm format)
+* disassembler add '@' to hwreg and sendmsg to make dump compatible with clrxasm
+* add '--HSAConfig' to dump AmdCL2 kernel configuration as AMD HSA config
+* add AMD HSA configuration pseudo-ops to GalliumCompute and AmdCL2 binary formats
+* update device list for Gallium and ROCm binary formats for recognizing device
+* fixed support for LLVM>=3.9 and Mesa3D>=17.0.0 in GalliumCompute
+* add pseudo-op '.default_hsa_features' to AmdCL2, Gallium and ROCm formats
+* update headers in code
+* make error handling more compact in assembler's code
+* fixed '.machine', '.codeversion' handling (do not print obsolete warnings)
+* add pkg-config files to installation
+* remove obsolete warnings in CMakeLists.txt
+* added GFX901 support (RX VEGA with HBCC ?)
+* add Config.h and amdbin/Elf.h headers to Doxygen documentation
+* change lowest device for GCN 1.2 to Iceland in GPUId.
+* add support for Windows developments environments: CygWin and MinGW
+* make detecting of 64-bits more portable in CMakeLists.txt (use compiler to do)
+* checking whether std::call_once is available for non full supported std threads
+* use only C++ compiler to check features (Int128Detect.cpp)
+
+CLRadeonExtender 0.1.4r1:
+
+* fixed code operation in SMRD and SMEM instructions
+* fixed parsing symbol register ranges begins from 'exec', 'vcc', 'tma', ...
+* checking end of line at parsing symbol and regvar register ranges
+
+CLRadeonExtender 0.1.4:
+
+* add AMD RX VEGA support (GCN 1.4/VEGA)
+* add symbol scopes
+* add support for 32-bit AMD OpenCL 2.0 binaries
+* update GPU device ids to latest drivers
+* add Ellesmere and Baffin support for AMD OpenCL 1.2 binaries
+* add support for LLVM 3.9, LLVM 4.0 and Mesa3D 17.0
+* add new options to clrxasm (--llvmVersion)
+* add GCN 1.2 instruction set documentation
+* add new SMEM instruction (s_buffer_atomics)
+* add GDS segment size to AMD OpenCL 2.0 binaries
+* add code of samples for GCN 1.2
+* add option to use old AMD OpenCL 1.2 binary format into samples
+* add editor's syntax (NotePad++, Kate, Gedit, VIM)
+* minor fixes in GCN assembler
+* add modifier's parametrization
+* add options to control case-sensitiviness in macro names
+* fixed handling AMDOCL names for 32-bit Windows environment
+* add installation rules for AMDGPU-PRO drivers (OpenSUSE and Ubuntu)
+* add new pseudo-ops '.get_64bit', '.get_arch', '.get_format', '.get_gpu'
+* add autodetection for LLVM and Mesa3D version
+* find correct AMDOCL, MesaOCL and llvm-config at runtime
+
+CLRadeonExtender 0.1.3:
+
+* ROCm binary format support
+* fixed '.format' pseudo-op
+* fixed resolving variables in some specific cases
+* fixed handling AmdCL2 format for device type later than GCN.1.1
+* small fixes in documentation
+* fixed disassemblying s_waitcnt
+* fixed handling floating point literals in assembler and compatibility mode (bugFP)
+* ARMv8 (AArch64) architecture support
+* Android support
+
+CLRadeonExtender 0.1.2:
+
+* AMD OpenCL 2.0 support
+* 64-bit Gallium binary format support
+* support for new closed Linux and Windows drivers
+* new samples
+* documentation for OpenCL 2.0 support (includes ABI)
+* documentation for GCN ISA FLAT encoding
+* lit() specifier to distinguish literal and inline constant
+* alternate macro syntax
+* correct counting registers for automatic configuration
+* fixed handling of conditionals and macro pseudo-ops
+* disassembler can dump configuration in user-friendly form
+
+CLRadeonExtender 0.1.1:
+
+* support for Windows
+* register ranges, and symbol's of register ranges
+* GCN ISA documentation
+* fixed AMD Catalyst and Gallium compute binary generator
+* fixed clrxasm
+
+CLRadeonExtender 0.1:
+
+* first published version

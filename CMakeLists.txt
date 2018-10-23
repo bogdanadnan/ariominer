@@ -27,6 +27,8 @@ set(SOURCE
         hash/argon2/blake2/blake2b.c hash/argon2/blake2/blake2.h
         hash/gpu/opencl/opencl_hasher.cpp hash/gpu/opencl/opencl_hasher.h
         hash/gpu/opencl/opencl_kernel.cpp hash/gpu/opencl/opencl_kernel.h
+        hash/gpu/amdgcn/amdgcn_hasher.cpp hash/gpu/amdgcn/amdgcn_hasher.h
+        hash/gpu/amdgcn/amdgcn_kernel.cpp hash/gpu/amdgcn/amdgcn_kernel.h
         hash/gpu/cuda/cuda_hasher.cpp hash/gpu/cuda/cuda_hasher.h
         crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h
         autotune/autotune.cpp autotune/autotune.h
@@ -34,7 +36,8 @@ set(SOURCE
         hash/argon2/blake2/blake2b-round.h
         hash/argon2/blake2/blake2b-load-sse41.h
         hash/argon2/blake2/blake2b-load-sse2.h
-        hash/argon2/blake2/blake2-config.h)
+        hash/argon2/blake2/blake2-config.h
+        )
 
 set(CUDA_KERNEL
         hash/gpu/cuda/cuda_kernel.cu)
@@ -85,6 +88,17 @@ if(NOT WITHOUT_OPENCL)
     find_package(OpenCL REQUIRED)
     include_directories(${OpenCL_INCLUDE_DIR})
     target_link_libraries(ariominer ${OpenCL_LIBRARY})
+
+    if(NOT WITHOUT_AMDGCN)
+        add_definitions(-DWITH_AMDGCN)
+        list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/hash/gpu/amdgcn/CLRX/cmake")
+        add_subdirectory("hash/gpu/amdgcn/CLRX")
+        include_directories("hash/gpu/amdgcn/CLRX")
+        include_directories("${PROJECT_BINARY_DIR}/hash/gpu/amdgcn/CLRX/")
+
+        target_link_libraries(ariominer CLRXCLHelperStatic CLRXAmdAsmStatic
+                CLRXAmdBinStatic CLRXUtilsStatic)
+    endif()
 endif()
 
 target_link_libraries(ariominer cpu_features ${CMAKE_THREAD_LIBS_INIT})

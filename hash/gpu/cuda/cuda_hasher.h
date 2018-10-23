@@ -48,7 +48,7 @@ struct cuda_kernel_arguments {
 		memset(host_seed_memory, 0, threads * sizeof(uint64_t*));
 	}
 
-	uint64_t *address_profile_1_1_524288;
+	int32_t *address_profile_1_1_524288;
 	uint32_t *address_profile_4_4_16384;
 	uint32_t *segments_profile_4_4_16384;
 	int *offsets;
