@@ -211,6 +211,8 @@ amdgcn_device_info *amdgcn_hasher::__get_device_info(cl_platform_id platform, cl
 	}
 
 	string board_name;
+
+#ifdef	CL_DEVICE_BOARD_NAME_AMD
 	sz = 0;
 	clGetDeviceInfo(device, CL_DEVICE_BOARD_NAME_AMD, 0, NULL, &sz);
 	buffer = (char *)malloc(sz + 1);
@@ -225,6 +227,7 @@ amdgcn_device_info *amdgcn_hasher::__get_device_info(cl_platform_id platform, cl
 		board_name = buffer;
 		free(buffer);
 	}
+#endif
 
 	device_info->device_string = board_name + " (" + device_name + ")";
 

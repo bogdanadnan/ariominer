@@ -43,8 +43,11 @@ opencl_device_info *opencl_hasher::__get_device_info(cl_platform_id platform, cl
 
     string device_name;
 	cl_device_info query_type = CL_DEVICE_NAME;
+
+#ifdef	CL_DEVICE_BOARD_NAME_AMD
     if(device_vendor.find("Advanced Micro Devices") != string::npos)
 		query_type = CL_DEVICE_BOARD_NAME_AMD;
+#endif
 
 	sz = 0;
 	clGetDeviceInfo(device, query_type, 0, NULL, &sz);
