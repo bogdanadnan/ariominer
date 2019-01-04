@@ -65,6 +65,7 @@ include_directories(hash/cpu/cpu_features/include)
 find_package(Threads)
 
 add_subdirectory(hash/cpu/cpu_features)
+set_property(TARGET cpu_features PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_executable(ariominer ${SOURCE})
 add_library(hasher SHARED ${SOURCE_HASHER})
