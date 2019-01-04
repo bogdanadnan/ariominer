@@ -27,9 +27,9 @@ struct hash_timing {
     int profile; //0 CPU 1 GPU
 };
 
-#define REGISTER_HASHER(x)          x __##x
+#define REGISTER_HASHER(x)        extern "C"  { DLLEXPORT void hasher_loader() { x *instance = new x(); } }
 
-class hasher {
+class DLLEXPORT hasher {
 public:
     hasher();
     virtual ~hasher();
@@ -55,6 +55,7 @@ public:
 
     static vector<hasher*> get_hashers();
     static vector<hasher*> get_active_hashers();
+    static void load_hashers();
 
 protected:
     double _intensity;

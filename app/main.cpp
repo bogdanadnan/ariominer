@@ -8,7 +8,7 @@
 #include "../miner/miner.h"
 #include "../autotune/autotune.h"
 #include "../proxy/proxy.h"
-#include "../hash/argon2/argon2.h"
+#include "../hash/hasher.h"
 
 runner *main_app = NULL;
 
@@ -47,6 +47,8 @@ int main(int argc, char *argv[]) {
         cout << "Type ariominer --help for usage information." << endl;
         return 0;
     }
+
+    hasher::load_hashers();
 
     if(args.is_miner()) {
         miner m(args);

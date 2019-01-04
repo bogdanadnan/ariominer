@@ -26,6 +26,9 @@
 #include <cmath>
 #include <signal.h>
 
+#include <dlfcn.h>
+#include "dllexport.h"
+
 #ifndef _WIN64
 #include <unistd.h>
 #include <sys/time.h>
@@ -49,7 +52,7 @@ using namespace std;
 #define LOG(msg) cout<<msg<<endl
 
 uint64_t microseconds();
-
+vector<string> get_files(string folder);
 
 
 #endif //ARIOMINER_COMMON_H

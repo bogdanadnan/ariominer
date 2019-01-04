@@ -166,7 +166,6 @@ void amdgcn_hasher::cleanup() {
 			clReleaseMemObject((*it)->arguments.memory_chunk_5);
 			clReleaseMemObject((*it)->arguments.address_profile_1_1_524288);
 			clReleaseMemObject((*it)->arguments.address_profile_4_4_16384);
-			clReleaseMemObject((*it)->arguments.segments_profile_4_4_16384);
 			clReleaseMemObject((*it)->arguments.seed_memory[0]);
 			clReleaseMemObject((*it)->arguments.seed_memory[1]);
 			clReleaseMemObject((*it)->arguments.out_memory[0]);
@@ -466,13 +465,6 @@ bool amdgcn_hasher::__setup_device_info(amdgcn_device_info *device, double inten
 		return false;
 	}
 
-	device->arguments.segments_profile_4_4_16384 = clCreateBuffer(device->context, CL_MEM_READ_ONLY, 64 * 2 * sizeof(uint16_t), NULL, &error);
-	if(error != CL_SUCCESS) {
-		device->error = error;
-		device->error_message = "Error creating memory buffer.";
-		return false;
-	}
-
 	device->arguments.seed_memory[0] = clCreateBuffer(device->context, CL_MEM_READ_ONLY, max_threads * 8 * ARGON2_BLOCK_SIZE, NULL, &error);
 	if(error != CL_SUCCESS) {
 		device->error = error;
@@ -505,11 +497,8 @@ bool amdgcn_hasher::__setup_device_info(amdgcn_device_info *device, double inten
 	int32_t *addresses_1_1_524288 = (int32_t *)malloc((argon2profile_1_1_524288.block_refs_size + 2) * 2 * sizeof(int32_t)); //add 2 to ref_size to be exact$
 
 	for(int i=0;i<argon2profile_1_1_524288.block_refs_size;i++) {
-		int ref_chunk_idx = (i / 32) * 64;
-		int ref_idx = i % 32;
-
-		addresses_1_1_524288[ref_chunk_idx + ref_idx] = argon2profile_1_1_524288.block_refs[i*3];
-		addresses_1_1_524288[ref_chunk_idx + ref_idx + 32] = argon2profile_1_1_524288.block_refs[i*3 + 2];
+		addresses_1_1_524288[i * 2] = argon2profile_1_1_524288.block_refs[i*3];
+		addresses_1_1_524288[i * 2 + 1] = argon2profile_1_1_524288.block_refs[i*3 + 2];
 	}
 	error=clEnqueueWriteBuffer(device->queue, device->arguments.address_profile_1_1_524288, CL_TRUE, 0, (argon2profile_1_1_524288.block_refs_size + 2) * 2 * sizeof(int32_t), addresses_1_1_524288, 0, NULL, NULL);
 	if(error != CL_SUCCESS) {
@@ -533,20 +522,21 @@ bool amdgcn_hasher::__setup_device_info(amdgcn_device_info *device, double inten
 	}
 	free(addresses_4_4_16384);
 
-	//reorganize segments data
-	uint16_t *segments_4_4_16384 = (uint16_t *)malloc(64 * 2 * sizeof(uint16_t));
-	for(int i=0;i<64;i++) {
-		int seg_start = argon2profile_4_4_16384.segments[i*3];
-		segments_4_4_16384[i*2] = seg_start;
-		segments_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[seg_start*3 + 1];
-	}
-	error=clEnqueueWriteBuffer(device->queue, device->arguments.segments_profile_4_4_16384, CL_TRUE, 0, 64 * 2 * sizeof(uint16_t), segments_4_4_16384, 0, NULL, NULL);
-	if(error != CL_SUCCESS) {
-		device->error = error;
-		device->error_message = "Error writing to gpu memory.";
-		return false;
-	}
-	free(segments_4_4_16384);
+/*	for(int seg = 0; seg < 4; seg++) {
+		int offset = seg;
+		printf("\t.byte ");
+		for(int s=0;s<16;s++) {
+			int idx = offset + s * 4;
+			int seg_start = argon2profile_4_4_16384.segments[idx * 3];
+			int prev_blk = argon2profile_4_4_16384.block_refs[seg_start * 3 + 1];
+			printf("0x%02hhx, 0x%02hhx, 0x%02hhx, 0x%02hhx, ", ((uint8_t *) &seg_start)[0],
+				   ((uint8_t *) &seg_start)[1], ((uint8_t *) &prev_blk)[0],
+				   ((uint8_t *) &prev_blk)[1]);
+			if((s + 1) % 4 == 0)
+				printf("\n\t.byte ");
+		}
+		printf("\n");
+	}*/
 
 	clSetKernelArg(device->kernel_cblocks, 0, sizeof(device->arguments.memory_chunk_0), &device->arguments.memory_chunk_0);
 	clSetKernelArg(device->kernel_cblocks, 1, sizeof(device->arguments.memory_chunk_1), &device->arguments.memory_chunk_1);
@@ -564,8 +554,7 @@ bool amdgcn_hasher::__setup_device_info(amdgcn_device_info *device, double inten
 	clSetKernelArg(device->kernel_gblocks, 4, sizeof(device->arguments.memory_chunk_4), &device->arguments.memory_chunk_4);
 	clSetKernelArg(device->kernel_gblocks, 5, sizeof(device->arguments.memory_chunk_5), &device->arguments.memory_chunk_5);
 	clSetKernelArg(device->kernel_gblocks, 8, sizeof(device->arguments.address_profile_4_4_16384), &device->arguments.address_profile_4_4_16384);
-	clSetKernelArg(device->kernel_gblocks, 9, sizeof(device->arguments.segments_profile_4_4_16384), &device->arguments.segments_profile_4_4_16384);
-	clSetKernelArg(device->kernel_gblocks, 10, sizeof(int32_t), &device->profile_info.threads_per_chunk_profile_4_4_16384);
+	clSetKernelArg(device->kernel_gblocks, 9, sizeof(int32_t), &device->profile_info.threads_per_chunk_profile_4_4_16384);
 
 	return true;
 }
@@ -632,6 +621,22 @@ struct amdgcn_gpumgmt_thread_data {
 	amdgcn_device_info *device;
 };
 
+void print_block(void *data) {
+    for(int i=0;i<256;i++) {
+    	printf("%u, ", ((uint32_t *)data)[i]);
+    }
+    printf("\n");
+}
+
+void print_cksum(void *data) {
+    uint64_t x = 0;
+
+    for(int i=0;i<128;i++) {
+        x += ((uint64_t *)data)[i];
+    }
+    printf("%llu\n", x);
+}
+
 void *amdgcn_kernel_filler(void *memory, int threads, argon2profile *profile, void *user_data) {
 	amdgcn_gpumgmt_thread_data *gpumgmt_thread = (amdgcn_gpumgmt_thread_data *)user_data;
 	amdgcn_device_info *device = gpumgmt_thread->device;
@@ -692,7 +697,10 @@ void *amdgcn_kernel_filler(void *memory, int threads, argon2profile *profile, vo
 	}
 
 	device->device_lock.unlock();
-
+//	for(int i=0;i<threads;i++) {
+//		print_cksum(((uint8_t *)memory + i * 8 * 1024));
+//		print_block(((uint8_t *)memory + i * 8 * 1024));
+//	}
 	return memory;
 }
 
@@ -744,6 +752,7 @@ void amdgcn_hasher::__run(amdgcn_device_info *device, int thread_id) {
 				stored_hashes.push_back(input);
 			}
 			_store_hash(stored_hashes);
+//			exit(0);
 		}
 	}
 	free(memory);

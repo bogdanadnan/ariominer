@@ -18,8 +18,6 @@
 
 #include "cpu_hasher.h"
 
-#include <dlfcn.h>
-
 cpu_hasher::cpu_hasher() : hasher() {
     _type = "CPU";
     __optimization = "REF";
@@ -95,6 +93,7 @@ string cpu_hasher::__detect_features_and_make_description() {
     ss << "SSE2 ";
     __optimization = "SSE2";
 #else
+    ss << "none";
     __optimization = "REF";
 #endif
 
@@ -115,9 +114,6 @@ string cpu_hasher::__detect_features_and_make_description() {
             ss << "AVX512F ";
             __optimization = "AVX512F";
         }
-    }
-    else {
-        ss << "none";
     }
     ss << endl;
 #endif

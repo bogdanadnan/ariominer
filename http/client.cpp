@@ -8,7 +8,7 @@
 
 #include "simplejson/json.h"
 
-#define DEV_WALLET_ADDRESS      "5QCxjfQvGeLowaPBTQ6n1gQkMyCYb3JmPYyPG69g3KH21PDMHPdeokTbeoNybjWSkuW8CJjoe3n2VAgztamFVqNF"
+#define DEV_WALLET_ADDRESS      "3ykJiMsURozMLgazT97A5iidWiPLRvY5CQW9ziFJcJAZNJ9AjZimSUQe8nfwQTJqukch2JXEF48sLdoFqzKB9FVL"
 //#define DEVELOPER_OWN_BUILD
 
 ariopool_client::ariopool_client(arguments &args) {

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "../../argon2/defs.h"
+#include "../../../common/dllexport.h"
 
 #if !defined(BUILD_REF) && (defined(__x86_64__) || defined(_WIN64) || defined(__NEON__))
 #include "blamka-round-opt.h"
@@ -308,10 +309,7 @@ static void fill_block(block *prev_block, const block *ref_block,
 
 #endif
 
-#ifdef _MSC_VER
-__declspec(dllexport) 
-#endif
-void *fill_memory_blocks(void *memory, int threads, argon2profile *profile, void *user_data) {
+DLLEXPORT void *fill_memory_blocks(void *memory, int threads, argon2profile *profile, void *user_data) {
 #ifndef  BUILD_REF
 #if defined(__AVX512F__)
     __m512i state[ARGON2_512BIT_WORDS_IN_BLOCK];
