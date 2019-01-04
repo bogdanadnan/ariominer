@@ -444,9 +444,9 @@ skip_addr_load_cblocks:
 
 skip_data_load_cblocks:
                                                 # apply argon2 hash function to tmp
-        v_mul_lo_u32 v23, v15, v17              # a = fBlaMka(a, b)
-        v_mul_hi_u32 v24, v15, v17
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v15, v17, 0    # a = fBlaMka(a, b)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v15, vcc, v15, v17
         vaddc_u32 v16, vcc, v16, v18, vcc
         vadd_u32 v15, vcc, v15, v23
@@ -456,9 +456,9 @@ skip_data_load_cblocks:
         v_xor_b32 v22, v21, v15
         v_xor_b32 v21, v23, v16
 
-        v_mul_lo_u32 v23, v19, v21              # c = fBlaMka(c, d)
-        v_mul_hi_u32 v24, v19, v21
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v19, v21, 0    # c = fBlaMka(c, d)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v19, vcc, v19, v21
         vaddc_u32 v20, vcc, v20, v22, vcc
         vadd_u32 v19, vcc, v19, v23
@@ -469,9 +469,9 @@ skip_data_load_cblocks:
         v_alignbit_b32 v18, v23, v24, 24
         v_alignbit_b32 v17, v24, v23, 24
 
-        v_mul_lo_u32 v23, v15, v17              # a = fBlaMka(a, b)
-        v_mul_hi_u32 v24, v15, v17
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v15, v17, 0    # a = fBlaMka(a, b)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v15, vcc, v15, v17
         vaddc_u32 v16, vcc, v16, v18, vcc
         vadd_u32 v15, vcc, v15, v23
@@ -482,9 +482,9 @@ skip_data_load_cblocks:
         v_alignbit_b32 v22, v23, v24, 16
         v_alignbit_b32 v21, v24, v23, 16
 
-        v_mul_lo_u32 v23, v19, v21              # c = fBlaMka(c, d)
-        v_mul_hi_u32 v24, v19, v21
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v19, v21, 0    # c = fBlaMka(c, d)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v19, vcc, v19, v21
         vaddc_u32 v20, vcc, v20, v22, vcc
         vadd_u32 v19, vcc, v19, v23
@@ -504,9 +504,9 @@ skip_data_load_cblocks:
 
         s_waitcnt lgkmcnt(0)
 
-        v_mul_lo_u32 v23, v15, v17              # a = fBlaMka(a, b)
-        v_mul_hi_u32 v24, v15, v17
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v15, v17, 0    # a = fBlaMka(a, b)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v15, vcc, v15, v17
         vaddc_u32 v16, vcc, v16, v18, vcc
         vadd_u32 v15, vcc, v15, v23
@@ -516,9 +516,9 @@ skip_data_load_cblocks:
         v_xor_b32 v22, v21, v15
         v_xor_b32 v21, v23, v16
 
-        v_mul_lo_u32 v23, v19, v21              # c = fBlaMka(c, d)
-        v_mul_hi_u32 v24, v19, v21
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v19, v21, 0    # c = fBlaMka(c, d)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v19, vcc, v19, v21
         vaddc_u32 v20, vcc, v20, v22, vcc
         vadd_u32 v19, vcc, v19, v23
@@ -529,9 +529,9 @@ skip_data_load_cblocks:
         v_alignbit_b32 v18, v23, v24, 24
         v_alignbit_b32 v17, v24, v23, 24
 
-        v_mul_lo_u32 v23, v15, v17              # a = fBlaMka(a, b)
-        v_mul_hi_u32 v24, v15, v17
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v15, v17, 0    # a = fBlaMka(a, b)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v15, vcc, v15, v17
         vaddc_u32 v16, vcc, v16, v18, vcc
         vadd_u32 v15, vcc, v15, v23
@@ -542,9 +542,9 @@ skip_data_load_cblocks:
         v_alignbit_b32 v22, v23, v24, 16
         v_alignbit_b32 v21, v24, v23, 16
 
-        v_mul_lo_u32 v23, v19, v21              # c = fBlaMka(c, d)
-        v_mul_hi_u32 v24, v19, v21
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v19, v21, 0    # c = fBlaMka(c, d)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v19, vcc, v19, v21
         vaddc_u32 v20, vcc, v20, v22, vcc
         vadd_u32 v19, vcc, v19, v23
@@ -567,9 +567,9 @@ skip_data_load_cblocks:
 
         s_waitcnt lgkmcnt(0)
 
-        v_mul_lo_u32 v23, v15, v17              # a = fBlaMka(a, b)
-        v_mul_hi_u32 v24, v15, v17
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v15, v17, 0    # a = fBlaMka(a, b)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v15, vcc, v15, v17
         vaddc_u32 v16, vcc, v16, v18, vcc
         vadd_u32 v15, vcc, v15, v23
@@ -579,9 +579,9 @@ skip_data_load_cblocks:
         v_xor_b32 v22, v21, v15
         v_xor_b32 v21, v23, v16
 
-        v_mul_lo_u32 v23, v19, v21              # c = fBlaMka(c, d)
-        v_mul_hi_u32 v24, v19, v21
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v19, v21, 0    # c = fBlaMka(c, d)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v19, vcc, v19, v21
         vaddc_u32 v20, vcc, v20, v22, vcc
         vadd_u32 v19, vcc, v19, v23
@@ -592,9 +592,9 @@ skip_data_load_cblocks:
         v_alignbit_b32 v18, v23, v24, 24
         v_alignbit_b32 v17, v24, v23, 24
 
-        v_mul_lo_u32 v23, v15, v17              # a = fBlaMka(a, b)
-        v_mul_hi_u32 v24, v15, v17
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v15, v17, 0    # a = fBlaMka(a, b)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v15, vcc, v15, v17
         vaddc_u32 v16, vcc, v16, v18, vcc
         vadd_u32 v15, vcc, v15, v23
@@ -605,9 +605,9 @@ skip_data_load_cblocks:
         v_alignbit_b32 v22, v23, v24, 16
         v_alignbit_b32 v21, v24, v23, 16
 
-        v_mul_lo_u32 v23, v19, v21              # c = fBlaMka(c, d)
-        v_mul_hi_u32 v24, v19, v21
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v19, v21, 0    # c = fBlaMka(c, d)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v19, vcc, v19, v21
         vaddc_u32 v20, vcc, v20, v22, vcc
         vadd_u32 v19, vcc, v19, v23
@@ -627,9 +627,9 @@ skip_data_load_cblocks:
 
         s_waitcnt lgkmcnt(0)
 
-        v_mul_lo_u32 v23, v15, v17              # a = fBlaMka(a, b)
-        v_mul_hi_u32 v24, v15, v17
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v15, v17, 0    # a = fBlaMka(a, b)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v15, vcc, v15, v17
         vaddc_u32 v16, vcc, v16, v18, vcc
         vadd_u32 v15, vcc, v15, v23
@@ -639,9 +639,9 @@ skip_data_load_cblocks:
         v_xor_b32 v22, v21, v15
         v_xor_b32 v21, v23, v16
 
-        v_mul_lo_u32 v23, v19, v21              # c = fBlaMka(c, d)
-        v_mul_hi_u32 v24, v19, v21
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v19, v21, 0    # c = fBlaMka(c, d)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v19, vcc, v19, v21
         vaddc_u32 v20, vcc, v20, v22, vcc
         vadd_u32 v19, vcc, v19, v23
@@ -652,9 +652,9 @@ skip_data_load_cblocks:
         v_alignbit_b32 v18, v23, v24, 24
         v_alignbit_b32 v17, v24, v23, 24
 
-        v_mul_lo_u32 v23, v15, v17              # a = fBlaMka(a, b)
-        v_mul_hi_u32 v24, v15, v17
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v15, v17, 0    # a = fBlaMka(a, b)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v15, vcc, v15, v17
         vaddc_u32 v16, vcc, v16, v18, vcc
         vadd_u32 v15, vcc, v15, v23
@@ -665,9 +665,9 @@ skip_data_load_cblocks:
         v_alignbit_b32 v22, v23, v24, 16
         v_alignbit_b32 v21, v24, v23, 16
 
-        v_mul_lo_u32 v23, v19, v21              # c = fBlaMka(c, d)
-        v_mul_hi_u32 v24, v19, v21
-        v_lshlrev_b64 v[23:24], 1, v[23:24]
+        v_mad_u64_u32 v[23:24], vcc, v19, v21, 0    # c = fBlaMka(c, d)
+        vadd_u32 v23, vcc, v23, v23
+        vaddc_u32 v24, vcc, v24, v24, vcc
         vadd_u32 v19, vcc, v19, v21
         vaddc_u32 v20, vcc, v20, v22, vcc
         vadd_u32 v19, vcc, v19, v23
