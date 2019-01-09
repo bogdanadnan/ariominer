@@ -299,14 +299,14 @@ bool miner::__display_report() {
         }
     }
 
-    if(avg_hash_rate_cblocks <= __args.chs_threshold()) {
+    if(avg_hash_rate_cblocks <= __args.chs_threshold() && (__blocks_count > 1 || __argon2profile == "1_1_524288")) {
         __chs_threshold_hit++;
     }
     else {
         __chs_threshold_hit = 0;
     }
 
-    if(avg_hash_rate_gblocks <= __args.ghs_threshold()) {
+    if(avg_hash_rate_gblocks <= __args.ghs_threshold() && (__blocks_count > 1 || __argon2profile == "4_4_16384")) {
         __ghs_threshold_hit++;
     }
     else {
