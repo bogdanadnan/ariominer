@@ -132,6 +132,7 @@ bool cuda_hasher::configure(arguments &args) {
 	_intensity = (intensity_cpu + intensity_gpu) / 2.0;
 
 	__running = true;
+	_update_running_status(__running);
 	for(vector<cuda_device_info *>::iterator d = __devices.begin(); d != __devices.end(); d++) {
 		if((*d)->threads_profile_1_1_524288 != 0 || (*d)->threads_profile_4_4_16384 != 0) {
 			for(int i=0;i<(*d)->device_threads;i++) {
@@ -282,8 +283,6 @@ void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
 			continue;
 		}
 
-//        uint64_t start_log = microseconds();
-
 		hash_data input = _get_input();
 		argon2profile *profile = _get_argon2profile();
 
@@ -309,6 +308,8 @@ void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
 
 			if (device->error != cudaSuccess) {
 				LOG("Error running kernel: (" + to_string(device->error) + ")" + device->error_message);
+				__running = false;
+				continue;
 			}
 			vector<hash_data> stored_hashes;
 			for(vector<string>::iterator it = hashes.begin(); it != hashes.end(); ++it) {
@@ -317,8 +318,9 @@ void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
 			}
 			_store_hash(stored_hashes);
 		}
-//        printf("Total time: %lld\n", microseconds() - start_log);
 	}
+
+	_update_running_status(__running);
 }
 
 REGISTER_HASHER(cuda_hasher);

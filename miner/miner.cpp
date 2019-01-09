@@ -23,6 +23,9 @@ miner::miner(arguments &args) : __args(args), __client(args) {
     __rejected = 0;
     __begin_time = time(NULL);
     __running = false;
+    __chs_threshold_hit = 0;
+    __ghs_threshold_hit = 0;
+    __running = false;
 
     vector<hasher*> hashers = hasher::get_hashers();
 	for (vector<hasher*>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
@@ -56,6 +59,15 @@ miner::miner(arguments &args) : __args(args), __client(args) {
 	}
 
 	LOG("\n");
+
+    __update_pool_data();
+    vector<hasher*> active_hashers = hasher::get_active_hashers();
+
+    for (vector<hasher *>::iterator it = active_hashers.begin(); it != active_hashers.end(); ++it) {
+        (*it)->set_input(__public_key, __blk, __difficulty, __argon2profile, __recommendation);
+    }
+
+    __blocks_count = 1;
 }
 
 miner::~miner() {
@@ -68,16 +80,25 @@ void miner::run() {
 
     vector<hasher *> hashers = hasher::get_active_hashers();
 
-    __running = true;
+    if(hashers.size() == 0) {
+        LOG("No hashers available. Exiting.");
+    }
+    else {
+        __running = true;
+    }
 
     while (__running) {
         for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
+            if(!(*it)->is_running()) {
+                __running = false;
+                break;
+            }
             vector<hash_data> hashes = (*it)->get_hashes();
 
             for (vector<hash_data>::iterator hash = hashes.begin(); hash != hashes.end(); hash++) {
                 if (hash->block != __blk) //the block expired
                     continue;
-//                LOG(hash->hash);
+
                 string duration = __calc_duration(hash->base, hash->hash);
                 uint64_t result = __calc_compare(duration);
                 if (result > 0 && result <= __limit) {
@@ -111,12 +132,15 @@ void miner::run() {
                 for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
                     (*it)->set_input(__public_key, __blk, __difficulty, __argon2profile, __recommendation);
                 }
+                __blocks_count++;
             }
             last_update = microseconds();
         }
 
         if (microseconds() - last_report > __args.report_interval()) {
-            __display_report();
+            if(!__display_report())
+                __running = false;
+
             last_report = microseconds();
         }
 
@@ -215,7 +239,7 @@ bool miner::__update_pool_data() {
     return false;
 }
 
-void miner::__display_report() {
+bool miner::__display_report() {
     vector<hasher*> hashers = hasher::get_active_hashers();
     stringstream ss;
 
@@ -275,7 +299,31 @@ void miner::__display_report() {
         }
     }
 
+    if(avg_hash_rate_cblocks <= __args.chs_threshold() && (__blocks_count > 1 || __argon2profile == "1_1_524288")) {
+        __chs_threshold_hit++;
+    }
+    else {
+        __chs_threshold_hit = 0;
+    }
+
+    if(avg_hash_rate_gblocks <= __args.ghs_threshold() && (__blocks_count > 1 || __argon2profile == "4_4_16384")) {
+        __ghs_threshold_hit++;
+    }
+    else {
+        __ghs_threshold_hit = 0;
+    }
+
+    if(__chs_threshold_hit >= 3 && (__blocks_count > 1 || __argon2profile == "1_1_524288")) {
+        LOG("CBlocks hashrate is lower than requested threshold, exiting.");
+        return false;
+    }
+    if(__ghs_threshold_hit >= 3 && (__blocks_count > 1 || __argon2profile == "4_4_16384")) {
+        LOG("GBlocks hashrate is lower than requested threshold, exiting.");
+        return false;
+    }
+
     LOG(ss.str());
+    return true;
 }
 
 void miner::stop() {

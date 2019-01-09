@@ -52,6 +52,7 @@ public:
     uint32_t get_hash_count_gblocks();
 
     vector<hash_data> get_hashes();
+    bool is_running();
 
     static vector<hasher*> get_hashers();
     static vector<hasher*> get_active_hashers();
@@ -70,6 +71,7 @@ protected:
     hash_data _get_input();
     argon2profile *_get_argon2profile();
     bool _should_pause();
+    void _update_running_status(bool running);
 private:
     string __make_nonce();
 
@@ -80,6 +82,7 @@ private:
     string __blk;
     string __difficulty;
     bool __pause;
+    bool __is_running;
     argon2profile *__argon2profile;
 
     mutex __hashes_mutex;

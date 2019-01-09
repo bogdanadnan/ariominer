@@ -21,6 +21,7 @@ hasher::hasher() {
     __blk = "";
     __difficulty = "";
     __pause = false;
+    __is_running = false;
     __argon2profile = argon2profile_default;
 
     __begin_round_time = __hashrate_time = microseconds();
@@ -290,5 +291,13 @@ void hasher::load_hashers() {
 			}
 		}
 	}
+}
+
+bool hasher::is_running() {
+    return __is_running;
+}
+
+void hasher::_update_running_status(bool running) {
+    __is_running = running;
 }
 
