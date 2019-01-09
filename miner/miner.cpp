@@ -27,15 +27,11 @@ miner::miner(arguments &args) : __args(args), __client(args) {
     __ghs_threshold_hit = 0;
     __running = false;
 
-    __update_pool_data();
-    __blocks_count = 1;
-
     vector<hasher*> hashers = hasher::get_hashers();
 	for (vector<hasher*>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
 		if ((*it)->get_type() == "CPU") {
 			if ((*it)->initialize()) {
 				(*it)->configure(__args);
-                (*it)->set_input(__public_key, __blk, __difficulty, __argon2profile, __recommendation);
 			}
 			LOG("Compute unit: " + (*it)->get_type());
 			LOG((*it)->get_info());
@@ -58,12 +54,20 @@ miner::miner(arguments &args) : __args(args), __client(args) {
 	}
 	if (selected_gpu_hasher != NULL) {
 		selected_gpu_hasher->configure(__args);
-        selected_gpu_hasher->set_input(__public_key, __blk, __difficulty, __argon2profile, __recommendation);
 		LOG("Compute unit: " + selected_gpu_hasher->get_type() + " - " + selected_gpu_hasher->get_subtype());
 		LOG(selected_gpu_hasher->get_info());
 	}
 
 	LOG("\n");
+
+    __update_pool_data();
+    vector<hasher*> active_hashers = hasher::get_active_hashers();
+
+    for (vector<hasher *>::iterator it = active_hashers.begin(); it != active_hashers.end(); ++it) {
+        (*it)->set_input(__public_key, __blk, __difficulty, __argon2profile, __recommendation);
+    }
+
+    __blocks_count = 1;
 }
 
 miner::~miner() {
