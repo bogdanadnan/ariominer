@@ -37,6 +37,7 @@ private:
     uint32_t __rejected;
     int __chs_threshold_hit;
     int __ghs_threshold_hit;
+    int __blocks_count;
 
     time_t __begin_time;
 

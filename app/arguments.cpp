@@ -530,11 +530,11 @@ int arguments::autotune_step_time() {
     return __autotune_step_time;
 }
 
-unsigned int arguments::chs_threshold() {
+int arguments::chs_threshold() {
     return __chs_threshold;
 }
 
-unsigned int arguments::ghs_threshold() {
+int arguments::ghs_threshold() {
     return __ghs_threshold;
 }
 

@@ -25,12 +25,17 @@ miner::miner(arguments &args) : __args(args), __client(args) {
     __running = false;
     __chs_threshold_hit = 0;
     __ghs_threshold_hit = 0;
+    __running = false;
+
+    __update_pool_data();
+    __blocks_count = 1;
 
     vector<hasher*> hashers = hasher::get_hashers();
 	for (vector<hasher*>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
 		if ((*it)->get_type() == "CPU") {
 			if ((*it)->initialize()) {
 				(*it)->configure(__args);
+                (*it)->set_input(__public_key, __blk, __difficulty, __argon2profile, __recommendation);
 			}
 			LOG("Compute unit: " + (*it)->get_type());
 			LOG((*it)->get_info());
@@ -53,6 +58,7 @@ miner::miner(arguments &args) : __args(args), __client(args) {
 	}
 	if (selected_gpu_hasher != NULL) {
 		selected_gpu_hasher->configure(__args);
+        selected_gpu_hasher->set_input(__public_key, __blk, __difficulty, __argon2profile, __recommendation);
 		LOG("Compute unit: " + selected_gpu_hasher->get_type() + " - " + selected_gpu_hasher->get_subtype());
 		LOG(selected_gpu_hasher->get_info());
 	}
@@ -70,7 +76,12 @@ void miner::run() {
 
     vector<hasher *> hashers = hasher::get_active_hashers();
 
-    __running = true;
+    if(hashers.size() == 0) {
+        LOG("No hashers available. Exiting.");
+    }
+    else {
+        __running = true;
+    }
 
     while (__running) {
         for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
@@ -83,7 +94,7 @@ void miner::run() {
             for (vector<hash_data>::iterator hash = hashes.begin(); hash != hashes.end(); hash++) {
                 if (hash->block != __blk) //the block expired
                     continue;
-//                LOG(hash->hash);
+
                 string duration = __calc_duration(hash->base, hash->hash);
                 uint64_t result = __calc_compare(duration);
                 if (result > 0 && result <= __limit) {
@@ -117,6 +128,7 @@ void miner::run() {
                 for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
                     (*it)->set_input(__public_key, __blk, __difficulty, __argon2profile, __recommendation);
                 }
+                __blocks_count++;
             }
             last_update = microseconds();
         }
@@ -297,7 +309,7 @@ bool miner::__display_report() {
         __ghs_threshold_hit = 0;
     }
 
-    if(__chs_threshold_hit >= 3 || __ghs_threshold_hit >= 3) {
+    if((__chs_threshold_hit >= 3 || __ghs_threshold_hit >= 3) && __blocks_count > 1) {
         LOG("Hashrate is lower than requested threshold, exiting.");
         return false;
     }

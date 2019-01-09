@@ -39,8 +39,8 @@ public:
 	string cpu_optimization();
 	string gpu_optimization();
 
-	unsigned int chs_threshold();
-	unsigned int ghs_threshold();
+	int chs_threshold();
+	int ghs_threshold();
 
     string get_help();
 
@@ -81,8 +81,8 @@ private:
 	string __cpu_optimization;
 	string __gpu_optimization;
 
-	unsigned int __chs_threshold;
-	unsigned int __ghs_threshold;
+	int __chs_threshold;
+	int __ghs_threshold;
 
     static string __argv_0;
 };
