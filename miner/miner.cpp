@@ -23,6 +23,8 @@ miner::miner(arguments &args) : __args(args), __client(args) {
     __rejected = 0;
     __begin_time = time(NULL);
     __running = false;
+    __chs_threshold_hit = 0;
+    __ghs_threshold_hit = 0;
 
     vector<hasher*> hashers = hasher::get_hashers();
 	for (vector<hasher*>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
@@ -72,6 +74,10 @@ void miner::run() {
 
     while (__running) {
         for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
+            if(!(*it)->is_running()) {
+                __running = false;
+                break;
+            }
             vector<hash_data> hashes = (*it)->get_hashes();
 
             for (vector<hash_data>::iterator hash = hashes.begin(); hash != hashes.end(); hash++) {
@@ -116,7 +122,9 @@ void miner::run() {
         }
 
         if (microseconds() - last_report > __args.report_interval()) {
-            __display_report();
+            if(!__display_report())
+                __running = false;
+
             last_report = microseconds();
         }
 
@@ -215,7 +223,7 @@ bool miner::__update_pool_data() {
     return false;
 }
 
-void miner::__display_report() {
+bool miner::__display_report() {
     vector<hasher*> hashers = hasher::get_active_hashers();
     stringstream ss;
 
@@ -275,7 +283,27 @@ void miner::__display_report() {
         }
     }
 
+    if(avg_hash_rate_cblocks <= __args.chs_threshold()) {
+        __chs_threshold_hit++;
+    }
+    else {
+        __chs_threshold_hit = 0;
+    }
+
+    if(avg_hash_rate_gblocks <= __args.ghs_threshold()) {
+        __ghs_threshold_hit++;
+    }
+    else {
+        __ghs_threshold_hit = 0;
+    }
+
+    if(__chs_threshold_hit >= 3 || __ghs_threshold_hit >= 3) {
+        LOG("Hashrate is lower than requested threshold, exiting.");
+        return false;
+    }
+
     LOG(ss.str());
+    return true;
 }
 
 void miner::stop() {

@@ -22,7 +22,7 @@ private:
     string __calc_duration(const string &base, const string &hash);
     uint64_t __calc_compare(const string &duration);
     bool __update_pool_data();
-    void __display_report();
+    bool __display_report();
 
     string __argon2profile;
     string __recommendation;
@@ -35,6 +35,8 @@ private:
     uint32_t __found;
     uint32_t __confirmed;
     uint32_t __rejected;
+    int __chs_threshold_hit;
+    int __ghs_threshold_hit;
 
     time_t __begin_time;
 

@@ -69,6 +69,7 @@ bool cpu_hasher::configure(arguments &args) {
         __threads_count = 1;
 
     __running = true;
+    _update_running_status(__running);
     for(int i=0;i<__threads_count;i++) {
 		__runners.push_back(new thread([&]() { this->__run(); }));
     }
@@ -159,6 +160,8 @@ void cpu_hasher::__run() {
     void *mem = __allocate_memory(buffer);
     if(mem == NULL) {
         LOG("Error allocating memory");
+        __running = false;
+        _update_running_status(__running);
         return;
     }
 
@@ -176,9 +179,9 @@ void cpu_hasher::__run() {
             void *new_buffer;
             mem = __allocate_memory(new_buffer);
             if(mem == NULL) {
-                free(buffer);
                 LOG("Error allocating memory");
-                return;
+                __running = false;
+                continue;
             }
             hash_factory.set_seed_memory((uint8_t *)mem);
             free(buffer);
@@ -205,6 +208,7 @@ void cpu_hasher::__run() {
         }
     }
 
+    _update_running_status(__running);
     free(buffer);
 }
 

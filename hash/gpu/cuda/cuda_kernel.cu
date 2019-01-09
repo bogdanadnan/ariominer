@@ -735,22 +735,6 @@ void cuda_free(cuda_device_info *device) {
 	cudaDeviceReset();
 }
 
-void print_block(void *data) {
-	for(int i=0;i<256;i++) {
-		printf("%u, ", ((uint32_t *)data)[i]);
-	}
-	printf("\n");
-}
-
-void print_cksum(void *data) {
-	uint64_t x = 0;
-
-	for(int i=0;i<128;i++) {
-		x += ((uint64_t *)data)[i];
-	}
-	printf("%llu\n", x);
-}
-
 void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void *user_data) {
 	//    uint64_t start_log = microseconds();
 	//    printf("Waiting for lock: %lld\n", microseconds() - start_log);

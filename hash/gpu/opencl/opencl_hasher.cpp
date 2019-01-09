@@ -576,6 +576,7 @@ bool opencl_hasher::configure(arguments &args) {
     _intensity = (intensity_cpu + intensity_gpu) / 2.0;
 
     __running = true;
+    _update_running_status(__running);
     for(vector<opencl_device_info *>::iterator d = __devices.begin(); d != __devices.end(); d++) {
         if((*d)->profile_info.threads_profile_1_1_524288 != 0 || (*d)->profile_info.threads_profile_4_4_16384 != 0) {
             __runners.push_back(new thread([&](opencl_device_info *device) {
@@ -680,8 +681,6 @@ void opencl_hasher::__run(opencl_device_info *device, int thread_id) {
             continue;
         }
 
-//        uint64_t start_log = microseconds();
-
         hash_data input = _get_input();
         argon2profile *profile = _get_argon2profile();
 
@@ -707,6 +706,8 @@ void opencl_hasher::__run(opencl_device_info *device, int thread_id) {
 
 			if (device->error != CL_SUCCESS) {
 				LOG("Error running kernel: (" + to_string(device->error) + ")" + device->error_message);
+				__running = false;
+				continue;
 			}
 			vector<hash_data> stored_hashes;
             for(vector<string>::iterator it = hashes.begin(); it != hashes.end(); ++it) {
@@ -715,9 +716,9 @@ void opencl_hasher::__run(opencl_device_info *device, int thread_id) {
             }
 			_store_hash(stored_hashes);
 		}
-//        printf("Total time: %lld\n", microseconds() - start_log);
     }
 	free(memory);
+    _update_running_status(__running);
 }
 
 void opencl_hasher::cleanup() {
