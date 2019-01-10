@@ -6,6 +6,11 @@ include (TargetArch.cmake)
 target_architecture (ARCH)
 MESSAGE( STATUS "Target architecture is: " ${ARCH} )
 
+SET(CMAKE_SKIP_BUILD_RPATH FALSE)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+SET(CMAKE_INSTALL_RPATH "./")
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 set(SOURCE
         hash/hasher.h
         http/http.cpp http/http.h
