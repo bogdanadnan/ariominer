@@ -138,8 +138,12 @@ if(NOT WITHOUT_OPENCL)
                 LIBRARY_OUTPUT_DIRECTORY modules
                 )
         target_compile_definitions(amdgcn_hasher PRIVATE EXPORT_SYMBOLS=1)
-        target_link_libraries(amdgcn_hasher hasher CLRXCLHelper CLRXAmdAsm
-                CLRXAmdBin CLRXUtils)
+	set_property(TARGET CLRXCLHelperStatic PROPERTY POSITION_INDEPENDENT_CODE ON)
+	set_property(TARGET CLRXAmdAsmStatic PROPERTY POSITION_INDEPENDENT_CODE ON)
+	set_property(TARGET CLRXAmdBinStatic PROPERTY POSITION_INDEPENDENT_CODE ON)
+	set_property(TARGET CLRXUtilsStatic PROPERTY POSITION_INDEPENDENT_CODE ON)
+        target_link_libraries(amdgcn_hasher hasher CLRXCLHelperStatic CLRXAmdAsmStatic
+                CLRXAmdBinStatic CLRXUtilsStatic ${OpenCL_LIBRARY})
         add_dependencies(ariominer amdgcn_hasher)
     endif()
 endif()
