@@ -5,14 +5,12 @@
 #ifndef ARIOMINER_DLLEXPORT_H
 #define ARIOMINER_DLLEXPORT_H
 
+#undef DLLEXPORT
+
 #ifndef _WIN64
 	#define DLLEXPORT
 #else
-	#ifdef  EXPORT_SYMBOLS
-		#define DLLEXPORT __declspec(dllexport)
-	#else
-		#define DLLEXPORT __declspec(dllimport)
-	#endif
+	#define DLLEXPORT __declspec(dllexport)
 #endif
 
 #endif //ARIOMINER_DLLEXPORT_H

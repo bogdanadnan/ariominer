@@ -17,6 +17,7 @@
 #include "../argon2/argon2.h"
 
 #include "cpu_hasher.h"
+#include "../../common/dllexport.h"
 
 cpu_hasher::cpu_hasher() : hasher() {
     _type = "CPU";

@@ -6,7 +6,6 @@
 #define ARIOMINER_HASHER_H
 
 #include "argon2/defs.h"
-#include "../app/arguments.h"
 
 struct hash_data {
     hash_data() {

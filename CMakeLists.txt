@@ -12,7 +12,6 @@ SET(CMAKE_INSTALL_RPATH "./")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 set(SOURCE
-        hash/hasher.h
         http/http.cpp http/http.h
         http/client.cpp http/client.h
         http/server.cpp http/server.h
@@ -20,24 +19,17 @@ set(SOURCE
         miner/miner.cpp miner/miner.h
         proxy/proxy.cpp proxy/proxy.h
         app/main.cpp
-        app/arguments.cpp app/arguments.h common/common.h
-        crypt/sha512.cpp crypt/sha512.h
         http/http_parser/http_parser.c http/http_parser/http_parser.h
         miner/mini-gmp/mini-gmp.h miner/mini-gmp/mini-gmp.c
-        common/common.cpp
-        hash/argon2/argon2.cpp hash/argon2/argon2.h
-        hash/argon2/defs.h
-        hash/argon2/argon2profile_4_4_16384.c hash/argon2/argon2profile_1_1_524288.c
-        hash/argon2/blake2/blake2b.c hash/argon2/blake2/blake2.h
-        crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h
         autotune/autotune.cpp autotune/autotune.h
         app/runner.h
-        hash/argon2/blake2/blake2b-round.h
-        hash/argon2/blake2/blake2b-load-sse41.h
-        hash/argon2/blake2/blake2b-load-sse2.h
-        hash/argon2/blake2/blake2-config.h
         )
-set(SOURCE_HASHER hash/hasher.cpp hash/hasher.h)
+set(SOURCE_COMMON app/arguments.cpp app/arguments.h common/common.h common/common.cpp common/dllimport.h common/dllexport.h
+        crypt/sha512.cpp crypt/sha512.h crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h)
+set(SOURCE_HASHER hash/hasher.cpp hash/hasher.h hash/argon2/argon2.cpp hash/argon2/argon2.h
+        hash/argon2/defs.h hash/argon2/blake2/blake2b.c hash/argon2/blake2/blake2.h hash/argon2/blake2/blake2b-round.h
+        hash/argon2/blake2/blake2b-load-sse41.h hash/argon2/blake2/blake2b-load-sse2.h hash/argon2/blake2/blake2-config.h
+        hash/argon2/argon2profile_4_4_16384.c hash/argon2/argon2profile_1_1_524288.c)
 set(SOURCE_CPU_HASHER hash/cpu/cpu_hasher.cpp hash/cpu/cpu_hasher.h)
 set(SOURCE_OPENCL_HASHER hash/gpu/opencl/opencl_hasher.cpp hash/gpu/opencl/opencl_hasher.h
         hash/gpu/opencl/opencl_kernel.cpp hash/gpu/opencl/opencl_kernel.h)
@@ -66,6 +58,10 @@ configure_file (
 
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories(hash/cpu/cpu_features/include)
+if(WIN32)
+    include_directories(win64/include)
+    list(APPEND SOURCE_COMMON win64/src/dlfcn.c win64/src/win64.c)
+endif()
 
 find_package(Threads)
 
@@ -73,10 +69,12 @@ add_subdirectory(hash/cpu/cpu_features)
 set_property(TARGET cpu_features PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_executable(ariominer ${SOURCE})
+add_library(common SHARED ${SOURCE_COMMON})
 add_library(hasher SHARED ${SOURCE_HASHER})
-target_compile_definitions(hasher PRIVATE EXPORT_SYMBOLS=1)
-target_link_libraries(hasher ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT})
-
+target_link_libraries(hasher common ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+if(WIN32)
+    target_link_libraries(common Psapi.lib)
+endif()
 add_library(cpu_hasher MODULE ${SOURCE_CPU_HASHER})
 set_target_properties(cpu_hasher
         PROPERTIES
@@ -84,7 +82,6 @@ set_target_properties(cpu_hasher
         SUFFIX ".hsh"
         LIBRARY_OUTPUT_DIRECTORY modules
         )
-target_compile_definitions(cpu_hasher PRIVATE EXPORT_SYMBOLS=1)
 target_link_libraries(cpu_hasher hasher cpu_features)
 add_dependencies(ariominer cpu_hasher)
 
@@ -103,7 +100,6 @@ if(NOT WITHOUT_CUDA)
             SUFFIX ".hsh"
             LIBRARY_OUTPUT_DIRECTORY modules
             )
-    target_compile_definitions(cuda_hasher PRIVATE EXPORT_SYMBOLS=1)
     target_link_libraries(cuda_hasher hasher)
     add_dependencies(ariominer cuda_hasher)
 endif()
@@ -119,7 +115,6 @@ if(NOT WITHOUT_OPENCL)
             SUFFIX ".hsh"
             LIBRARY_OUTPUT_DIRECTORY modules
             )
-    target_compile_definitions(opencl_hasher PRIVATE EXPORT_SYMBOLS=1)
     target_link_libraries(opencl_hasher hasher ${OpenCL_LIBRARY})
     add_dependencies(ariominer opencl_hasher)
 
@@ -137,18 +132,16 @@ if(NOT WITHOUT_OPENCL)
                 SUFFIX ".hsh"
                 LIBRARY_OUTPUT_DIRECTORY modules
                 )
-        target_compile_definitions(amdgcn_hasher PRIVATE EXPORT_SYMBOLS=1)
-	set_property(TARGET CLRXCLHelperStatic PROPERTY POSITION_INDEPENDENT_CODE ON)
-	set_property(TARGET CLRXAmdAsmStatic PROPERTY POSITION_INDEPENDENT_CODE ON)
-	set_property(TARGET CLRXAmdBinStatic PROPERTY POSITION_INDEPENDENT_CODE ON)
-	set_property(TARGET CLRXUtilsStatic PROPERTY POSITION_INDEPENDENT_CODE ON)
         target_link_libraries(amdgcn_hasher hasher CLRXCLHelperStatic CLRXAmdAsmStatic
                 CLRXAmdBinStatic CLRXUtilsStatic ${OpenCL_LIBRARY})
         add_dependencies(ariominer amdgcn_hasher)
     endif()
 endif()
 
-target_link_libraries(ariominer hasher)
+target_link_libraries(ariominer common hasher)
+if(WIN32)
+    target_link_libraries(ariominer ws2_32.lib)
+endif()
 
 add_library(argon2_fill_blocks_REF MODULE ${ARGON2_FILL_BLOCKS_SRC})
 set_target_properties(argon2_fill_blocks_REF
@@ -157,7 +150,7 @@ set_target_properties(argon2_fill_blocks_REF
         SUFFIX ".opt"
         LIBRARY_OUTPUT_DIRECTORY modules
         )
-target_compile_definitions(argon2_fill_blocks_REF PRIVATE EXPORT_SYMBOLS=1 BUILD_REF=1)
+target_compile_definitions(argon2_fill_blocks_REF PRIVATE BUILD_REF=1)
 add_dependencies(ariominer argon2_fill_blocks_REF)
 
 if(ARCH STREQUAL "x86_64")
@@ -177,11 +170,6 @@ if(ARCH STREQUAL "x86_64")
     target_compile_options(argon2_fill_blocks_AVX PRIVATE -mavx)
     target_compile_options(argon2_fill_blocks_AVX2 PRIVATE -mavx2)
     target_compile_options(argon2_fill_blocks_AVX512F PRIVATE -mavx512f)
-    target_compile_definitions(argon2_fill_blocks_SSE2 PRIVATE EXPORT_SYMBOLS=1)
-    target_compile_definitions(argon2_fill_blocks_SSSE3 PRIVATE EXPORT_SYMBOLS=1)
-    target_compile_definitions(argon2_fill_blocks_AVX PRIVATE EXPORT_SYMBOLS=1)
-    target_compile_definitions(argon2_fill_blocks_AVX2 PRIVATE EXPORT_SYMBOLS=1)
-    target_compile_definitions(argon2_fill_blocks_AVX512F PRIVATE EXPORT_SYMBOLS=1)
     add_dependencies(ariominer argon2_fill_blocks_SSE2 argon2_fill_blocks_SSSE3 argon2_fill_blocks_AVX argon2_fill_blocks_AVX2 argon2_fill_blocks_AVX512F)
 endif(ARCH STREQUAL "x86_64")
 
@@ -194,6 +182,13 @@ if(ARCH STREQUAL "arm")
             LIBRARY_OUTPUT_DIRECTORY modules
             )
     target_compile_options(argon2_fill_blocks_NEON PRIVATE -D__NEON__ -mfpu=neon -funsafe-math-optimizations)
-    target_compile_definitions(argon2_fill_blocks_NEON PRIVATE EXPORT_SYMBOLS=1)
     add_dependencies(ariominer argon2_fill_blocks_NEON)
 endif(ARCH STREQUAL "arm")
+
+if(WIN32)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D_CRT_SECURE_NO_WARNINGS=1")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_CRT_SECURE_NO_WARNINGS=1")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /D_CRT_SECURE_NO_WARNINGS=1")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /D_CRT_SECURE_NO_WARNINGS=1")
+endif()
+

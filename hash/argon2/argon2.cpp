@@ -7,6 +7,7 @@
 #include "../../crypt/random_generator.h"
 
 #include "blake2/blake2.h"
+#include "../../common/dllexport.h"
 #include "argon2.h"
 #include "defs.h"
 

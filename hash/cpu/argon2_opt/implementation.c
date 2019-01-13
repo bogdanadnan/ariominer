@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "../../../common/dllimport.h"
 #include "../../argon2/defs.h"
 #include "../../../common/dllexport.h"
 

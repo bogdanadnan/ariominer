@@ -2,6 +2,7 @@
 // Created by Haifa Bogdan Adnan on 05/08/2018.
 //
 
+#include "dllexport.h"
 #include "common.h"
 #include <dirent.h>
 
@@ -18,7 +19,7 @@ vector<string> get_files(string folder) {
 	if ((dir = opendir (folder.c_str())) != NULL) {
 		while ((ent = readdir (dir)) != NULL) {
 			if(ent->d_type == DT_REG)
-			result.push_back(ent->d_name);
+    			result.push_back(ent->d_name);
 		}
 		closedir (dir);
 	}
