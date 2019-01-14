@@ -5,7 +5,7 @@
 #ifndef ARIOMINER_ARGUMENTS_H
 #define ARIOMINER_ARGUMENTS_H
 
-class arguments {
+class DLLEXPORT arguments {
 public:
     arguments(int argc, char *argv[]);
 

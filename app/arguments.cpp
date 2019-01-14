@@ -2,10 +2,9 @@
 // Created by Haifa Bogdan Adnan on 04/08/2018.
 //
 
+#include "../common/dllexport.h"
 #include "../common/common.h"
-
 #include <getopt.h>
-
 #include "arguments.h"
 
 arguments::arguments(int argc, char **argv) {

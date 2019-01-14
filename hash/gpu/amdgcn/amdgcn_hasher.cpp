@@ -17,6 +17,7 @@
 
 #include "amdgcn_hasher.h"
 #include "amdgcn_kernel.h"
+#include "../../../common/dllexport.h"
 
 #define KERNEL_WORKGROUP_SIZE   32
 
@@ -212,8 +213,11 @@ amdgcn_device_info *amdgcn_hasher::__get_device_info(cl_platform_id platform, cl
 
 	string board_name;
 
-#ifdef	CL_DEVICE_BOARD_NAME_AMD
-	sz = 0;
+#ifndef CL_DEVICE_BOARD_NAME_AMD
+#define CL_DEVICE_BOARD_NAME_AMD                    0x4038
+#endif
+
+    sz = 0;
 	clGetDeviceInfo(device, CL_DEVICE_BOARD_NAME_AMD, 0, NULL, &sz);
 	buffer = (char *)malloc(sz + 1);
 	device_info->error = clGetDeviceInfo(device, CL_DEVICE_BOARD_NAME_AMD, sz, buffer, &sz);
@@ -227,9 +231,8 @@ amdgcn_device_info *amdgcn_hasher::__get_device_info(cl_platform_id platform, cl
 		board_name = buffer;
 		free(buffer);
 	}
-#endif
 
-	device_info->device_string = board_name + " (" + device_name + ")";
+	device_info->device_string = board_name.empty() ? (board_name + " (" + device_name + ")") : device_name;
 
 	device_info->error = clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(device_info->max_mem_size), &(device_info->max_mem_size), NULL);
 	if(device_info->error != CL_SUCCESS) {

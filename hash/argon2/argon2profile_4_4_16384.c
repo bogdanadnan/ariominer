@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "../../common/dllexport.h"
 #include "defs.h"
 
 int32_t blocks_refs_4_4_16384[] = {
@@ -65606,7 +65607,7 @@ int32_t segments_4_4_16384[] = {
 64504, 65528, 1
 };
 
-argon2profile argon2profile_4_4_16384 = {
+DLLEXPORT argon2profile argon2profile_4_4_16384 = {
     16384,
     4,
     4,

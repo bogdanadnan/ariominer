@@ -27,7 +27,7 @@
 #include <signal.h>
 
 #include <dlfcn.h>
-#include "dllexport.h"
+#include "dllimport.h"
 
 #ifndef _WIN64
 #include <unistd.h>
@@ -38,11 +38,7 @@
 #include<arpa/inet.h>
 #include <fcntl.h>
 #else
-#include <WinSock2.h>
-#include <WS2tcpip.h>
-#include <win64_compatibility_layer.h>
-
-#define close closesocket
+#include <win64.h>
 #endif
 
 #include <config.h>
@@ -51,8 +47,7 @@ using namespace std;
 
 #define LOG(msg) cout<<msg<<endl
 
-uint64_t microseconds();
-vector<string> get_files(string folder);
-
+DLLEXPORT uint64_t microseconds();
+DLLEXPORT vector<string> get_files(string folder);
 
 #endif //ARIOMINER_COMMON_H

@@ -7,6 +7,10 @@
 
 #include "http.h"
 
+#ifdef _WIN64
+#define close closesocket
+#endif
+
 int http_callback (http_parser* parser, const char *at, size_t length) {
     string *body = (string *)parser->data;
     (*body) += string(at, length);

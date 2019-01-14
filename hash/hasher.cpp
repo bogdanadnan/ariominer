@@ -5,9 +5,10 @@
 #include "../common/common.h"
 #include "../crypt/base64.h"
 #include "../crypt/random_generator.h"
+#include "../app/arguments.h"
 
+#include "../common/dllexport.h"
 #include "argon2/argon2.h"
-
 #include "hasher.h"
 
 hasher::hasher() {

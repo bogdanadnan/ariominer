@@ -9,7 +9,7 @@
 
 typedef void *(*argon2_blocks_filler_ptr)(void *, int, argon2profile *, void *);
 
-class argon2 {
+class DLLEXPORT argon2 {
 public:
     argon2(argon2_blocks_filler_ptr filler, void *seed_memory, void *user_data);
 

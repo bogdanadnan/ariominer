@@ -10,6 +10,7 @@
 
 #include "opencl_hasher.h"
 #include "opencl_kernel.h"
+#include "../../../common/dllexport.h"
 
 #if defined(WITH_OPENCL)
 

@@ -14,6 +14,7 @@
 #include <driver_types.h>
 
 #include "cuda_hasher.h"
+#include "../../../common/dllexport.h"
 
 cuda_hasher::cuda_hasher() {
 	_type = "GPU";
