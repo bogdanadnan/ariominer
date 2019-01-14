@@ -578,7 +578,7 @@ string arguments::get_help() {
             "                    this is optional, defaults to 100 (*)\n"
             "                    you can add more entries separated by comma for each GPU\n"
             "   --gpu-threads: miner specific option, how many host threads per GPU\n"
-            "                    this is optional, defaults to 4 (*)\n"
+            "                    this is unused for the moment, defaults to 4 (*)\n"
             "                    you can add more entries separated by comma for each GPU\n"
             "   --gpu-filter: miner specific option, filter string for device selection\n"
             "                    it will select only devices that have in description the specified string\n"

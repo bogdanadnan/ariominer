@@ -8,61 +8,31 @@
 #if defined(WITH_CUDA)
 
 struct cuda_kernel_arguments {
-	cuda_kernel_arguments() {
-		address_profile_1_1_524288 = NULL;
-		address_profile_4_4_16384 = NULL;
-		segments_profile_4_4_16384 = NULL;
-		offsets = NULL;
-
-		memory = NULL;
-		seed_memory = NULL;
-		out_memory = NULL;
-		host_seed_memory = NULL;
-	}
-
-	~cuda_kernel_arguments() {
-		if(memory != NULL)
-			free(memory);
-
-		if(out_memory != NULL)
-			free(out_memory);
-
-		if(seed_memory != NULL)
-			free(seed_memory);
-
-		if(host_seed_memory != NULL)
-			free(host_seed_memory);
-	}
-
-	void set_threads(int threads) {
-		memory = (void**)malloc(threads * sizeof(void*));
-		memset(memory, 0, threads * sizeof(void*));
-
-		seed_memory = (uint64_t**)malloc(threads * sizeof(uint64_t*));
-		memset(seed_memory, 0, threads * sizeof(uint64_t*));
-
-		out_memory = (uint64_t**)malloc(threads * sizeof(uint64_t*));
-		memset(out_memory, 0, threads * sizeof(uint64_t*));
-
-		host_seed_memory = (uint64_t**)malloc(threads * sizeof(uint64_t*));
-		memset(host_seed_memory, 0, threads * sizeof(uint64_t*));
-	}
-
-	int32_t *address_profile_1_1_524288;
-	uint32_t *address_profile_4_4_16384;
-	uint32_t *segments_profile_4_4_16384;
-	int *offsets;
-
-	void **memory;
-	uint64_t **seed_memory;
-	uint64_t **out_memory;
-	uint64_t **host_seed_memory;
+    void *memory_chunk_0;
+    void *memory_chunk_1;
+    void *memory_chunk_2;
+    void *memory_chunk_3;
+    void *memory_chunk_4;
+    void *memory_chunk_5;
+    int32_t *address_profile_1_1_524288;
+    uint32_t *address_profile_4_4_16384;
+    uint32_t *segments_profile_4_4_16384;
+    uint64_t *seed_memory[2];
+    uint64_t *out_memory[2];
+    uint64_t *host_seed_memory[2];
 };
 
-struct cuda_threads_per_stream {
-	uint32_t threads_profile_1_1_524288;
-	uint32_t threads_profile_4_4_16384;
-	size_t memory_size;
+struct argon2profile_info {
+    argon2profile_info() {
+        threads_profile_1_1_524288 = 0;
+        threads_per_chunk_profile_1_1_524288 = 0;
+        threads_profile_4_4_16384 = 0;
+        threads_per_chunk_profile_4_4_16384 = 0;
+    }
+    uint32_t threads_profile_1_1_524288;
+    uint32_t threads_per_chunk_profile_1_1_524288;
+    uint32_t threads_profile_4_4_16384;
+    uint32_t threads_per_chunk_profile_4_4_16384;
 };
 
 struct cuda_device_info {
@@ -71,18 +41,10 @@ struct cuda_device_info {
 		device_string = "";
 		max_mem_size = 0;
 		free_mem_size = 0;
-		device_threads = 2;
-		threads_profile_1_1_524288 = 0;
-		threads_profile_4_4_16384 = 0;
-		threads_per_stream = NULL;
+		max_allocable_mem_size = 0;
 
 		error = cudaSuccess;
 		error_message = "";
-	}
-	~cuda_device_info() {
-		if(threads_per_stream != NULL) {
-			delete[] threads_per_stream;
-		}
 	}
 
     int device_index;
@@ -90,14 +52,12 @@ struct cuda_device_info {
     string device_string;
     uint64_t max_mem_size;
     uint64_t free_mem_size;
+    uint64_t max_allocable_mem_size;
 
-    int device_threads;
-    cuda_threads_per_stream *threads_per_stream;
-
-	uint32_t threads_profile_1_1_524288;
-	uint32_t threads_profile_4_4_16384;
-
+    argon2profile_info profile_info;
 	cuda_kernel_arguments arguments;
+
+    mutex device_lock;
 
     cudaError_t error;
     string error_message;
@@ -106,7 +66,6 @@ struct cuda_device_info {
 struct cuda_gpumgmt_thread_data {
 	int thread_id;
 	cuda_device_info *device;
-	void *cuda_info;
 };
 
 class cuda_hasher : public hasher {
@@ -132,7 +91,7 @@ private:
 };
 
 // CUDA kernel exports
-extern void cuda_allocate(cuda_device_info *device);
+extern void cuda_allocate(cuda_device_info *device, double chunks, size_t chunk_size);
 extern void cuda_free(cuda_device_info *device);
 extern void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void *user_data);
 // end CUDA kernel exports
