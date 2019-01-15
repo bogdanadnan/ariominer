@@ -1003,6 +1003,7 @@ void cuda_free(cuda_device_info *device) {
 void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void *user_data) {
 	cuda_gpumgmt_thread_data *gpumgmt_thread = (cuda_gpumgmt_thread_data *)user_data;
 	cuda_device_info *device = gpumgmt_thread->device;
+	cudaStream_t stream = (cudaStream_t)gpumgmt_thread->device_data;
 
 	int mem_seed_count = profile->thr_cost;
 	size_t work_items;
@@ -1022,7 +1023,7 @@ void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void
 
 	device->device_lock.lock();
 
-	device->error = cudaMemcpy(device->arguments.seed_memory[gpumgmt_thread->thread_id], memory, threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, cudaMemcpyHostToDevice);
+	device->error = cudaMemcpyAsync(device->arguments.seed_memory[gpumgmt_thread->thread_id], memory, threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, cudaMemcpyHostToDevice, stream);
 	if (device->error != cudaSuccess) {
 		device->error_message = "Error writing to gpu memory.";
 		device->device_lock.unlock();
@@ -1030,7 +1031,7 @@ void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void
 	}
 
 	if(parallelism == 1) {
-		fill_blocks_cpu<<<threads, work_items>>>((uint32_t*)device->arguments.memory_chunk_0,
+		fill_blocks_cpu<<<threads, work_items, 0, stream>>>((uint32_t*)device->arguments.memory_chunk_0,
                 (uint32_t*)device->arguments.memory_chunk_1,
                 (uint32_t*)device->arguments.memory_chunk_2,
                 (uint32_t*)device->arguments.memory_chunk_3,
@@ -1042,7 +1043,7 @@ void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void
 				memsize, device->profile_info.threads_per_chunk_profile_1_1_524288);
 	}
 	else {
-		fill_blocks_gpu<<<threads, work_items>>> ((uint32_t*)device->arguments.memory_chunk_0,
+		fill_blocks_gpu<<<threads, work_items, 0, stream>>> ((uint32_t*)device->arguments.memory_chunk_0,
                 (uint32_t*)device->arguments.memory_chunk_1,
                 (uint32_t*)device->arguments.memory_chunk_2,
                 (uint32_t*)device->arguments.memory_chunk_3,
@@ -1055,11 +1056,16 @@ void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void
 				memsize, device->profile_info.threads_per_chunk_profile_4_4_16384);
 	}
 
-	device->error = cudaMemcpy(memory, device->arguments.out_memory[gpumgmt_thread->thread_id], threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, cudaMemcpyDeviceToHost);
+	device->error = cudaMemcpyAsync(memory, device->arguments.out_memory[gpumgmt_thread->thread_id], threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, cudaMemcpyDeviceToHost, stream);
 	if (device->error != cudaSuccess) {
 		device->error_message = "Error reading gpu memory.";
         device->device_lock.unlock();
 		return NULL;
+	}
+
+	while(cudaStreamQuery(stream) != cudaSuccess) {
+		this_thread::sleep_for(chrono::milliseconds(10));
+		continue;
 	}
 
 	device->device_lock.unlock();

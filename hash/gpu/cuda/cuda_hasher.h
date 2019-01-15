@@ -66,6 +66,7 @@ struct cuda_device_info {
 struct cuda_gpumgmt_thread_data {
 	int thread_id;
 	cuda_device_info *device;
+	void *device_data;
 };
 
 class cuda_hasher : public hasher {

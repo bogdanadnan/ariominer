@@ -281,6 +281,16 @@ void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
 	cuda_gpumgmt_thread_data thread_data;
 	thread_data.device = device;
 	thread_data.thread_id = thread_id;
+	cudaStream_t stream;
+	device->error = cudaStreamCreate(&stream);
+	if(device->error != cudaSuccess) {
+	    LOG("Error running kernel: (" + to_string(device->error) + ") cannot create cuda stream.");
+        __running = false;
+    	_update_running_status(__running);
+    	return;
+    }
+
+	thread_data.device_data = stream;
 
 	void *memory = device->arguments.host_seed_memory[thread_id];
 	argon2 hash_factory(cuda_kernel_filler, memory, &thread_data);
