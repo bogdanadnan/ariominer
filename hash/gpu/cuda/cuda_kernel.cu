@@ -1064,12 +1064,5 @@ void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void
 
 	device->device_lock.unlock();
 
-	device->error = cudaDeviceSynchronize();
-    if (device->error != cudaSuccess) {
-        device->error_message = "Error waiting for GPU.";
-        device->device_lock.unlock();
-        return NULL;
-    }
-
 	return memory;
 }
