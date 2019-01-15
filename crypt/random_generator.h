@@ -5,8 +5,7 @@
 #ifndef ARIOMINER_RANDOM_GENERATOR_H
 #define ARIOMINER_RANDOM_GENERATOR_H
 
-
-class random_generator {
+class DLLEXPORT random_generator {
 public:
     random_generator();
     static random_generator &instance();
@@ -21,6 +20,5 @@ private:
 
     static random_generator __instance;
 };
-
 
 #endif //ARIOMINER_RANDOM_GENERATOR_H

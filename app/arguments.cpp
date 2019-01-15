@@ -2,10 +2,9 @@
 // Created by Haifa Bogdan Adnan on 04/08/2018.
 //
 
+#include "../common/dllexport.h"
 #include "../common/common.h"
-
 #include <getopt.h>
-
 #include "arguments.h"
 
 arguments::arguments(int argc, char **argv) {
@@ -46,6 +45,8 @@ arguments::arguments(int argc, char **argv) {
             {"intensity-stop", required_argument, NULL, 'z'},
             {"intensity-step", required_argument, NULL, 'q'},
             {"autotune-step-time", required_argument, NULL, 's'},
+            {"chs-threshold", required_argument, NULL, 'e'},
+            {"ghs-threshold", required_argument, NULL, 'i'},
             {0, 0, 0, 0}
         };
 
@@ -287,6 +288,22 @@ arguments::arguments(int argc, char **argv) {
                     __autotune_step_time = atoi(optarg);
                 }
                 break;
+            case 'e':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    __chs_threshold = atoi(optarg);
+                }
+                break;
+            case 'i':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    __ghs_threshold = atoi(optarg);
+                }
+                break;
             case ':':
                 __error_flag = true;
                 break;
@@ -512,6 +529,14 @@ int arguments::autotune_step_time() {
     return __autotune_step_time;
 }
 
+int arguments::chs_threshold() {
+    return __chs_threshold;
+}
+
+int arguments::ghs_threshold() {
+    return __ghs_threshold;
+}
+
 string arguments::get_help() {
     return
             "\nArionum CPU/GPU Miner v." ArioMiner_VERSION_MAJOR "." ArioMiner_VERSION_MINOR "." ArioMiner_VERSION_REVISION "\n"
@@ -553,7 +578,7 @@ string arguments::get_help() {
             "                    this is optional, defaults to 100 (*)\n"
             "                    you can add more entries separated by comma for each GPU\n"
             "   --gpu-threads: miner specific option, how many host threads per GPU\n"
-            "                    this is optional, defaults to 4 (*)\n"
+            "                    this is unused for the moment, defaults to 4 (*)\n"
             "                    you can add more entries separated by comma for each GPU\n"
             "   --gpu-filter: miner specific option, filter string for device selection\n"
             "                    it will select only devices that have in description the specified string\n"
@@ -570,6 +595,10 @@ string arguments::get_help() {
 			"   --force-gpu-optimization: what type of GPU optimization to use\n"
 			"                    values: OPENCL, CUDA, AMDGCN\n"
 			"                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
+            "   --chs-threshold: miner specific option, cblocks avg hashrate value under which\n"
+            "                    miner will exit (default is disabled)\n"
+            "   --ghs-threshold: miner specific option, gblocks avg hashrate value under which\n"
+            "                    miner will exit (default is disabled)\n"
 			"   --block-type: miner specific option, override block type sent by pool\n"
             "                    useful for tunning intensity; values: CPU, GPU\n"
             "                    don't use for regular mining, shares submitted during opposite block type will be rejected\n"
@@ -610,6 +639,9 @@ void arguments::__init() {
     __cpu_optimization = "";
 	__gpu_optimization = "";
     __argon2profile = "";
+
+    __chs_threshold = -1;
+    __ghs_threshold = -1;
 
     __error_flag = false;
 }

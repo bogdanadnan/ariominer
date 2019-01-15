@@ -1,8 +1,9 @@
 #ifndef SHA512_H
 #define SHA512_H
+
 #include <string>
 
-class SHA512
+class DLLEXPORT SHA512
 {
 protected:
     typedef unsigned char uint8;

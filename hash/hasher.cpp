@@ -5,9 +5,10 @@
 #include "../common/common.h"
 #include "../crypt/base64.h"
 #include "../crypt/random_generator.h"
+#include "../app/arguments.h"
 
+#include "../common/dllexport.h"
 #include "argon2/argon2.h"
-
 #include "hasher.h"
 
 hasher::hasher() {
@@ -21,6 +22,7 @@ hasher::hasher() {
     __blk = "";
     __difficulty = "";
     __pause = false;
+    __is_running = false;
     __argon2profile = argon2profile_default;
 
     __begin_round_time = __hashrate_time = microseconds();
@@ -228,6 +230,8 @@ void hasher::_store_hash(const vector<hash_data> &hashes) {
 		__hashrate_time = timestamp;
 	}
 
+//	for(int i=0;i<hashes.size();i++)
+//	    LOG(hashes[i].hash);
 	__hashes_mutex.unlock();
 }
 
@@ -273,4 +277,28 @@ string hasher::__make_nonce() {
 }
 
 vector<hasher*> *hasher::__registered_hashers = NULL;
+
+typedef void *(*hasher_loader)();
+
+void hasher::load_hashers() {
+	string module_path = arguments::get_app_folder() + "/modules/";
+	vector<string> files = get_files(module_path);
+	for(vector<string>::iterator iter = files.begin();iter != files.end();iter++) {
+		if(iter->find(".hsh") != string::npos) {
+			void *__dll_handle = dlopen((module_path + *iter).c_str(), RTLD_LAZY);
+			if(__dll_handle != NULL) {
+				hasher_loader hasher_loader_ptr = (hasher_loader) dlsym(__dll_handle, "hasher_loader");
+				(*hasher_loader_ptr)();
+			}
+		}
+	}
+}
+
+bool hasher::is_running() {
+    return __is_running;
+}
+
+void hasher::_update_running_status(bool running) {
+    __is_running = running;
+}
 

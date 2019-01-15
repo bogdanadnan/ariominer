@@ -6,7 +6,6 @@
 #define ARIOMINER_HASHER_H
 
 #include "argon2/defs.h"
-#include "../app/arguments.h"
 
 struct hash_data {
     hash_data() {
@@ -27,9 +26,9 @@ struct hash_timing {
     int profile; //0 CPU 1 GPU
 };
 
-#define REGISTER_HASHER(x)          x __##x
+#define REGISTER_HASHER(x)        extern "C"  { DLLEXPORT void hasher_loader() { x *instance = new x(); } }
 
-class hasher {
+class DLLEXPORT hasher {
 public:
     hasher();
     virtual ~hasher();
@@ -52,9 +51,11 @@ public:
     uint32_t get_hash_count_gblocks();
 
     vector<hash_data> get_hashes();
+    bool is_running();
 
     static vector<hasher*> get_hashers();
     static vector<hasher*> get_active_hashers();
+    static void load_hashers();
 
 protected:
     double _intensity;
@@ -69,6 +70,7 @@ protected:
     hash_data _get_input();
     argon2profile *_get_argon2profile();
     bool _should_pause();
+    void _update_running_status(bool running);
 private:
     string __make_nonce();
 
@@ -79,6 +81,7 @@ private:
     string __blk;
     string __difficulty;
     bool __pause;
+    bool __is_running;
     argon2profile *__argon2profile;
 
     mutex __hashes_mutex;

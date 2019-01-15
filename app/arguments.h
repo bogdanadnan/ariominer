@@ -5,7 +5,7 @@
 #ifndef ARIOMINER_ARGUMENTS_H
 #define ARIOMINER_ARGUMENTS_H
 
-class arguments {
+class DLLEXPORT arguments {
 public:
     arguments(int argc, char *argv[]);
 
@@ -38,6 +38,9 @@ public:
 
 	string cpu_optimization();
 	string gpu_optimization();
+
+	int chs_threshold();
+	int ghs_threshold();
 
     string get_help();
 
@@ -77,6 +80,9 @@ private:
 
 	string __cpu_optimization;
 	string __gpu_optimization;
+
+	int __chs_threshold;
+	int __ghs_threshold;
 
     static string __argv_0;
 };

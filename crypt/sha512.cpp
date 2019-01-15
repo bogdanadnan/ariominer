@@ -1,3 +1,5 @@
+#include "../common/dllexport.h"
+
 #include <cstring>
 #include <fstream>
 #include "sha512.h"
