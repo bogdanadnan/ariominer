@@ -226,18 +226,23 @@ arguments::arguments(int argc, char **argv) {
 					__help_flag = 1;
 				}
 				else {
-					if (strcmp(optarg, "OPENCL") == 0)
-						__gpu_optimization = "OPENCL";
-                    else if (strcmp(optarg, "CUDA") == 0)
-                        __gpu_optimization = "CUDA";
-                    else if (strcmp(optarg, "AMDGCN") == 0)
-                        __gpu_optimization = "AMDGCN";
-					else {
-						sprintf(buff, "%s: invalid arguments",
-							argv[0]);
-						__error_message = buff;
-						__error_flag = true;
-					}
+				    vector<string> gpu_hashers = __parse_multiarg(optarg);
+				    for(vector<string>::iterator st = gpu_hashers.begin(); st != gpu_hashers.end(); st++) {
+				        string opt = *st;
+                        if (opt == "OPENCL")
+                            __gpu_optimization.push_back("OPENCL");
+                        else if (opt == "CUDA")
+                            __gpu_optimization.push_back("CUDA");
+                        else if (opt == "AMDGCN")
+                            __gpu_optimization.push_back("AMDGCN");
+                        else {
+                            sprintf(buff, "%s: invalid arguments",
+                                    argv[0]);
+                            __error_message = buff;
+                            __error_flag = true;
+                            break;
+                        }
+                    }
 				}
 			break;
 			case 'u':
@@ -428,6 +433,11 @@ bool arguments::valid(string &error) {
             error = "GPU autotune step time must be at least 10 seconds.";
             return false;
         }
+
+        if(__gpu_optimization.size() > 1) {
+            error = "In autotune mode you can only use one gpu hasher type (AMDGCN|CUDA|OPENCL).";
+            return false;
+        }
     }
     else {
         error = "Only miner or autotune mode are supported for the moment";
@@ -497,7 +507,7 @@ string arguments::cpu_optimization() {
 	return __cpu_optimization;
 }
 
-string arguments::gpu_optimization() {
+vector<string> arguments::gpu_optimization() {
 	return __gpu_optimization;
 }
 
@@ -637,12 +647,13 @@ void arguments::__init() {
     __autotune_step_time = 20;
 
     __cpu_optimization = "";
-	__gpu_optimization = "";
+	__gpu_optimization.clear();
     __argon2profile = "";
 
     __chs_threshold = -1;
     __ghs_threshold = -1;
 
+    __cards_count = 0;
     __error_flag = false;
 }
 

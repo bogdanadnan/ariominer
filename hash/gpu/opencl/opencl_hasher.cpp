@@ -500,7 +500,7 @@ opencl_hasher::~opencl_hasher() {
 }
 
 bool opencl_hasher::configure(arguments &args) {
-    int index = 1;
+    int index = args.get_cards_count();
     double intensity_cpu = 0;
     double intensity_gpu = 0;
 
@@ -527,8 +527,9 @@ bool opencl_hasher::configure(arguments &args) {
 
     for(vector<opencl_device_info *>::iterator d = __devices.begin(); d != __devices.end(); d++, index++) {
         stringstream ss;
-        ss << "["<< index << "] " << (*d)->device_string << endl;
+        ss << "["<< (index + 1) << "] " << (*d)->device_string << endl;
         string device_description = ss.str();
+        (*d)->device_index = index;
 
         if(filter.size() > 0) {
             bool found = false;
@@ -567,6 +568,8 @@ bool opencl_hasher::configure(arguments &args) {
         total_threads_profile_4_4_16384 += (*d)->profile_info.threads_profile_4_4_16384;
         total_threads_profile_1_1_524288 += (*d)->profile_info.threads_profile_1_1_524288;
     }
+
+    args.set_cards_count(index);
 
     if (total_threads_profile_4_4_16384 == 0 && total_threads_profile_1_1_524288 == 0) {
         _intensity = 0;
@@ -708,7 +711,7 @@ void opencl_hasher::__run(opencl_device_info *device, int thread_id) {
 			if (device->error != CL_SUCCESS) {
 				LOG("Error running kernel: (" + to_string(device->error) + ")" + device->error_message);
 				__running = false;
-				continue;
+				exit(0);
 			}
 			vector<hash_data> stored_hashes;
             for(vector<string>::iterator it = hashes.begin(); it != hashes.end(); ++it) {

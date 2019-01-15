@@ -37,7 +37,7 @@ public:
     int report_interval();
 
 	string cpu_optimization();
-	string gpu_optimization();
+	vector<string> gpu_optimization();
 
 	int chs_threshold();
 	int ghs_threshold();
@@ -45,6 +45,9 @@ public:
     string get_help();
 
     static string get_app_folder();
+
+    int get_cards_count() { return __cards_count; }
+    void set_cards_count(int count) { __cards_count = count; }
 
 private:
     void __init();
@@ -79,11 +82,12 @@ private:
     string __argon2profile;
 
 	string __cpu_optimization;
-	string __gpu_optimization;
+	vector<string> __gpu_optimization;
 
 	int __chs_threshold;
 	int __ghs_threshold;
 
+	int __cards_count;
     static string __argv_0;
 };
 

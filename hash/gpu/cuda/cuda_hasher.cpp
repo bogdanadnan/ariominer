@@ -50,7 +50,7 @@ bool cuda_hasher::initialize() {
 }
 
 bool cuda_hasher::configure(arguments &args) {
-	int index = 1;
+	int index = args.get_cards_count();
 	double intensity_cpu = 0;
 	double intensity_gpu = 0;
 
@@ -77,8 +77,9 @@ bool cuda_hasher::configure(arguments &args) {
 
 	for(vector<cuda_device_info *>::iterator d = __devices.begin(); d != __devices.end(); d++, index++) {
 		stringstream ss;
-		ss << "["<< index << "] " << (*d)->device_string << endl;
+		ss << "["<< (index + 1) << "] " << (*d)->device_string << endl;
 		string device_description = ss.str();
+        (*d)->device_index = index;
 
 		if(filter.size() > 0) {
 			bool found = false;
@@ -124,6 +125,8 @@ bool cuda_hasher::configure(arguments &args) {
 		total_threads_profile_1_1_524288 += (*d)->profile_info.threads_profile_1_1_524288;
 	}
 
+	args.set_cards_count(index);
+
 	if (total_threads_profile_4_4_16384 == 0 && total_threads_profile_1_1_524288 == 0) {
 		_intensity = 0;
 		_description += "Status: DISABLED - not enough resources.";
@@ -166,7 +169,7 @@ void cuda_hasher::cleanup() {
 cuda_device_info *cuda_hasher::__get_device_info(int device_index) {
 	cuda_device_info *device_info = new cuda_device_info();
 	device_info->error = cudaSuccess;
-	device_info->device_index = device_index;
+	device_info->cuda_index = device_index;
 
 	device_info->error = cudaSetDevice(device_index);
 	if(device_info->error != cudaSuccess) {
@@ -276,7 +279,7 @@ vector<cuda_device_info *> cuda_hasher::__query_cuda_devices(cudaError_t &error,
 }
 
 void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
-	cudaSetDevice(device->device_index);
+	cudaSetDevice(device->cuda_index);
 
 	cuda_gpumgmt_thread_data thread_data;
 	thread_data.device = device;
@@ -328,7 +331,7 @@ void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
 			if (device->error != cudaSuccess) {
 				LOG("Error running kernel: (" + to_string(device->error) + ")" + device->error_message);
 				__running = false;
-				continue;
+				exit(0);
 			}
 			vector<hash_data> stored_hashes;
 			for(vector<string>::iterator it = hashes.begin(); it != hashes.end(); ++it) {

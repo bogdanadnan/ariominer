@@ -751,7 +751,7 @@ __global__ void fill_blocks_gpu(uint32_t *scratchpad0,
 };
 
 void cuda_allocate(cuda_device_info *device, double chunks, size_t chunk_size) {
-	device->error = cudaSetDevice(device->device_index);
+	device->error = cudaSetDevice(device->cuda_index);
 	if(device->error != cudaSuccess) {
 		device->error_message = "Error setting current device for memory allocation.";
 		return;
@@ -926,7 +926,7 @@ void cuda_allocate(cuda_device_info *device, double chunks, size_t chunk_size) {
 }
 
 void cuda_free(cuda_device_info *device) {
-	cudaSetDevice(device->device_index);
+	cudaSetDevice(device->cuda_index);
 
 	if(device->arguments.address_profile_1_1_524288 != NULL) {
 		cudaFree(device->arguments.address_profile_1_1_524288);
