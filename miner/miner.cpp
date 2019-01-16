@@ -327,11 +327,11 @@ bool miner::__display_report() {
 
     if(__chs_threshold_hit >= 12 && (__blocks_count > 1 || __argon2profile == "1_1_524288")) {
         LOG("CBlocks hashrate is lower than requested threshold, exiting.");
-        return false;
+        exit(0);
     }
     if(__ghs_threshold_hit >= 12 && (__blocks_count > 1 || __argon2profile == "4_4_16384")) {
         LOG("GBlocks hashrate is lower than requested threshold, exiting.");
-        return false;
+        exit(0);
     }
 
     LOG(ss.str());
