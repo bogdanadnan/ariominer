@@ -299,6 +299,26 @@ void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
 
 	thread_data.device_data = stream;
 
+#ifdef PARALLEL_CUDA
+    if(thread_id == 0) {
+        thread_data.threads_profile_1_1_524288_idx = 0;
+        thread_data.threads_profile_4_4_16384_idx = 0;
+        thread_data.threads_profile_1_1_524288 = device->profile_info.threads_profile_1_1_524288 / 2;
+        thread_data.threads_profile_4_4_16384 = device->profile_info.threads_profile_4_4_16384 / 2;
+    }
+    else {
+        thread_data.threads_profile_1_1_524288_idx = device->profile_info.threads_profile_1_1_524288 / 2;
+        thread_data.threads_profile_4_4_16384_idx = device->profile_info.threads_profile_4_4_16384 / 2;
+        thread_data.threads_profile_1_1_524288 = device->profile_info.threads_profile_1_1_524288 - thread_data.threads_profile_1_1_524288_idx;
+        thread_data.threads_profile_4_4_16384 = device->profile_info.threads_profile_4_4_16384 - thread_data.threads_profile_4_4_16384_idx;
+    }
+#else
+    thread_data.threads_profile_1_1_524288_idx = 0;
+    thread_data.threads_profile_4_4_16384_idx = 0;
+    thread_data.threads_profile_1_1_524288 = device->profile_info.threads_profile_1_1_524288;
+    thread_data.threads_profile_4_4_16384 = device->profile_info.threads_profile_4_4_16384;
+#endif
+
 	void *memory = device->arguments.host_seed_memory[thread_id];
 	argon2 hash_factory(cuda_kernel_filler, memory, &thread_data);
 	hash_factory.set_lane_length(2);
@@ -319,7 +339,7 @@ void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
 					continue;
 				}
 				hash_factory.set_seed_memory_offset(2 * ARGON2_BLOCK_SIZE);
-				hash_factory.set_threads(device->profile_info.threads_profile_1_1_524288);
+				hash_factory.set_threads(thread_data.threads_profile_1_1_524288);
 			}
 			else {
 				if(device->profile_info.threads_profile_4_4_16384 == 0) {
@@ -327,7 +347,7 @@ void cuda_hasher::__run(cuda_device_info *device, int thread_id) {
 					continue;
 				}
 				hash_factory.set_seed_memory_offset(8 * ARGON2_BLOCK_SIZE);
-				hash_factory.set_threads(device->profile_info.threads_profile_4_4_16384);
+				hash_factory.set_threads(thread_data.threads_profile_4_4_16384);
 			}
 
 			vector<string> hashes = hash_factory.generate_hashes(*profile, input.base, input.salt);

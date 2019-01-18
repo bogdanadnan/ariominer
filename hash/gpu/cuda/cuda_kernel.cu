@@ -284,14 +284,15 @@ __global__ void fill_blocks_cpu(uint32_t *scratchpad0,
                                 uint32_t *out,
                                 int32_t *addresses,
                                 int memsize,
-                                int threads_per_chunk) {
+                                int threads_per_chunk,
+								int thread_idx) {
 	__shared__ uint32_t state[BLOCK_SIZE_UINT];
 	__shared__ int32_t addr[64];
 
 	uint32_t a0, a1, b0, b1, c0, c1, d0, d1, x0, x1, y0, y1, z0, z1, w0, w1;
 	uint32_t p0, p1, q0, q1, l0, l1, m0, m1;;
 
-	int hash = blockIdx.x;
+	int hash = blockIdx.x + thread_idx;
 	int id = threadIdx.x;
 
 	int offset = id << 2;
@@ -462,14 +463,15 @@ __global__ void fill_blocks_gpu(uint32_t *scratchpad0,
                                 uint32_t *addresses,
                                 uint32_t *segments,
                                 int memsize,
-                                int threads_per_chunk) {
+                                int threads_per_chunk,
+								int thread_idx) {
 	__shared__ uint32_t state[4 * BLOCK_SIZE_UINT];
 	__shared__ uint32_t addr[4 * 32];
 
 	uint32_t a0, a1, b0, b1, c0, c1, d0, d1, x0, x1, y0, y1, z0, z1, w0, w1;
 	uint32_t e0, e1, f0, f1, g0, g1, h0, h1, p0, p1, q0, q1, l0, l1, m0, m1;
 
-	int hash = blockIdx.x;
+	int hash = blockIdx.x + thread_idx;
 	int local_id = threadIdx.x;
 
 	int id = local_id % ITEMS_PER_SEGMENT;
@@ -1021,12 +1023,12 @@ void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void
 	}
 	work_items = KERNEL_WORKGROUP_SIZE * parallelism;
 
-	device->device_lock.lock();
+	gpumgmt_thread->lock();
 
 	device->error = cudaMemcpyAsync(device->arguments.seed_memory[gpumgmt_thread->thread_id], memory, threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, cudaMemcpyHostToDevice, stream);
 	if (device->error != cudaSuccess) {
 		device->error_message = "Error writing to gpu memory.";
-		device->device_lock.unlock();
+		gpumgmt_thread->unlock();
 		return NULL;
 	}
 
@@ -1040,7 +1042,7 @@ void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void
 				device->arguments.seed_memory[gpumgmt_thread->thread_id],
 				device->arguments.out_memory[gpumgmt_thread->thread_id],
 				device->arguments.address_profile_1_1_524288,
-				memsize, device->profile_info.threads_per_chunk_profile_1_1_524288);
+				memsize, device->profile_info.threads_per_chunk_profile_1_1_524288, gpumgmt_thread->threads_profile_1_1_524288_idx);
 	}
 	else {
 		fill_blocks_gpu<<<threads, work_items, 0, stream>>> ((uint32_t*)device->arguments.memory_chunk_0,
@@ -1053,13 +1055,13 @@ void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void
 				device->arguments.out_memory[gpumgmt_thread->thread_id],
 				device->arguments.address_profile_4_4_16384,
 				device->arguments.segments_profile_4_4_16384,
-				memsize, device->profile_info.threads_per_chunk_profile_4_4_16384);
+				memsize, device->profile_info.threads_per_chunk_profile_4_4_16384, gpumgmt_thread->threads_profile_4_4_16384_idx);
 	}
 
 	device->error = cudaMemcpyAsync(memory, device->arguments.out_memory[gpumgmt_thread->thread_id], threads * 2 * mem_seed_count * ARGON2_BLOCK_SIZE, cudaMemcpyDeviceToHost, stream);
 	if (device->error != cudaSuccess) {
 		device->error_message = "Error reading gpu memory.";
-        device->device_lock.unlock();
+		gpumgmt_thread->unlock();
 		return NULL;
 	}
 
@@ -1068,7 +1070,7 @@ void *cuda_kernel_filler(void *memory, int threads, argon2profile *profile, void
 		continue;
 	}
 
-	device->device_lock.unlock();
+	gpumgmt_thread->unlock();
 
 	return memory;
 }

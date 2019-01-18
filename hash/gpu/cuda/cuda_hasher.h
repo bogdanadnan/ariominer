@@ -65,9 +65,27 @@ struct cuda_device_info {
 };
 
 struct cuda_gpumgmt_thread_data {
+	void lock() {
+#ifndef PARALLEL_CUDA
+		device->device_lock.lock();
+#endif
+	}
+
+	void unlock() {
+#ifndef PARALLEL_CUDA
+		device->device_lock.unlock();
+#endif
+	}
+
 	int thread_id;
 	cuda_device_info *device;
 	void *device_data;
+
+	int threads_profile_1_1_524288;
+	int threads_profile_4_4_16384;
+
+	int threads_profile_1_1_524288_idx;
+	int threads_profile_4_4_16384_idx;
 };
 
 class cuda_hasher : public hasher {
