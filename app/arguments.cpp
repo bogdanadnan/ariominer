@@ -630,9 +630,9 @@ string arguments::get_help() {
 			"                    values: REF\n"
 #endif
 			"                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
-			"   --force-gpu-optimization: what type of GPU optimization/hasher to use\n"
-			"                    values: OPENCL, CUDA, AMDGCN\n"
+			"   --force-gpu-optimization: what type of GPU optimization/hasher to use; values: OPENCL, CUDA, AMDGCN\n"
 			"                    this is optional, defaults to autodetect\n"
+            "                    you can add more entries separated by comma\n"
             "   --chs-threshold: miner specific option, cblocks avg hashrate value under which\n"
             "                    miner will exit (default is disabled)\n"
             "   --ghs-threshold: miner specific option, gblocks avg hashrate value under which\n"

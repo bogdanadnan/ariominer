@@ -81,7 +81,7 @@ bool amdgcn_hasher::configure(arguments &args) {
 
 	for(vector<amdgcn_device_info *>::iterator d = __devices.begin(); d != __devices.end(); d++, index++) {
 		stringstream ss;
-		ss << "["<< (index + 1) << "] " << (*d)->device_string << endl;
+		ss << "["<< (index + 1) << "] " << (*d)->device_string;
 		string device_description = ss.str();
 		(*d)->device_index = index;
 
@@ -96,7 +96,12 @@ bool amdgcn_hasher::configure(arguments &args) {
 			if(!found) {
 				(*d)->profile_info.threads_profile_4_4_16384 = 0;
 				(*d)->profile_info.threads_profile_1_1_524288 = 0;
+				ss << " - DISABLED" << endl;
+				_description += ss.str();
 				continue;
+			}
+			else {
+				ss << endl;
 			}
 		}
 
