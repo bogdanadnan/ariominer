@@ -546,10 +546,9 @@ bool opencl_hasher::configure(arguments &args) {
                 _description += ss.str();
                 continue;
             }
-            else {
-                ss << endl;
-            }
         }
+
+        ss << endl;
 
         double device_intensity_cpu = 0;
         if(args.gpu_intensity_cblocks().size() == 1 || (*d)->device_index >= args.gpu_intensity_cblocks().size())
