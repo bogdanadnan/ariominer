@@ -50,7 +50,7 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
     string response = _http_get(url);
 
     if(__show_pool_requests && url.find("hashrate") != string::npos) // log only hashrate responses
-        LOG("Pool response: " + url);
+        LOG("Pool response: " + response);
 
     if(!__validate_response(response)) {
         LOG("Error connecting to " + __pool_address + ".");
