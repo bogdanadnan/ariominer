@@ -292,7 +292,7 @@ __global__ void fill_blocks_cpu(uint32_t *scratchpad0,
 	uint32_t a0, a1, b0, b1, c0, c1, d0, d1, x0, x1, y0, y1, z0, z1, w0, w1;
 	uint32_t p0, p1, q0, q1, l0, l1, m0, m1;;
 
-	int hash = blockIdx.x + thread_idx;
+	int hash = blockIdx.x;
     int mem_hash = hash + thread_idx;
 	int id = threadIdx.x;
 
