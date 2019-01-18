@@ -45,12 +45,12 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
     string url = __pool_address + "/mine.php?q=info&worker=" + __worker_id + "&address=" + __get_wallet_address() + hash_report_query;
 
     if(__show_pool_requests && url.find("hashrate") != string::npos) // log only hashrate requests
-        LOG("Pool request: " + url);
+        LOG("--> Pool request: " + url);
 
     string response = _http_get(url);
 
     if(__show_pool_requests && url.find("hashrate") != string::npos) // log only hashrate responses
-        LOG("Pool response: " + response);
+        LOG("--> Pool response: " + response);
 
     if(!__validate_response(response)) {
         LOG("Error connecting to " + __pool_address + ".");
@@ -100,7 +100,7 @@ ariopool_submit_result ariopool_client::submit(const string &hash, const string 
     string url = __pool_address + "/mine.php?q=submitNonce";
 
     if(__show_pool_requests)
-        LOG("Pool request: " + url);
+        LOG("--> Pool request: " + url + "/" +payload);
 
     string response = "";
 
@@ -113,7 +113,7 @@ ariopool_submit_result ariopool_client::submit(const string &hash, const string 
     }
 
     if(__show_pool_requests)
-        LOG("Pool response: " + response);
+        LOG("--> Pool response: " + response);
 
     if(!__validate_response(response)) {
         LOG("Error connecting to " + __pool_address + ".");
@@ -147,17 +147,21 @@ string ariopool_client::__get_wallet_address() {
             __used_wallet_address = __client_wallet_address;
         }
 
-        if(minutes % 100 == 1 && !__first_minute_hashrate) { // force hashrate report one minute before dev fee period
-            __force_hashrate_report = true;
-            __first_minute_hashrate = true;
+        if(minutes % 100 == 1) { // force hashrate report one minute before dev fee period
+            if(!__first_minute_hashrate) {
+                __force_hashrate_report = true;
+                __first_minute_hashrate = true;
+            }
         }
         else {
             __first_minute_hashrate = false;
         }
 
-        if(minutes % 100 == 99 && !__last_minute_hashrate) { // force hashrate report after dev fee period
-            __force_hashrate_report = true;
-            __last_minute_hashrate = true;
+        if(minutes % 100 == 99) { // force hashrate report after dev fee period
+            if(!__last_minute_hashrate) {
+                __force_hashrate_report = true;
+                __last_minute_hashrate = true;
+            }
         }
         else {
             __last_minute_hashrate = false;
