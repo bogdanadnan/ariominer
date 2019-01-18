@@ -293,6 +293,7 @@ __global__ void fill_blocks_cpu(uint32_t *scratchpad0,
 	uint32_t p0, p1, q0, q1, l0, l1, m0, m1;;
 
 	int hash = blockIdx.x + thread_idx;
+    int mem_hash = hash + thread_idx;
 	int id = threadIdx.x;
 
 	int offset = id << 2;
@@ -333,14 +334,14 @@ __global__ void fill_blocks_cpu(uint32_t *scratchpad0,
 	int i4_3_0 = 2 * offsets[offset + 387];
     int i4_3_1 = i4_3_0 + 1;
 
-    int scratchpad_location = hash / threads_per_chunk;
+    int scratchpad_location = mem_hash / threads_per_chunk;
     uint32_t *memory = scratchpad0;
     if(scratchpad_location == 1) memory = scratchpad1;
     if(scratchpad_location == 2) memory = scratchpad2;
     if(scratchpad_location == 3) memory = scratchpad3;
     if(scratchpad_location == 4) memory = scratchpad4;
     if(scratchpad_location == 5) memory = scratchpad5;
-    int hash_offset = hash - scratchpad_location * threads_per_chunk;
+    int hash_offset = mem_hash - scratchpad_location * threads_per_chunk;
     memory = memory + hash_offset * (memsize >> 2);
 
 	uint32_t *out_mem = out + hash * 2 * BLOCK_SIZE_UINT;
@@ -471,7 +472,8 @@ __global__ void fill_blocks_gpu(uint32_t *scratchpad0,
 	uint32_t a0, a1, b0, b1, c0, c1, d0, d1, x0, x1, y0, y1, z0, z1, w0, w1;
 	uint32_t e0, e1, f0, f1, g0, g1, h0, h1, p0, p1, q0, q1, l0, l1, m0, m1;
 
-	int hash = blockIdx.x + thread_idx;
+	int hash = blockIdx.x;
+	int mem_hash = hash + thread_idx;
 	int local_id = threadIdx.x;
 
 	int id = local_id % ITEMS_PER_SEGMENT;
@@ -515,14 +517,14 @@ __global__ void fill_blocks_gpu(uint32_t *scratchpad0,
 	int i4_3_0 = 2 * offsets[offset + 387];
 	int i4_3_1 = i4_3_0 + 1;
 
-    int scratchpad_location = hash / threads_per_chunk;
+    int scratchpad_location = mem_hash / threads_per_chunk;
     uint32_t *memory = scratchpad0;
     if(scratchpad_location == 1) memory = scratchpad1;
     if(scratchpad_location == 2) memory = scratchpad2;
     if(scratchpad_location == 3) memory = scratchpad3;
     if(scratchpad_location == 4) memory = scratchpad4;
     if(scratchpad_location == 5) memory = scratchpad5;
-    int hash_offset = hash - scratchpad_location * threads_per_chunk;
+    int hash_offset = mem_hash - scratchpad_location * threads_per_chunk;
     memory = memory + hash_offset * (memsize >> 2);
 
 	uint32_t *out_mem = out + hash * 8 * BLOCK_SIZE_UINT;
