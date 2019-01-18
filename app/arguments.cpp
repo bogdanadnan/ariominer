@@ -618,7 +618,9 @@ string arguments::get_help() {
             "                    you can add more entries separated by comma for each GPU\n"
             "   --gpu-filter: miner specific option, filter string for device selection\n"
             "                    it will select only devices that have in description the specified string\n"
-            "                    this is optional, defaults to \"\"; you can add more entries separated by comma\n"
+            "                    this is optional, defaults to \"\"; you can add more entries separated by comma;\n"
+            "                    if using multiple gpu hashers you can select specific filters for each like this:\n"
+            "                    --gpu-filter CUDA:[1],CUDA:[2],OPENCL:AMD where [1], [2] and AMD are filters for cards\n"
 			"   --force-cpu-optimization: miner specific option, what type of CPU optimization to use\n"
 #if defined(__x86_64__) || defined(_WIN64)
 			"                    values: REF, SSE2, SSSE3, AVX, AVX2, AVX512F\n"
@@ -628,9 +630,9 @@ string arguments::get_help() {
 			"                    values: REF\n"
 #endif
 			"                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
-			"   --force-gpu-optimization: what type of GPU optimization to use\n"
+			"   --force-gpu-optimization: what type of GPU optimization/hasher to use\n"
 			"                    values: OPENCL, CUDA, AMDGCN\n"
-			"                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
+			"                    this is optional, defaults to autodetect\n"
             "   --chs-threshold: miner specific option, cblocks avg hashrate value under which\n"
             "                    miner will exit (default is disabled)\n"
             "   --ghs-threshold: miner specific option, gblocks avg hashrate value under which\n"

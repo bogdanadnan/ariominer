@@ -303,7 +303,7 @@ void hasher::_update_running_status(bool running) {
 }
 
 vector<string> hasher::_get_gpu_filters(arguments &args) {
-    vector<string> local_filters = args.gpu_optimization();
+    vector<string> local_filters = args.gpu_filter();
     vector<hasher*> gpu_hashers = get_hashers_of_type("GPU");
     for(vector<string>::iterator it = local_filters.end(); it-- != local_filters.begin();) {
         string filter = *it;
