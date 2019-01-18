@@ -101,6 +101,9 @@ if(NOT WITHOUT_CUDA)
             LIBRARY_OUTPUT_DIRECTORY modules
             )
     target_link_libraries(cuda_hasher hasher)
+    if(NOT WIN32)
+        add_definitions(-DPARALLEL_CUDA)
+    endif()
     add_dependencies(ariominer cuda_hasher)
 endif()
 
