@@ -302,3 +302,34 @@ void hasher::_update_running_status(bool running) {
     __is_running = running;
 }
 
+vector<string> hasher::_get_gpu_filters(arguments &args) {
+    vector<string> local_filters = args.gpu_optimization();
+    vector<hasher*> gpu_hashers = get_hashers_of_type("GPU");
+    for(vector<string>::iterator it = local_filters.end(); it-- != local_filters.begin();) {
+        string filter = *it;
+        string filter_type = "";
+        for(vector<hasher*>::iterator hit = gpu_hashers.begin(); hit != gpu_hashers.end(); hit++) {
+            if(filter.find((*hit)->_subtype + ":") == 0) {
+                filter_type = (*hit)->_subtype;
+                break;
+            }
+        }
+        if(filter_type != "" && filter_type != this->_subtype) {
+            local_filters.erase(it);
+        }
+        else if(filter_type != "") { //cleanup subtype prefix
+            it->erase(0, this->_subtype.size() + 1);
+        }
+    }
+    return local_filters;
+}
+
+vector<hasher *> hasher::get_hashers_of_type(const string &type) {
+    vector<hasher *> filtered;
+    for(vector<hasher*>::iterator it = __registered_hashers->begin();it != __registered_hashers->end();++it) {
+        if((*it)->_type == type)
+            filtered.push_back(*it);
+    }
+    return filtered;
+}
+

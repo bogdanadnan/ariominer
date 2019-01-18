@@ -514,7 +514,7 @@ bool opencl_hasher::configure(arguments &args) {
     }
     intensity_gpu /= args.gpu_intensity_gblocks().size();
 
-    vector<string> filter = args.gpu_filter();
+    vector<string> filter = _get_gpu_filters(args);
 
     int total_threads_profile_4_4_16384 = 0;
     int total_threads_profile_1_1_524288 = 0;
