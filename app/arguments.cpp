@@ -40,6 +40,7 @@ arguments::arguments(int argc, char **argv) {
 			{"force-gpu-optimization", required_argument, NULL, 'f'},
 			{"update-interval", required_argument, NULL, 'u'},
             {"report-interval", required_argument, NULL, 'r'},
+            {"hash-report-interval", required_argument, NULL, 'j'},
             {"block-type", required_argument, NULL, 'b'},
             {"intensity-start", required_argument, NULL, 'y'},
             {"intensity-stop", required_argument, NULL, 'z'},
@@ -47,12 +48,13 @@ arguments::arguments(int argc, char **argv) {
             {"autotune-step-time", required_argument, NULL, 's'},
             {"chs-threshold", required_argument, NULL, 'e'},
             {"ghs-threshold", required_argument, NULL, 'i'},
+            {"show-pool-requests", no_argument, NULL, 'k'},
             {0, 0, 0, 0}
         };
 
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:x:d:o:f:u:r:b:y:z:q:t:s:",
+        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:x:d:o:f:u:r:b:y:z:q:t:s:e:i:j:k",
                          options, &option_index);
 
         switch (c)
@@ -72,6 +74,9 @@ arguments::arguments(int argc, char **argv) {
                 break;
             case 'v':
                 __verbose_flag = 1;
+                break;
+            case 'k':
+                __show_pool_requests = true;
                 break;
             case 'm':
                 if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
@@ -261,6 +266,14 @@ arguments::arguments(int argc, char **argv) {
                     __report_interval = 1000000 * atoi(optarg);
                 }
                 break;
+            case 'j':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    __hash_report_interval = 1000000 * atoi(optarg);
+                }
+                break;
             case 'y':
                 if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
                     __help_flag = 1;
@@ -402,6 +415,11 @@ bool arguments::valid(string &error) {
             error = "Reporting interval must be at least 1 sec.";
             return false;
         }
+
+        if (__hash_report_interval < 60000000) {
+            error = "Reporting interval must be at least 1 min.";
+            return false;
+        }
     }
     else if(__autotune_flag == 1) {
         if (__argon2profile.empty()) {
@@ -511,12 +529,16 @@ vector<string> arguments::gpu_optimization() {
 	return __gpu_optimization;
 }
 
-int arguments::update_interval() {
+int64_t arguments::update_interval() {
     return __update_interval;
 }
 
-int arguments::report_interval() {
+int64_t arguments::report_interval() {
     return __report_interval;
+}
+
+int64_t arguments::hash_report_interval() {
+    return __hash_report_interval;
 }
 
 string arguments::argon2_profile() {
@@ -535,7 +557,7 @@ double arguments::gpu_intensity_step() {
     return __gpu_intensity_step;
 }
 
-int arguments::autotune_step_time() {
+int64_t arguments::autotune_step_time() {
     return __autotune_step_time;
 }
 
@@ -545,6 +567,10 @@ int arguments::chs_threshold() {
 
 int arguments::ghs_threshold() {
     return __ghs_threshold;
+}
+
+bool arguments::show_pool_requests() {
+    return __show_pool_requests;
 }
 
 string arguments::get_help() {
@@ -615,8 +641,11 @@ string arguments::get_help() {
             "   --update-interval: how often should we update mining settings from pool, in seconds\n"
             "                    increasing it will lower the load on pool but will increase rejection rate\n"
             "                    this is optional, defaults to 2 sec and can't be set lower than that\n"
+            "   --hash-report-interval: how often should we send hashrate to pool, in minutes\n"
+            "                    this is optional, defaults to 10 min and can't be set lower than 1 min\n"
             "   --report-interval: how often should we display mining reports, in seconds\n"
             "                    this is optional, defaults to 10 sec\n"
+            "   --show-pool-requests: miner specific option, show full requests sent to pool, debug purpose only\n"
             "   --intensity-start: autotune specific option, start intensity for autotuning (default 1)\n"
             "   --intensity-stop: autotune specific option, stop intensity for autotuning (default 100)\n"
             "   --intensity-step: autotune specific option, intensity steps for autotuning (default 1)\n"
@@ -640,6 +669,7 @@ void arguments::__init() {
     __proxy_port = 8088;
     __update_interval = 2000000;
     __report_interval = 10000000;
+    __hash_report_interval = 600000000;
 
     __gpu_intensity_start = 1;
     __gpu_intensity_stop = 100;
@@ -652,6 +682,8 @@ void arguments::__init() {
 
     __chs_threshold = -1;
     __ghs_threshold = -1;
+
+    __show_pool_requests = false;
 
     __cards_count = 0;
     __error_flag = false;
@@ -691,4 +723,3 @@ vector<string> arguments::__parse_multiarg(const string &arg) {
 
     return tokens;
 }
-

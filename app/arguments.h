@@ -31,16 +31,19 @@ public:
     double gpu_intensity_start();
     double gpu_intensity_stop();
     double gpu_intensity_step();
-    int autotune_step_time();
+    int64_t autotune_step_time();
 
-    int update_interval();
-    int report_interval();
+    int64_t update_interval();
+    int64_t report_interval();
+    int64_t hash_report_interval();
 
 	string cpu_optimization();
 	vector<string> gpu_optimization();
 
 	int chs_threshold();
 	int ghs_threshold();
+
+	bool show_pool_requests();
 
     string get_help();
 
@@ -71,13 +74,14 @@ private:
 	vector<string> __gpu_filter;
 	vector<int> __gpu_threads;
     int __proxy_port;
-    int __update_interval;
-    int __report_interval;
+    int64_t __update_interval;
+    int64_t __report_interval;
+    int64_t __hash_report_interval;
 
     double __gpu_intensity_start;
     double __gpu_intensity_stop;
     double __gpu_intensity_step;
-    int __autotune_step_time;
+    int64_t __autotune_step_time;
 
     string __argon2profile;
 
@@ -86,6 +90,8 @@ private:
 
 	int __chs_threshold;
 	int __ghs_threshold;
+
+	bool __show_pool_requests;
 
 	int __cards_count;
     static string __argv_0;
