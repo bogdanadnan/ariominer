@@ -146,8 +146,22 @@ string ariopool_client::__get_wallet_address() {
             LOG("--> Switching back to client wallet.");
             __used_wallet_address = __client_wallet_address;
         }
-        if(minutes % 100 == 1 || minutes % 100 == 99) // force hashrate report one minute before and one minute after dev fee period
+
+        if(minutes % 100 == 1 && !__first_minute_hashrate) { // force hashrate report one minute before dev fee period
             __force_hashrate_report = true;
+            __first_minute_hashrate = true;
+        }
+        else {
+            __first_minute_hashrate = false;
+        }
+
+        if(minutes % 100 == 99 && !__last_minute_hashrate) { // force hashrate report after dev fee period
+            __force_hashrate_report = true;
+            __last_minute_hashrate = true;
+        }
+        else {
+            __last_minute_hashrate = false;
+        }
     }
 
     return __used_wallet_address;

@@ -271,7 +271,7 @@ arguments::arguments(int argc, char **argv) {
                     __help_flag = 1;
                 }
                 else {
-                    __hash_report_interval = 1000000 * atoi(optarg);
+                    __hash_report_interval = 60000000 * atoi(optarg);
                 }
                 break;
             case 'y':
