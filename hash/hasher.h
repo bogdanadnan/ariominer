@@ -53,6 +53,7 @@ public:
     vector<hash_data> get_hashes();
     bool is_running();
 
+    static vector<hasher*> get_hashers_of_type(const string &type);
     static vector<hasher*> get_hashers();
     static vector<hasher*> get_active_hashers();
     static void load_hashers();
@@ -71,6 +72,8 @@ protected:
     argon2profile *_get_argon2profile();
     bool _should_pause();
     void _update_running_status(bool running);
+	vector<string> _get_gpu_filters(arguments &args);
+
 private:
     string __make_nonce();
 

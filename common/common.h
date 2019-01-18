@@ -45,7 +45,7 @@
 
 using namespace std;
 
-#define LOG(msg) cout<<msg<<endl
+#define LOG(msg) cout<<msg<<endl<<flush
 
 DLLEXPORT uint64_t microseconds();
 DLLEXPORT vector<string> get_files(string folder);

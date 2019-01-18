@@ -18,13 +18,17 @@ autotune::~autotune() { }
 void autotune::run() {
     vector<hasher*> all_hashers = hasher::get_hashers();
 	hasher *selected_hasher = NULL;
+	string gpu_optimization;
+	if(__args.gpu_optimization().size() > 0)
+	    gpu_optimization = __args.gpu_optimization()[0];
+
 	for (vector<hasher*>::iterator it = all_hashers.begin(); it != all_hashers.end(); ++it) {
 		if ((*it)->get_type() == "GPU") {
 			if ((*it)->initialize()) {
 				if (selected_hasher == NULL || selected_hasher->get_priority() < (*it)->get_priority()) {
 					selected_hasher = *it;
 				}
-				if ((*it)->get_subtype() == __args.gpu_optimization()) {
+				if ((*it)->get_subtype() == gpu_optimization) {
 					selected_hasher = *it;
 					break;
 				}
@@ -34,7 +38,7 @@ void autotune::run() {
 	if (selected_hasher != NULL) {
 		selected_hasher->configure(__args);
 		selected_hasher->set_input("test_public_key", "test_blk", "test_difficulty", __args.argon2_profile(), "mine");
-		LOG("Compute unit: " + selected_hasher->get_type());
+		LOG("Compute unit: " + selected_hasher->get_type() + " - " + selected_hasher->get_subtype());
 		LOG(selected_hasher->get_info());
 	}
 	
