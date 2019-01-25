@@ -21,6 +21,7 @@
 
 cpu_hasher::cpu_hasher() : hasher() {
     _type = "CPU";
+    _subtype = "CPU";
     __optimization = "REF";
     __available_processing_thr = 1;
     __available_memory_thr = 1;
@@ -182,7 +183,7 @@ void cpu_hasher::__run() {
             if(mem == NULL) {
                 LOG("Error allocating memory");
                 __running = false;
-                continue;
+                exit(0);
             }
             hash_factory.set_seed_memory((uint8_t *)mem);
             free(buffer);

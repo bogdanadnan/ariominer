@@ -41,11 +41,15 @@ private:
     string __client_wallet_address;
     string __used_wallet_address;
     string __force_argon2profile;
+    int64_t __hash_report_interval;
 
     bool __force_hashrate_report;
+    bool __show_pool_requests;
 
     uint64_t __timestamp;
     uint64_t __last_hash_report;
+    bool __first_minute_hashrate;
+    bool __last_minute_hashrate;
 };
 
 #endif //PROJECT_CLIENT_H

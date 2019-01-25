@@ -38,24 +38,32 @@ miner::miner(arguments &args) : __args(args), __client(args) {
 		}
 	}
 
-	hasher *selected_gpu_hasher = NULL;
+	vector<hasher *> selected_gpu_hashers;
+	vector<string> requested_hashers = args.gpu_optimization();
 	for (vector<hasher*>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
 		if ((*it)->get_type() == "GPU") {
 			if ((*it)->initialize()) {
-                if (selected_gpu_hasher == NULL || selected_gpu_hasher->get_priority() < (*it)->get_priority()) {
-                    selected_gpu_hasher = *it;
-                }
-                if ((*it)->get_subtype() == args.gpu_optimization()) {
-                    selected_gpu_hasher = *it;
-                    break;
-                }
+			    if(requested_hashers.size() > 0) {
+			        if(find(requested_hashers.begin(), requested_hashers.end(), (*it)->get_subtype()) != requested_hashers.end()) {
+			            selected_gpu_hashers.push_back(*it);
+			        }
+			    }
+			    else {
+                    if (selected_gpu_hashers.size() == 0 || selected_gpu_hashers[0]->get_priority() < (*it)->get_priority()) {
+                        selected_gpu_hashers.clear();
+                        selected_gpu_hashers.push_back(*it);
+                    }
+			    }
 			}
 		}
 	}
-	if (selected_gpu_hasher != NULL) {
-		selected_gpu_hasher->configure(__args);
-		LOG("Compute unit: " + selected_gpu_hasher->get_type() + " - " + selected_gpu_hasher->get_subtype());
-		LOG(selected_gpu_hasher->get_info());
+
+	if (selected_gpu_hashers.size() > 0) {
+        for (vector<hasher*>::iterator it = selected_gpu_hashers.begin(); it != selected_gpu_hashers.end(); ++it) {
+            (*it)->configure(__args);
+            LOG("Compute unit: " + (*it)->get_type() + " - " + (*it)->get_subtype());
+            LOG((*it)->get_info());
+        }
 	}
 
 	LOG("\n");
@@ -281,7 +289,11 @@ bool miner::__display_report() {
             avg_hash_rate_gblocks += (*it)->get_avg_hash_rate_gblocks();
             hash_count_gblocks += (*it)->get_hash_count_gblocks();
 
-            ss << fixed << setprecision(2) << "--> " << (*it)->get_type() << "  " <<
+            string subtype = (*it)->get_subtype();
+            while(subtype.length() < 7) {
+                subtype += " ";
+            }
+            ss << fixed << setprecision(2) << "--> " << subtype <<
                "Hash rate: " << setw(6)<< (*it)->get_current_hash_rate() << " H/s   " <<
                "Avg. (Cblocks): " << setw(6) << (*it)->get_avg_hash_rate_cblocks() << " H/s  " <<
                "Avg. (Gblocks): " << setw(6) << (*it)->get_avg_hash_rate_gblocks() << "  " <<
@@ -291,7 +303,7 @@ bool miner::__display_report() {
                 ss << endl;
         }
         if(hashers.size() > 1) {
-            ss << fixed << setprecision(2) << "--> ALL  " <<
+            ss << fixed << setprecision(2) << "--> ALL    " <<
                "Hash rate: " << setw(6) << hash_rate << " H/s   " <<
                "Avg. (Cblocks): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
                "Avg. (Gblocks): " << setw(6) << avg_hash_rate_gblocks << "  " <<
@@ -313,13 +325,13 @@ bool miner::__display_report() {
         __ghs_threshold_hit = 0;
     }
 
-    if(__chs_threshold_hit >= 3 && (__blocks_count > 1 || __argon2profile == "1_1_524288")) {
+    if(__chs_threshold_hit >= 12 && (__blocks_count > 1 || __argon2profile == "1_1_524288")) {
         LOG("CBlocks hashrate is lower than requested threshold, exiting.");
-        return false;
+        exit(0);
     }
-    if(__ghs_threshold_hit >= 3 && (__blocks_count > 1 || __argon2profile == "4_4_16384")) {
+    if(__ghs_threshold_hit >= 12 && (__blocks_count > 1 || __argon2profile == "4_4_16384")) {
         LOG("GBlocks hashrate is lower than requested threshold, exiting.");
-        return false;
+        exit(0);
     }
 
     LOG(ss.str());

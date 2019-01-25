@@ -16,9 +16,10 @@ ariopool_client::ariopool_client(arguments &args) {
     __worker_id = args.name();
     __client_wallet_address = __used_wallet_address = args.wallet();
     __force_argon2profile = args.argon2_profile();
+    __hash_report_interval = args.hash_report_interval();
     __timestamp = __last_hash_report = microseconds();
-    __last_hash_report -= 580000000; // force first hash report at 20 seconds after start
     __force_hashrate_report = false;
+    __show_pool_requests = args.show_pool_requests();
 }
 
 ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double hash_rate_gblocks) {
@@ -36,14 +37,20 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
 
     uint64_t current_timestamp = microseconds();
     string hash_report_query = "";
-    if(__force_hashrate_report || (current_timestamp - __last_hash_report) > 600000000) {
+    if(__force_hashrate_report || (current_timestamp - __last_hash_report) > __hash_report_interval) {
         hash_report_query = "&hashrate=" + to_string(hash_rate_cblocks) + "&hrgpu=" + to_string(hash_rate_gblocks);
         __last_hash_report = current_timestamp;
         __force_hashrate_report = false;
     }
     string url = __pool_address + "/mine.php?q=info&worker=" + __worker_id + "&address=" + __get_wallet_address() + hash_report_query;
 
+    if(__show_pool_requests && url.find("hashrate") != string::npos) // log only hashrate requests
+        LOG("--> Pool request: " + url);
+
     string response = _http_get(url);
+
+    if(__show_pool_requests && url.find("hashrate") != string::npos) // log only hashrate responses
+        LOG("--> Pool response: " + response);
 
     if(!__validate_response(response)) {
         LOG("Error connecting to " + __pool_address + ".");
@@ -92,6 +99,9 @@ ariopool_submit_result ariopool_client::submit(const string &hash, const string 
 
     string url = __pool_address + "/mine.php?q=submitNonce";
 
+    if(__show_pool_requests)
+        LOG("--> Pool request: " + url + "/" +payload);
+
     string response = "";
 
     for(int i=0;i<2;i++) { //try resubmitting if first submit fails
@@ -101,6 +111,9 @@ ariopool_submit_result ariopool_client::submit(const string &hash, const string 
             break;
         }
     }
+
+    if(__show_pool_requests)
+        LOG("--> Pool response: " + response);
 
     if(!__validate_response(response)) {
         LOG("Error connecting to " + __pool_address + ".");
@@ -134,6 +147,25 @@ string ariopool_client::__get_wallet_address() {
             __used_wallet_address = __client_wallet_address;
         }
 
+        if(minutes % 100 == 1) { // force hashrate report one minute after dev fee period
+            if(!__first_minute_hashrate) {
+                __force_hashrate_report = true;
+                __first_minute_hashrate = true;
+            }
+        }
+        else {
+            __first_minute_hashrate = false;
+        }
+
+        if(minutes % 100 == 99) { // force hashrate report before dev fee period
+            if(!__last_minute_hashrate) {
+                __force_hashrate_report = true;
+                __last_minute_hashrate = true;
+            }
+        }
+        else {
+            __last_minute_hashrate = false;
+        }
     }
 
     return __used_wallet_address;

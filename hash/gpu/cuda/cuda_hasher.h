@@ -48,6 +48,7 @@ struct cuda_device_info {
 	}
 
     int device_index;
+	int cuda_index;
 
     string device_string;
     uint64_t max_mem_size;
