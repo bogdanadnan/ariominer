@@ -18,8 +18,6 @@
 
 #include "cpu_hasher.h"
 
-#include <dlfcn.h>
-
 cpu_hasher::cpu_hasher() : hasher() {
     _type = "CPU";
     __optimization = "REF";
@@ -28,7 +26,6 @@ cpu_hasher::cpu_hasher() : hasher() {
     __threads_count = 0;
     __running = false;
     __argon2_blocks_filler_ptr = NULL;
-    __dll_handle = NULL;
     _description = __detect_features_and_make_description();
 }
 
@@ -213,12 +210,34 @@ void *cpu_hasher::__allocate_memory(void *&buffer) {
     return align(64, argon2profile_default->memsize, mem, mem_size);
 }
 
+extern "C" {
+#if defined(__x86_64__) || defined(_WIN64)
+void *fill_memory_blocks_REF(void *memory, int threads, argon2profile *profile, void *user_data);
+void *fill_memory_blocks_SSE2(void *memory, int threads, argon2profile *profile, void *user_data);
+void *fill_memory_blocks_SSSE3(void *memory, int threads, argon2profile *profile, void *user_data);
+void *fill_memory_blocks_AVX2(void *memory, int threads, argon2profile *profile, void *user_data);
+void *fill_memory_blocks_AVX512F(void *memory, int threads, argon2profile *profile, void *user_data);
+#elif defined(__arm__)
+void *fill_memory_blocks_NEON(void *memory, int threads, argon2profile *profile, void *user_data);
+#endif
+}
+
 void cpu_hasher::__load_argon2_block_filler() {
-    string module_path = arguments::get_app_folder();
-    module_path += "/modules/argon2_fill_blocks_" + __optimization + ".opt";
-    __dll_handle = dlopen(module_path.c_str(), RTLD_LAZY);
-    if(__dll_handle != NULL)
-        __argon2_blocks_filler_ptr = (argon2_blocks_filler_ptr)dlsym(__dll_handle, "fill_memory_blocks");
+    if(__optimization == "REF")
+       __argon2_blocks_filler_ptr = fill_memory_blocks_REF;
+#if defined(__x86_64__) || defined(_WIN64)
+    else if(__optimization == "SSE2")
+       __argon2_blocks_filler_ptr = fill_memory_blocks_SSE2;
+    else if(__optimization == "SSSE3")
+       __argon2_blocks_filler_ptr = fill_memory_blocks_SSSE3;
+    else if(__optimization == "AVX2")
+       __argon2_blocks_filler_ptr = fill_memory_blocks_AVX2;
+    else if(__optimization == "AVX512F")
+       __argon2_blocks_filler_ptr = fill_memory_blocks_AVX512F;
+#elif defined(__arm__)
+    else if(__optimization == "NEON")
+       __argon2_blocks_filler_ptr = fill_memory_blocks_NEON;
+#endif
 }
 
 void cpu_hasher::cleanup() {
@@ -228,8 +247,6 @@ void cpu_hasher::cleanup() {
         delete *it;
     }
     __runners.clear();
-    if(__dll_handle != NULL)
-        dlclose(__dll_handle);
 }
 
 REGISTER_HASHER(cpu_hasher);

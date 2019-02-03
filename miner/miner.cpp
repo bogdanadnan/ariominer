@@ -29,9 +29,6 @@ miner::miner(arguments &args) : __args(args), __client(args) {
         if((*it)->get_type() == "CPU") {
             (*it)->configure(__args);
         }
-        else if((*it)->get_type() == "GPU") {
-            (*it)->configure(__args);
-        }
         else {
             (*it)->configure(__args);
         }

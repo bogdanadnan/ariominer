@@ -9,7 +9,6 @@
 #include "argon2/argon2.h"
 
 #include "hasher.h"
-#include "gpu/gpu_hasher.h"
 #include "cpu/cpu_hasher.h"
 
 hasher::hasher() {

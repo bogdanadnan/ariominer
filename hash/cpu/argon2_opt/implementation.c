@@ -8,6 +8,16 @@
 
 #include "../../argon2/defs.h"
 
+#define glue(x, y) x##y
+
+#define GLUE_HELPER(x, y) x##y
+#define GLUE(x, y) GLUE_HELPER(x, y)
+
+#define copy_block GLUE(copy_block_,OPT_NAME)
+#define xor_block GLUE(xor_block_,OPT_NAME)
+#define fill_block GLUE(fill_block_,OPT_NAME)
+#define fill_memory_blocks GLUE(fill_memory_blocks_,OPT_NAME)
+
 #if !defined(BUILD_REF) && (defined(__x86_64__) || defined(_WIN64) || defined(__NEON__))
 #include "blamka-round-opt.h"
 #else

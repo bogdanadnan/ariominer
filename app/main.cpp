@@ -6,7 +6,6 @@
 #include "arguments.h"
 #include "runner.h"
 #include "../miner/miner.h"
-#include "../autotune/autotune.h"
 #include "../proxy/proxy.h"
 
 runner *main_app = NULL;
@@ -45,11 +44,6 @@ int main(int argc, char *argv[]) {
         miner m(args);
         main_app = &m;
         m.run();
-    }
-    else if(args.is_autotune()) {
-        autotune a(args);
-        main_app = &a;
-        a.run();
     }
     else if(args.is_proxy()) {
         proxy p(args);
