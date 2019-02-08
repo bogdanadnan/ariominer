@@ -23,6 +23,7 @@ private:
     uint64_t __calc_compare(const string &duration);
     bool __update_pool_data();
     bool __display_report();
+    void __save_log();
 
     string __argon2profile;
     string __recommendation;
@@ -38,6 +39,9 @@ private:
     int __chs_threshold_hit;
     int __ghs_threshold_hit;
     int __blocks_count;
+    uint32_t __hashrate;
+    uint32_t __total_shares;
+    uint64_t __min_dl;
 
     time_t __begin_time;
 

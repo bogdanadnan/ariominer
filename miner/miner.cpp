@@ -25,6 +25,9 @@ miner::miner(arguments &args) : __args(args), __client(args) {
     __running = false;
     __chs_threshold_hit = 0;
     __ghs_threshold_hit = 0;
+    __hashrate = 0;
+    __total_shares = 0;
+    __min_dl = -1;
     __running = false;
 
     vector<hasher*> hashers = hasher::get_hashers();
@@ -121,6 +124,10 @@ void miner::run() {
                             if (__args.is_verbose()) LOG("--> Nonce confirmed.");
                             __confirmed++;
                         }
+                        __total_shares++;
+                        if(result < __min_dl) {
+                            __min_dl = result;
+                        }
                     } else {
                         if (__args.is_verbose()) {
                             LOG("--> The nonce did not confirm.");
@@ -141,6 +148,8 @@ void miner::run() {
                     (*it)->set_input(__public_key, __blk, __difficulty, __argon2profile, __recommendation);
                 }
                 __blocks_count++;
+                __total_shares = 0;
+                __min_dl = -1;
             }
             last_update = microseconds();
         }
@@ -223,6 +232,8 @@ bool miner::__update_pool_data() {
         new_settings.limit != __limit ||
         new_settings.public_key != __public_key ||
         new_settings.height != __height)) {
+        __save_log();
+
         __blk = new_settings.block;
         __difficulty = new_settings.difficulty;
         __limit = new_settings.limit;
@@ -311,6 +322,8 @@ bool miner::__display_report() {
         }
     }
 
+    __hashrate = hash_rate;
+
     if(avg_hash_rate_cblocks <= __args.chs_threshold() && (__blocks_count > 1 || __argon2profile == "1_1_524288")) {
         __chs_threshold_hit++;
     }
@@ -341,4 +354,37 @@ bool miner::__display_report() {
 void miner::stop() {
     cout << endl << "Received termination request, please wait for cleanup ... " << endl;
     __running = false;
+}
+
+inline bool check_file_exists (const std::string& name) {
+    ifstream f(name.c_str());
+    return f.good();
+}
+
+void miner::__save_log() {
+    bool log_exists = check_file_exists("blocks_log.csv");
+
+    ofstream fs;
+    fs.open("blocks_log.csv", ofstream::app);
+
+    if(!log_exists) // dump header
+        fs << "TimeStamp, BlockHeight, Difficulty, BlockType, HashRate, TotalSharesPerBlock, MinDl" << endl;
+
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer[80];
+
+    time (&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer,sizeof(buffer),"%d-%m-%Y %H:%M:%S",timeinfo);
+    std::string strTimeStamp(buffer);
+
+    if(__height > 0) {
+        fs << strTimeStamp << ", " << __height << ", " << __difficulty << ", "
+           << (__argon2profile == "4_4_16384" ? "GBlock" : "CBlock") << ", " << __hashrate << ", " << __total_shares
+           << ", " << ((__min_dl < -1) ? __min_dl : 0) << endl;
+    }
+
+    fs.close();
 }
