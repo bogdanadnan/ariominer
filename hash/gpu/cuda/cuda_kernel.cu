@@ -819,8 +819,8 @@ void cuda_allocate(cuda_device_info *device, double chunks, size_t chunk_size) {
 		int ref_chunk_idx = (i / 32) * 64;
 		int ref_idx = i % 32;
 
-		addresses_1_1_524288[ref_chunk_idx + ref_idx] = argon2profile_1_1_524288.block_refs[i*3];
-		addresses_1_1_524288[ref_chunk_idx + ref_idx + 32] = argon2profile_1_1_524288.block_refs[i*3 + 2];
+		addresses_1_1_524288[ref_chunk_idx + ref_idx] = argon2profile_1_1_524288.block_refs[i*4];
+		addresses_1_1_524288[ref_chunk_idx + ref_idx + 32] = argon2profile_1_1_524288.block_refs[i*4 + 2];
 	}
 	device->error = cudaMalloc(&device->arguments.address_profile_1_1_524288, (argon2profile_1_1_524288.block_refs_size + 2) * 2 * sizeof(int32_t));
 	if(device->error != cudaSuccess) {
@@ -837,16 +837,9 @@ void cuda_allocate(cuda_device_info *device, double chunks, size_t chunk_size) {
 	//optimise address sizes
 	uint16_t *addresses_4_4_16384 = (uint16_t *)malloc(argon2profile_4_4_16384.block_refs_size * 2 * sizeof(uint16_t));
 	for(int i=0;i<argon2profile_4_4_16384.block_refs_size;i++) {
-		addresses_4_4_16384[i*2] = argon2profile_4_4_16384.block_refs[i*3 + (i >= 65528 ? 1 : 0)];
-		addresses_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[i*3 + 2];
-		bool found = false;
-		for(int j=i+1;j<argon2profile_4_4_16384.block_refs_size;j++) {
-			if(argon2profile_4_4_16384.block_refs[j * 3 + 2] == addresses_4_4_16384[i*2] || argon2profile_4_4_16384.block_refs[j * 3 + 1] == addresses_4_4_16384[i*2] || argon2profile_4_4_16384.block_refs[j * 3] == addresses_4_4_16384[i*2]) {
-				found = true;
-				break;
-			}
-		}
-		if(!found) {
+		addresses_4_4_16384[i*2] = argon2profile_4_4_16384.block_refs[i*4 + (i >= 65528 ? 1 : 0)];
+		addresses_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[i*4 + 2];
+		if(argon2profile_4_4_16384.block_refs[i*4 + 3] == 0) {
             addresses_4_4_16384[i*2] |= 32768;
 		}
 	}
@@ -867,7 +860,7 @@ void cuda_allocate(cuda_device_info *device, double chunks, size_t chunk_size) {
 	for(int i=0;i<64;i++) {
 		int seg_start = argon2profile_4_4_16384.segments[i*3];
 		segments_4_4_16384[i*2] = seg_start;
-		segments_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[seg_start*3 + 1];
+		segments_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[seg_start*4 + 1];
 	}
 	device->error = cudaMalloc(&device->arguments.segments_profile_4_4_16384, 64 * 2 * sizeof(uint16_t));
 	if(device->error != cudaSuccess) {

@@ -1084,14 +1084,14 @@ loop_gblocks_segments:
         vaddc_u32 v29, vcc, 0, v29, vcc
         flat_load_dwordx4 v[20:23], v[28:29] glc    # load mem chunk (4 int at once)
 
-        v_mov_b32 v31, 0xFFFF
-        v_and_b32 v59, v59, v31                 # addr0 = ref & 0xFFFF
-        v_lshlrev_b32 v59, 10, v59              # addr0 = addr0 * BLOCK_SIZE
-
         s_cmp_lt_u32 s13, 16
         s_cbranch_scc1 skip_nextblk_load_gblock1
 
-        vadd_u32 v28, vcc, v59, v61             # mem_addr = mem_ptr + addr0 + offset
+        v_mov_b32 v31, 0x7FFF
+        v_and_b32 v31, v59, v31                 # addr0 = ref & 0x7FFF (keep only last 15 bits, bit 16 is keep block bit)
+        v_lshlrev_b32 v31, 10, v31              # addr0 = addr0 * BLOCK_SIZE
+
+        vadd_u32 v28, vcc, v31, v61             # mem_addr = mem_ptr + addr0 + offset
         vadd_u32 v28, vcc, v28, s0
         v_mov_b32 v29, s1
         vaddc_u32 v29, vcc, 0, v29, vcc
@@ -1108,7 +1108,7 @@ skip_nextblk_load_gblock1:
 
 loop_gblocks:
 
-        v_mov_b32 v60, v59                      # backup addr0
+        v_mov_b32 v60, v59                      # backup ref
 #        s_add_u32 s12, s12, 4                   # increment lane index for ref
 
 #        s_cmp_eq_u32 s12, 128                   # if less than 128 skip refs batch load
@@ -1180,14 +1180,14 @@ skip_nextblk_xor_gblocks:
         vaddc_u32 v29, vcc, 0, v29, vcc
         flat_load_dwordx4 v[20:23], v[28:29] glc   # load mem chunk (4 int at once)
 
-        v_mov_b32 v31, 0xFFFF
-        v_and_b32 v59, v59, v31                 # addr0 = ref & 0xFFFF
-        v_lshlrev_b32 v59, 10, v59              # addr0 = addr0 * BLOCK_SIZE
-
         s_cmp_lt_u32 s13, 16
         s_cbranch_scc1 skip_data_load_gblocks
 
-        vadd_u32 v28, vcc, v59, v61             # mem_addr = mem_ptr + addr0 + offset
+        v_mov_b32 v31, 0x7FFF
+        v_and_b32 v31, v59, v31                 # addr0 = ref & 0x7FFF
+        v_lshlrev_b32 v31, 10, v31              # addr0 = addr0 * BLOCK_SIZE
+
+        vadd_u32 v28, vcc, v31, v61             # mem_addr = mem_ptr + addr0 + offset
         vadd_u32 v28, vcc, v28, s0
         v_mov_b32 v29, s1
         vaddc_u32 v29, vcc, 0, v29, vcc
@@ -1476,8 +1476,18 @@ skip_data_load_gblocks:
         v_xor_b32 v6, v6, v14
         v_xor_b32 v7, v7, v15
 
-        vadd_u32 v60, vcc, v60, v61             # mem_addr = mem_ptr + addr0 + offset
-        vadd_u32 v8, vcc, v60, s0
+        v_mov_b32 v8, 0x8000					# keep_block = ref & 0x8000
+		v_and_b32 v8, v60, v8
+		v_cmp_eq_u32 vcc, v8, 0
+		s_and_saveexec_b64 s[16:17], vcc
+		s_cbranch_execz skip_gblock_store
+
+		v_mov_b32 v8, 0x7FFF
+        v_and_b32 v8, v60, v8                   # addr0 = ref & 0x7FFF
+        v_lshlrev_b32 v8, 10, v8                # addr0 = addr0 * BLOCK_SIZE
+
+        vadd_u32 v8, vcc, v8, v61               # mem_addr = mem_ptr + addr0 + offset
+        vadd_u32 v8, vcc, v8, s0
         v_mov_b32 v9, s1
         vaddc_u32 v9, vcc, 0, v9, vcc
         flat_store_dwordx4 v[8:9], v[0:3] glc      # store mem chunk (4 int at once)
@@ -1488,6 +1498,9 @@ skip_data_load_gblocks:
         flat_store_dwordx4 v[8:9], v[4:7] glc      # store mem chunk (4 int at once)
 
 #        s_barrier                               # wait for all lanes to finish segment
+
+skip_gblock_store:
+		s_mov_b64  exec, s[16:17]
 
         s_add_u32 s10, s10, 1                   # i++
         s_cmp_le_u32 s10, s14                   # } endfor
