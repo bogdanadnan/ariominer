@@ -508,8 +508,8 @@ bool amdgcn_hasher::__setup_device_info(amdgcn_device_info *device, double inten
 	int32_t *addresses_1_1_524288 = (int32_t *)malloc((argon2profile_1_1_524288.block_refs_size + 2) * 2 * sizeof(int32_t)); //add 2 to ref_size to be exact$
 
 	for(int i=0;i<argon2profile_1_1_524288.block_refs_size;i++) {
-		addresses_1_1_524288[i * 2] = argon2profile_1_1_524288.block_refs[i*3];
-		addresses_1_1_524288[i * 2 + 1] = argon2profile_1_1_524288.block_refs[i*3 + 2];
+		addresses_1_1_524288[i * 2] = argon2profile_1_1_524288.block_refs[i*4];
+		addresses_1_1_524288[i * 2 + 1] = argon2profile_1_1_524288.block_refs[i*4 + 2];
 	}
 	error=clEnqueueWriteBuffer(device->queue, device->arguments.address_profile_1_1_524288, CL_TRUE, 0, (argon2profile_1_1_524288.block_refs_size + 2) * 2 * sizeof(int32_t), addresses_1_1_524288, 0, NULL, NULL);
 	if(error != CL_SUCCESS) {
@@ -520,12 +520,15 @@ bool amdgcn_hasher::__setup_device_info(amdgcn_device_info *device, double inten
 	free(addresses_1_1_524288);
 
 	//optimise address sizes
-	int16_t *addresses_4_4_16384 = (int16_t *)malloc(argon2profile_4_4_16384.block_refs_size * 2 * sizeof(int16_t));
+	uint16_t *addresses_4_4_16384 = (uint16_t *)malloc(argon2profile_4_4_16384.block_refs_size * 2 * sizeof(uint16_t));
 	for(int i=0;i<argon2profile_4_4_16384.block_refs_size;i++) {
-		addresses_4_4_16384[i*2] = argon2profile_4_4_16384.block_refs[i*3 + (i == 65528 ? 1 : 0)];
-		addresses_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[i*3 + 2];
+		addresses_4_4_16384[i*2] = argon2profile_4_4_16384.block_refs[i*4 + (i >= 65528 ? 1 : 0)];
+		addresses_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[i*4 + 2];
+		if(argon2profile_4_4_16384.block_refs[i*4 + 3] == 0) {
+			addresses_4_4_16384[i*2] |= 32768;
+		}
 	}
-	error=clEnqueueWriteBuffer(device->queue, device->arguments.address_profile_4_4_16384, CL_TRUE, 0, argon2profile_4_4_16384.block_refs_size * 2 * sizeof(int16_t), addresses_4_4_16384, 0, NULL, NULL);
+	error=clEnqueueWriteBuffer(device->queue, device->arguments.address_profile_4_4_16384, CL_TRUE, 0, argon2profile_4_4_16384.block_refs_size * 2 * sizeof(uint16_t), addresses_4_4_16384, 0, NULL, NULL);
 	if(error != CL_SUCCESS) {
 		device->error = error;
 		device->error_message = "Error writing to gpu memory.";
@@ -539,7 +542,7 @@ bool amdgcn_hasher::__setup_device_info(amdgcn_device_info *device, double inten
 		for(int s=0;s<16;s++) {
 			int idx = offset + s * 4;
 			int seg_start = argon2profile_4_4_16384.segments[idx * 3];
-			int prev_blk = argon2profile_4_4_16384.block_refs[seg_start * 3 + 1];
+			int prev_blk = argon2profile_4_4_16384.block_refs[seg_start * 4 + 1];
 			printf("0x%02hhx, 0x%02hhx, 0x%02hhx, 0x%02hhx, ", ((uint8_t *) &seg_start)[0],
 				   ((uint8_t *) &seg_start)[1], ((uint8_t *) &prev_blk)[0],
 				   ((uint8_t *) &prev_blk)[1]);

@@ -62,6 +62,7 @@ void autotune::run() {
             __args.gpu_intensity_gblocks().push_back(intensity);
         }
 
+		__args.set_cards_count(0);
 		selected_hasher->cleanup();
 		selected_hasher->initialize();
 		selected_hasher->configure(__args);

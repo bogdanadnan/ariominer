@@ -361,8 +361,8 @@ bool opencl_hasher::__setup_device_info(opencl_device_info *device, double inten
 		int ref_chunk_idx = (i / 32) * 64;
 		int ref_idx = i % 32;
 
-		addresses_1_1_524288[ref_chunk_idx + ref_idx] = argon2profile_1_1_524288.block_refs[i*3];
-		addresses_1_1_524288[ref_chunk_idx + ref_idx + 32] = argon2profile_1_1_524288.block_refs[i*3 + 2];
+		addresses_1_1_524288[ref_chunk_idx + ref_idx] = argon2profile_1_1_524288.block_refs[i*4];
+		addresses_1_1_524288[ref_chunk_idx + ref_idx + 32] = argon2profile_1_1_524288.block_refs[i*4 + 2];
 	}
     error=clEnqueueWriteBuffer(device->queue, device->arguments.address_profile_1_1_524288, CL_TRUE, 0, (argon2profile_1_1_524288.block_refs_size + 2) * 2 * sizeof(int32_t), addresses_1_1_524288, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
@@ -373,12 +373,15 @@ bool opencl_hasher::__setup_device_info(opencl_device_info *device, double inten
     free(addresses_1_1_524288);
 
 	//optimise address sizes
-	int16_t *addresses_4_4_16384 = (int16_t *)malloc(argon2profile_4_4_16384.block_refs_size * 2 * sizeof(int16_t));
+	uint16_t *addresses_4_4_16384 = (uint16_t *)malloc(argon2profile_4_4_16384.block_refs_size * 2 * sizeof(uint16_t));
 	for(int i=0;i<argon2profile_4_4_16384.block_refs_size;i++) {
-		addresses_4_4_16384[i*2] = argon2profile_4_4_16384.block_refs[i*3 + (i == 65528 ? 1 : 0)];
-		addresses_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[i*3 + 2];
+		addresses_4_4_16384[i*2] = argon2profile_4_4_16384.block_refs[i*4 + (i >= 65528 ? 1 : 0)];
+		addresses_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[i*4 + 2];
+		if(argon2profile_4_4_16384.block_refs[i*4 + 3] == 0) {
+			addresses_4_4_16384[i*2] |= 32768;
+		}
 	}
-    error=clEnqueueWriteBuffer(device->queue, device->arguments.address_profile_4_4_16384, CL_TRUE, 0, argon2profile_4_4_16384.block_refs_size * 2 * sizeof(int16_t), addresses_4_4_16384, 0, NULL, NULL);
+    error=clEnqueueWriteBuffer(device->queue, device->arguments.address_profile_4_4_16384, CL_TRUE, 0, argon2profile_4_4_16384.block_refs_size * 2 * sizeof(uint16_t), addresses_4_4_16384, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
         device->error = error;
         device->error_message = "Error writing to gpu memory.";
@@ -391,7 +394,7 @@ bool opencl_hasher::__setup_device_info(opencl_device_info *device, double inten
 	for(int i=0;i<64;i++) {
 		int seg_start = argon2profile_4_4_16384.segments[i*3];
 		segments_4_4_16384[i*2] = seg_start;
-		segments_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[seg_start*3 + 1];
+		segments_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[seg_start*4 + 1];
 	}
     error=clEnqueueWriteBuffer(device->queue, device->arguments.segments_profile_4_4_16384, CL_TRUE, 0, 64 * 2 * sizeof(uint16_t), segments_4_4_16384, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
@@ -772,7 +775,6 @@ bool opencl_hasher::initialize() {
     string error_message;
 
     __devices = __query_opencl_devices(error, error_message);
-
     if(error != CL_SUCCESS) {
         _description = "No compatible GPU detected: " + error_message;
         return false;
