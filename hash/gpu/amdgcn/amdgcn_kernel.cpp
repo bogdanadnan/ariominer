@@ -255,20 +255,30 @@ local_index:
         s_add_u32 s4, s4, HASH                  # out_ptr = out_ptr + out_offset
         s_addc_u32 s5, s5, 0
 
-        v_lshlrev_b32 v1, 4, v0                 # offset = id * 16
-        vadd_u32 v2, vcc, s2, v1                # seed_addr = seed_ptr + offset
-        v_mov_b32 v3, s3
-        vaddc_u32 v3, vcc, 0, v3, vcc
-        flat_load_dwordx4 v[6:9], v[2:3]        # load seed chunk (4 int at once)
-
-        vadd_u32 v2, vcc, v2, v14               # seed_addr += 512
-        vaddc_u32 v3, vcc, 0, v3, vcc
-        flat_load_dwordx4 v[10:13], v[2:3]      # load seed chunk (4 int at once)
-
         v_lshlrev_b32 v40, 3, v40               # idx_0_0 -> idx_3_3 *= 8 (offsets to 64 bit numbers)
         v_lshlrev_b32 v41, 3, v41
         v_lshlrev_b32 v42, 3, v42
         v_lshlrev_b32 v43, 3, v43
+
+        v_mov_b32 v2, s2                        # seed_addr = seed_ptr
+        v_mov_b32 v3, s3
+
+        vadd_u32 v4, vcc, v2, v40               # seed_addr += idx_0_0
+        vaddc_u32 v5, vcc, 0, v3, vcc
+        flat_load_dwordx2 v[6:7], v[4:5]        # load seed chunk (2 int at once)
+
+        vadd_u32 v4, vcc, v2, v41               # seed_addr += idx_0_1
+        vaddc_u32 v5, vcc, 0, v3, vcc
+        flat_load_dwordx2 v[8:9], v[4:5]        # load seed chunk (2 int at once)
+
+        vadd_u32 v4, vcc, v2, v42               # seed_addr += idx_0_2
+        vaddc_u32 v5, vcc, 0, v3, vcc
+        flat_load_dwordx2 v[10:11], v[4:5]      # load seed chunk (2 int at once)
+
+        vadd_u32 v4, vcc, v2, v43               # seed_addr += idx_0_3
+        vaddc_u32 v5, vcc, 0, v3, vcc
+        flat_load_dwordx2 v[12:13], v[4:5]      # load seed chunk (2 int at once)
+
         v_lshlrev_b32 v44, 3, v44
         v_lshlrev_b32 v45, 3, v45
         v_lshlrev_b32 v46, 3, v46
@@ -287,6 +297,8 @@ local_index:
         v_lshlrev_b32 v59, 2, v59
         v_lshlrev_b32 v60, 2, v60
         v_lshlrev_b32 v61, 2, v61
+
+        v_lshlrev_b32 v1, 4, v0                 # offset = id * 16
 
         s_waitcnt vmcnt(0)
 
@@ -322,26 +334,16 @@ local_index:
 
         s_waitcnt vmcnt(0)
 
-        v_mov_b32 v2, 1024                      # mem_addr = mem_ptr + BLOCK_SIZE
+        v_mov_b32 v2, 1024                      # mem_addr = mem_ptr + BLOCK_SIZE + offset
+		vadd_u32 v2, vcc, v2, v1
+        vadd_u32 v2, vcc, s0, v2
         v_mov_b32 v3, s1
-        vadd_u32 v2, vcc, v2, s0
         vaddc_u32 v3, vcc, 0, v3, vcc
+        flat_store_dwordx4 v[2:3], v[6:9]       # store seed chunk
 
-        vadd_u32 v4, vcc, v2, v40               # mem_addr += idx_0_0
-        vaddc_u32 v5, vcc, 0, v3, vcc
-        flat_store_dwordx2 v[4:5], v[6:7]       # store seed chunk (2 int at once)
-
-        vadd_u32 v4, vcc, v2, v41               # mem_addr += idx_0_1
-        vaddc_u32 v5, vcc, 0, v3, vcc
-        flat_store_dwordx2 v[4:5], v[8:9]       # store seed chunk (2 int at once)
-
-        vadd_u32 v4, vcc, v2, v42               # mem_addr += idx_0_2
-        vaddc_u32 v5, vcc, 0, v3, vcc
-        flat_store_dwordx2 v[4:5], v[10:11]     # store seed chunk (2 int at once)
-
-        vadd_u32 v4, vcc, v2, v43               # mem_addr += idx_0_3
-        vaddc_u32 v5, vcc, 0, v3, vcc
-        flat_store_dwordx2 v[4:5], v[12:13]     # store seed chunk (2 int at once)
+        vadd_u32 v2, vcc, v2, v14               # mem_addr += 512
+        vaddc_u32 v3, vcc, 0, v3, vcc
+        flat_store_dwordx4 v[2:3], v[10:13]     # store seed chunk
 
         v_lshlrev_b32 v0, 3, v0                 # id = id * 8
         vadd_u32 v2, vcc, s6, v0                # addr_ptr = addr_ptr + id (load 32 refs at once, one ref = 2 integers, 8 bytes)
@@ -358,28 +360,19 @@ local_index:
 
         s_lshl_b32 s9, s9, 10                   # addr1 = addr1 * BLOCK_SIZE
 
-        v_mov_b32 v62, s0                       # mem_addr = mem_ptr + addr1
+        v_mov_b32 v62, s9                       # mem_addr = mem_ptr + addr1 + offset
+		vadd_u32 v62, vcc, v62, v1
+        vadd_u32 v62, vcc, s0, v62
         v_mov_b32 v63, s1
-        vadd_u32 v62, vcc, v62, s9
         vaddc_u32 v63, vcc, 0, v63, vcc
+        flat_load_dwordx4 v[29:32], v[62:63]    # load mem chunk
 
-        vadd_u32 v4, vcc, v62, v40              # mem_addr += idx_0_0
-        vaddc_u32 v5, vcc, 0, v63, vcc
-        flat_load_dwordx2 v[29:30], v[4:5]      # load mem chunk (2 int at once)
-
-        vadd_u32 v4, vcc, v62, v41              # mem_addr += idx_0_1
-        vaddc_u32 v5, vcc, 0, v63, vcc
-        flat_load_dwordx2 v[31:32], v[4:5]      # load mem chunk (2 int at once)
-
-        vadd_u32 v4, vcc, v62, v42              # mem_addr += idx_0_2
-        vaddc_u32 v5, vcc, 0, v63, vcc
-        flat_load_dwordx2 v[33:34], v[4:5]      # load mem chunk (2 int at once)
-
-        vadd_u32 v4, vcc, v62, v43              # mem_addr += idx_0_3
-        vaddc_u32 v5, vcc, 0, v63, vcc
-        flat_load_dwordx2 v[35:36], v[4:5]      # load mem chunk (2 int at once)
+        vadd_u32 v62, vcc, v62, v14             # mem_addr += 512
+        vaddc_u32 v63, vcc, 0, v63, vcc
+        flat_load_dwordx4 v[33:36], v[62:63]    # load mem chunk
 
         s_mov_b32 s10, 1                        # for(int i=1;i<=524286;i++) {
+
 loop_cblocks:
         s_mov_b32 s11, s8                       # backup addr0
         s_add_u32 s12, s12, 1                   # increment lane index for ref
@@ -421,26 +414,16 @@ skip_addr_load_cblocks:
 
         s_lshl_b32 s9, s9, 10                   # addr1 = addr1 * BLOCK_SIZE
 
-        v_mov_b32 v62, s0                       # mem_addr = mem_ptr + addr1
+        v_mov_b32 v62, s9                       # mem_addr = mem_ptr + addr1 + offset
+		vadd_u32 v62, vcc, v62, v1
+        vadd_u32 v62, vcc, s0, v62
         v_mov_b32 v63, s1
-        vadd_u32 v62, vcc, v62, s9
         vaddc_u32 v63, vcc, 0, v63, vcc
+        flat_load_dwordx4 v[29:32], v[62:63]    # load mem chunk
 
-        vadd_u32 v4, vcc, v62, v40              # mem_addr += idx_0_0
-        vaddc_u32 v5, vcc, 0, v63, vcc
-        flat_load_dwordx2 v[29:30], v[4:5]      # load mem chunk (2 int at once)
-
-        vadd_u32 v4, vcc, v62, v41              # mem_addr += idx_0_1
-        vaddc_u32 v5, vcc, 0, v63, vcc
-        flat_load_dwordx2 v[31:32], v[4:5]      # load mem chunk (2 int at once)
-
-        vadd_u32 v4, vcc, v62, v42              # mem_addr += idx_0_2
-        vaddc_u32 v5, vcc, 0, v63, vcc
-        flat_load_dwordx2 v[33:34], v[4:5]      # load mem chunk (2 int at once)
-
-        vadd_u32 v4, vcc, v62, v43              # mem_addr += idx_0_3
-        vaddc_u32 v5, vcc, 0, v63, vcc
-        flat_load_dwordx2 v[35:36], v[4:5]      # load mem chunk (2 int at once)
+        vadd_u32 v62, vcc, v62, v14             # mem_addr += 512
+        vaddc_u32 v63, vcc, 0, v63, vcc
+        flat_load_dwordx4 v[33:36], v[62:63]    # load mem chunk
 
 skip_data_load_cblocks:
                                                 # apply argon2 hash function to tmp
@@ -704,26 +687,16 @@ skip_data_load_cblocks:
 
         s_lshl_b32 s11, s11, 10                 # addr0 = addr0 * BLOCK_SIZE
 
-        v_mov_b32 v62, s0                       # mem_addr = mem_ptr + addr0
+        v_mov_b32 v62, s11                      # mem_addr = mem_ptr + addr0 + offset
+		vadd_u32 v62, vcc, v62, v1
+        vadd_u32 v62, vcc, s0, v62
         v_mov_b32 v63, s1
-        vadd_u32 v62, vcc, v62, s11
         vaddc_u32 v63, vcc, 0, v63, vcc
+        flat_store_dwordx4 v[62:63], v[6:9]     # store mem chunk
 
-        vadd_u32 v4, vcc, v62, v40              # mem_addr += idx_0_0
-        vaddc_u32 v5, vcc, 0, v63, vcc
-        flat_store_dwordx2 v[4:5], v[6:7]       # store mem chunk (2 int at once)
-
-        vadd_u32 v4, vcc, v62, v41              # mem_addr += idx_0_1
-        vaddc_u32 v5, vcc, 0, v63, vcc
-        flat_store_dwordx2 v[4:5], v[8:9]       # store mem chunk (2 int at once)
-
-        vadd_u32 v4, vcc, v62, v42              # mem_addr += idx_0_2
-        vaddc_u32 v5, vcc, 0, v63, vcc
-        flat_store_dwordx2 v[4:5], v[10:11]     # store mem chunk (2 int at once)
-
-        vadd_u32 v4, vcc, v62, v43              # mem_addr += idx_0_3
-        vaddc_u32 v5, vcc, 0, v63, vcc
-        flat_store_dwordx2 v[4:5], v[12:13]     # store mem chunk (2 int at once)
+        vadd_u32 v62, vcc, v62, v14             # mem_addr += 512
+        vaddc_u32 v63, vcc, 0, v63, vcc
+        flat_store_dwordx4 v[62:63], v[10:13]   # store mem chunk
 
 skip_blk_store_cblocks:
         s_add_u32 s10, s10, 1                   # i++
