@@ -146,7 +146,7 @@ void miner::run() {
         }
 
         if (microseconds() - last_update > __args.update_interval()) {
-            if (__update_pool_data()) {
+            if (__update_pool_data() || __recommendation == "pause") {
                 for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
                     (*it)->set_input(__public_key, __blk, __difficulty, __argon2profile, __recommendation);
                 }
@@ -227,12 +227,16 @@ bool miner::__update_pool_data() {
     }
 
     ariopool_update_result new_settings = __client.update(hash_rate_cblocks, hash_rate_gblocks);
+    if(!new_settings.success) {
+    	__recommendation = "pause";
+    }
     if (new_settings.success &&
         (new_settings.block != __blk ||
         new_settings.difficulty != __difficulty ||
         new_settings.limit != __limit ||
         new_settings.public_key != __public_key ||
-        new_settings.height != __height)) {
+        new_settings.height != __height ||
+        new_settings.recommendation != __recommendation)) {
         __blk = new_settings.block;
         __difficulty = new_settings.difficulty;
         __limit = new_settings.limit;

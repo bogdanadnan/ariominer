@@ -120,6 +120,7 @@ hash_data hasher::_get_input() {
 double hasher::get_current_hash_rate() {
     double hashrate = 0;
     __hashes_mutex.lock();
+    __update_hashrate();
     hashrate = __hashrate;
     __hashes_mutex.unlock();
     return hashrate;
@@ -197,6 +198,12 @@ void hasher::_store_hash(const hash_data &hash) {
 		__total_hash_count_gblocks++;
 	}
 
+	__update_hashrate();
+
+	__hashes_mutex.unlock();
+}
+
+void hasher::__update_hashrate() {
 	uint64_t timestamp = microseconds();
 
 	if (timestamp - __hashrate_time > 5000000) { //we calculate hashrate every 5 seconds
@@ -204,8 +211,6 @@ void hasher::_store_hash(const hash_data &hash) {
 		__hashrate_hashcount = 0;
 		__hashrate_time = timestamp;
 	}
-
-	__hashes_mutex.unlock();
 }
 
 void hasher::_store_hash(const vector<hash_data> &hashes) {
@@ -222,13 +227,7 @@ void hasher::_store_hash(const vector<hash_data> &hashes) {
 		__total_hash_count_gblocks+=hashes.size();
 	}
 
-	uint64_t timestamp = microseconds();
-
-	if (timestamp - __hashrate_time > 5000000) { //we calculate hashrate every 5 seconds
-		__hashrate = __hashrate_hashcount / ((timestamp - __hashrate_time) / 1000000.0);
-		__hashrate_hashcount = 0;
-		__hashrate_time = timestamp;
-	}
+	__update_hashrate();
 
 //	for(int i=0;i<hashes.size();i++)
 //	    LOG(hashes[i].hash);

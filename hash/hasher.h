@@ -76,6 +76,7 @@ protected:
 
 private:
     string __make_nonce();
+	void __update_hashrate();
 
     static vector<hasher*> *__registered_hashers;
 
