@@ -19,13 +19,17 @@ miner::miner(arguments &args) : __args(args), __client(args) {
     __public_key = "";
     __height = 0;
     __found = 0;
-    __confirmed = 0;
-    __rejected = 0;
+    __confirmed_cblocks = 0;
+    __confirmed_gblocks = 0;
+    __rejected_cblocks = 0;
+    __rejected_gblocks = 0;
     __begin_time = time(NULL);
     __running = false;
     __chs_threshold_hit = 0;
     __ghs_threshold_hit = 0;
     __running = false;
+
+    LOG("Initializing miner with name: " + __args.name());
 
     vector<hasher*> hashers = hasher::get_hashers();
 	for (vector<hasher*>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
@@ -119,7 +123,10 @@ void miner::run() {
                             __found++;
                         } else {
                             if (__args.is_verbose()) LOG("--> Nonce confirmed.");
-                            __confirmed++;
+                            if(__argon2profile == "1_1_524288")
+                                __confirmed_cblocks++;
+                            else
+                                __confirmed_gblocks++;
                         }
                     } else {
                         if (__args.is_verbose()) {
@@ -127,7 +134,10 @@ void miner::run() {
                             LOG("--> Pool response: ");
                             LOG(reply.pool_response);
                         }
-                        __rejected++;
+                        if(__argon2profile == "1_1_524288")
+                            __rejected_cblocks++;
+                        else
+                            __rejected_gblocks++;
                         if (hash->realloc_flag != NULL)
                             *(hash->realloc_flag) = true;
                     }
@@ -269,19 +279,19 @@ bool miner::__display_report() {
         }
 
         ss << fixed << setprecision(2) << "--> Hash Rate: " << setw(6) << hash_rate << " H/s   " <<
-           "Avg. (Cblocks): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
-           "Avg. (Gblocks): " << setw(6) << avg_hash_rate_gblocks << " H/s  " <<
+           "Avg. (C): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
+           "Avg. (G): " << setw(6) << avg_hash_rate_gblocks << " H/s  " <<
            "Count: " << setw(4) << (hash_count_cblocks + hash_count_gblocks) << "  " <<
            "Time: " << setw(4) << total_time << "  " <<
-           "Shares: " << setw(3) << __confirmed << " " <<
-           "Finds: " << setw(3) << __found << " " <<
-           "Rejected: " << setw(3) << __rejected;
+           "Shares: " << setw(3) << (__confirmed_cblocks + __confirmed_gblocks) << " " <<
+           "Rejected: " << setw(3) << (__rejected_cblocks + __rejected_gblocks) << " " <<
+            "Blocks: " << setw(3) << __found;
     }
     else {
-        ss << fixed << setprecision(2) << "--> Time: " << setw(4) << total_time << "  " <<
-           "Shares: " << setw(3) << __confirmed << " " <<
-           "Finds: " << setw(3) << __found << " " <<
-           "Rejected: " << setw(3) << __rejected << endl;
+        ss << "--> Name: " << __args.name() << fixed << setprecision(2) << "  Time: " << setw(4) << total_time << "  " <<
+           "Shares (C): " << setw(3) << __confirmed_cblocks << " Shares (G): " << setw(3) << __confirmed_gblocks << " " <<
+           "Rejected (C): " << setw(3) << __rejected_cblocks << " Rejected (G): " << setw(3) << __rejected_gblocks << " " <<
+            "Blocks: " << setw(3) << __found << endl;
         for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
             hash_rate += (*it)->get_current_hash_rate();
             avg_hash_rate_cblocks += (*it)->get_avg_hash_rate_cblocks();
@@ -295,8 +305,8 @@ bool miner::__display_report() {
             }
             ss << fixed << setprecision(2) << "--> " << subtype <<
                "Hash rate: " << setw(6)<< (*it)->get_current_hash_rate() << " H/s   " <<
-               "Avg. (Cblocks): " << setw(6) << (*it)->get_avg_hash_rate_cblocks() << " H/s  " <<
-               "Avg. (Gblocks): " << setw(6) << (*it)->get_avg_hash_rate_gblocks() << "  " <<
+               "Avg. (C): " << setw(6) << (*it)->get_avg_hash_rate_cblocks() << " H/s  " <<
+               "Avg. (G): " << setw(6) << (*it)->get_avg_hash_rate_gblocks() << "  " <<
                "Count: " << setw(4) << ((*it)->get_hash_count_cblocks() + (*it)->get_hash_count_gblocks());
 
             if(hashers.size() > 1)
@@ -305,8 +315,8 @@ bool miner::__display_report() {
         if(hashers.size() > 1) {
             ss << fixed << setprecision(2) << "--> ALL    " <<
                "Hash rate: " << setw(6) << hash_rate << " H/s   " <<
-               "Avg. (Cblocks): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
-               "Avg. (Gblocks): " << setw(6) << avg_hash_rate_gblocks << "  " <<
+               "Avg. (C): " << setw(6) << avg_hash_rate_cblocks << " H/s  " <<
+               "Avg. (G): " << setw(6) << avg_hash_rate_gblocks << "  " <<
                "Count: " << setw(4) << (hash_count_cblocks + hash_count_gblocks);
         }
     }

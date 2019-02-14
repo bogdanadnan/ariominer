@@ -99,7 +99,7 @@ public:
 
 private:
     cuda_device_info *__get_device_info(int device_index);
-    bool __setup_device_info(cuda_device_info *device, double intensity_cpu, double intensity_gpu, int threads);
+    bool __setup_device_info(cuda_device_info *device, double intensity_cpu, double intensity_gpu);
     vector<cuda_device_info*> __query_cuda_devices(cudaError_t &error, string &error_message);
 
     void __run(cuda_device_info *device, int thread_id);

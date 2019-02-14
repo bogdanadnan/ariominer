@@ -33,8 +33,10 @@ private:
     string __public_key;
     uint32_t __height;
     uint32_t __found;
-    uint32_t __confirmed;
-    uint32_t __rejected;
+	uint32_t __confirmed_cblocks;
+	uint32_t __confirmed_gblocks;
+	uint32_t __rejected_cblocks;
+	uint32_t __rejected_gblocks;
     int __chs_threshold_hit;
     int __ghs_threshold_hit;
     int __blocks_count;

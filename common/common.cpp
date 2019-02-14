@@ -25,3 +25,19 @@ vector<string> get_files(string folder) {
 	}
 	return result;
 }
+
+bool is_number(const string &s) {
+	return !s.empty() && all_of(s.begin(), s.end(), ::isdigit);
+}
+
+string generate_uid(size_t length) {
+	static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	string randomString;
+
+	for (int n = 0; n < length; n++) {
+		int key = rand() % (int) (sizeof(charset) - 1);
+		randomString += charset[key];
+	}
+
+	return randomString;
+}

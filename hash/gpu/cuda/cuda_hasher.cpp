@@ -112,15 +112,9 @@ bool cuda_hasher::configure(arguments &args) {
 		else
 			device_intensity_gpu = args.gpu_intensity_gblocks()[(*d)->device_index];
 
-		int host_threads = 0;
-		if(args.gpu_threads().size() == 1 || (*d)->device_index >= args.gpu_threads().size())
-			host_threads = args.gpu_threads()[0];
-		else
-			host_threads = args.gpu_threads()[(*d)->device_index];
-
 		_description += ss.str();
 
-		if(!(__setup_device_info((*d), device_intensity_cpu, device_intensity_gpu, host_threads))) {
+		if(!(__setup_device_info((*d), device_intensity_cpu, device_intensity_gpu))) {
 			_description += (*d)->error_message;
 			_description += "\n";
 			continue;
@@ -206,7 +200,7 @@ cuda_device_info *cuda_hasher::__get_device_info(int device_index) {
     return device_info;
 }
 
-bool cuda_hasher::__setup_device_info(cuda_device_info *device, double intensity_cpu, double intensity_gpu, int threads) {
+bool cuda_hasher::__setup_device_info(cuda_device_info *device, double intensity_cpu, double intensity_gpu) {
     device->profile_info.threads_per_chunk_profile_1_1_524288 = (uint32_t)(device->max_allocable_mem_size / argon2profile_1_1_524288.memsize);
     size_t chunk_size_profile_1_1_524288 = device->profile_info.threads_per_chunk_profile_1_1_524288 * argon2profile_1_1_524288.memsize;
 
@@ -238,8 +232,6 @@ bool cuda_hasher::__setup_device_info(cuda_device_info *device, double intensity
     device->profile_info.threads_profile_4_4_16384 = (uint32_t)(max_threads_4_4_16384 * intensity_gpu / 100.0);
     if(max_threads_4_4_16384 > 0 && device->profile_info.threads_profile_4_4_16384 == 0 && intensity_gpu > 0)
         device->profile_info.threads_profile_4_4_16384 = 1;
-
-    size_t max_threads = max(device->profile_info.threads_profile_4_4_16384, device->profile_info.threads_profile_1_1_524288);
 
     double chunks_1_1_524288 = (double)device->profile_info.threads_profile_1_1_524288 / (double)device->profile_info.threads_per_chunk_profile_1_1_524288;
     double chunks_4_4_16384 = (double)device->profile_info.threads_profile_4_4_16384 / (double)device->profile_info.threads_per_chunk_profile_4_4_16384;
