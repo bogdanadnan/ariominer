@@ -230,7 +230,7 @@ amdgcn_device_info *amdgcn_hasher::__get_device_info(cl_platform_id platform, cl
 #define CL_DEVICE_BOARD_NAME_AMD                    0x4038
 #endif
 
-    sz = 0;
+    	sz = 0;
 	clGetDeviceInfo(device, CL_DEVICE_BOARD_NAME_AMD, 0, NULL, &sz);
 	buffer = (char *)malloc(sz + 1);
 	device_info->error = clGetDeviceInfo(device, CL_DEVICE_BOARD_NAME_AMD, sz, buffer, &sz);
@@ -245,7 +245,7 @@ amdgcn_device_info *amdgcn_hasher::__get_device_info(cl_platform_id platform, cl
 		free(buffer);
 	}
 
-	device_info->device_string = board_name.empty() ? (board_name + " (" + device_name + ")") : device_name;
+	device_info->device_string = (!board_name.empty()) ? (board_name + " (" + device_name + ")") : device_name;
 
 	device_info->error = clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(device_info->max_mem_size), &(device_info->max_mem_size), NULL);
 	if(device_info->error != CL_SUCCESS) {
@@ -258,6 +258,11 @@ amdgcn_device_info *amdgcn_hasher::__get_device_info(cl_platform_id platform, cl
 		device_info->error_message = "Error querying device max memory allocation.";
 		return device_info;
 	}
+
+	double mem_in_gb = device_info->max_mem_size / 1073741824.0;
+	stringstream ss;
+	ss << setprecision(2) << mem_in_gb;
+	device_info->device_string += (" (" + ss.str() + "GB)");
 
 	return device_info;
 }

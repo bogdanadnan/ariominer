@@ -204,6 +204,11 @@ cuda_device_info *cuda_hasher::__get_device_info(int device_index) {
     int hashes_in_chunk = chunk_size / argon2profile_1_1_524288.memsize;
     device_info->max_allocable_mem_size = hashes_in_chunk * argon2profile_1_1_524288.memsize;
 
+    double mem_in_gb = totalmem / 1073741824.0;
+    stringstream ss;
+    ss << setprecision(2) << mem_in_gb;
+    device_info->device_string += (" (" + ss.str() + "GB)");
+
     return device_info;
 }
 
