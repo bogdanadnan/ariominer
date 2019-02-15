@@ -365,7 +365,7 @@ string miner::get_status() {
     stringstream ss;
     ss << "{ \"name\": \"" << __args.name() << "\", \"block_height\": " << __height << ", \"time_running\": " << (time(NULL) - __begin_time) <<
        ", \"total_blocks\": " << __blocks_count << ", \"cblocks_shares\": " << __confirmed_cblocks << ", \"gblocks_shares\": " << __confirmed_gblocks <<
-       ", \"cblocks_rejects\": " << __rejected_cblocks << ", \"gblock_rejects\": " << __rejected_gblocks << ", \"blocks_earned\": " << __found <<
+       ", \"cblocks_rejects\": " << __rejected_cblocks << ", \"gblocks_rejects\": " << __rejected_gblocks << ", \"blocks_earned\": " << __found <<
        ", \"hashers\": [ ";
 
     vector<hasher*> hashers = hasher::get_active_hashers();

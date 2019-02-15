@@ -601,6 +601,7 @@ string arguments::get_help() {
             "   --port <proxy port>: proxy specific option, port on which to listen for clients\n"
             "                    this is optional, defaults to 8088\n"
             "   --enable-api-port <api port>: miner specific option, port on which to listen for api requests\n"
+            "                    if enabled, you can get reports in json format at http://localhost:port/status\n"
             "                    this is optional, defaults to disabled (value 0)\n"
             "   --cpu-intensity: miner specific option, mining intensity on CPU\n"
             "                    value from 0 (disabled) to 100 (full load)\n"
