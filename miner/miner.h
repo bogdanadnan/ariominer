@@ -18,6 +18,7 @@ public:
     virtual void run();
     virtual void stop();
 
+    string get_status();
 private:
     string __calc_duration(const string &base, const string &hash);
     uint64_t __calc_compare(const string &duration);

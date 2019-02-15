@@ -14,7 +14,7 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(SOURCE
         http/http.cpp http/http.h
         http/client.cpp http/client.h
-        http/server.cpp http/server.h
+        http/civetweb/civetweb.c http/civetweb/CivetServer.cpp
         http/simplejson/json.h
         miner/miner.cpp miner/miner.h
         proxy/proxy.cpp proxy/proxy.h
@@ -23,7 +23,7 @@ set(SOURCE
         miner/mini-gmp/mini-gmp.h miner/mini-gmp/mini-gmp.c
         autotune/autotune.cpp autotune/autotune.h
         app/runner.h
-        )
+        miner/miner_api.cpp miner/miner_api.h)
 set(SOURCE_COMMON app/arguments.cpp app/arguments.h common/common.h common/common.cpp common/dllimport.h common/dllexport.h
         crypt/sha512.cpp crypt/sha512.h crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h)
 set(SOURCE_HASHER hash/hasher.cpp hash/hasher.h hash/argon2/argon2.cpp hash/argon2/argon2.h

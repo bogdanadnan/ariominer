@@ -26,7 +26,6 @@ hasher::hasher() {
     __argon2profile = argon2profile_default;
 
     __begin_round_time = __hashrate_time = microseconds();
-    __hashrate_hashcount = 0;
     __hashrate = 0;
 
     __total_hash_count_cblocks = 0;
@@ -186,11 +185,11 @@ vector<hash_data> hasher::get_hashes() {
     return tmp;
 }
 
-void hasher::_store_hash(const hash_data &hash) {
+void hasher::_store_hash(const hash_data &hash, int device_id) {
 	__hashes_mutex.lock();
 	__hashes.push_back(hash);
 	__hash_count++;
-	__hashrate_hashcount++;
+    __device_infos[device_id].hashcount++;
 	if (hash.profile_name == "1_1_524288") {
 		__total_hash_count_cblocks++;
 	}
@@ -203,23 +202,14 @@ void hasher::_store_hash(const hash_data &hash) {
 	__hashes_mutex.unlock();
 }
 
-void hasher::__update_hashrate() {
-	uint64_t timestamp = microseconds();
-
-	if (timestamp - __hashrate_time > 5000000) { //we calculate hashrate every 5 seconds
-		__hashrate = __hashrate_hashcount / ((timestamp - __hashrate_time) / 1000000.0);
-		__hashrate_hashcount = 0;
-		__hashrate_time = timestamp;
-	}
-}
-
-void hasher::_store_hash(const vector<hash_data> &hashes) {
+void hasher::_store_hash(const vector<hash_data> &hashes, int device_id) {
 	if (hashes.size() == 0) return;
 
 	__hashes_mutex.lock();
 	__hashes.insert(__hashes.end(), hashes.begin(), hashes.end());
 	__hash_count+=hashes.size();
-	__hashrate_hashcount+=hashes.size();
+	__device_infos[device_id].hashcount += hashes.size();
+
 	if (hashes[0].profile_name == "1_1_524288") {
 		__total_hash_count_cblocks+=hashes.size();
 	}
@@ -232,6 +222,29 @@ void hasher::_store_hash(const vector<hash_data> &hashes) {
 //	for(int i=0;i<hashes.size();i++)
 //	    LOG(hashes[i].hash);
 	__hashes_mutex.unlock();
+}
+
+void hasher::__update_hashrate() {
+    uint64_t timestamp = microseconds();
+
+    if (timestamp - __hashrate_time > 5000000) { //we calculate hashrate every 5 seconds
+        string profile;
+        __input_mutex.lock();
+        profile = __argon2profile->profile_name;
+        __input_mutex.unlock();
+
+        size_t hashcount = 0;
+        for(map<int, device_info>::iterator iter = __device_infos.begin(); iter != __device_infos.end(); ++iter) {
+            hashcount += iter->second.hashcount;
+            if(profile == "1_1_524288")
+                iter->second.cblock_hashrate = iter->second.hashcount / ((timestamp - __hashrate_time) / 1000000.0);
+            else
+                iter->second.gblock_hashrate = iter->second.hashcount / ((timestamp - __hashrate_time) / 1000000.0);
+            iter->second.hashcount = 0;
+        }
+        __hashrate = hashcount / ((timestamp - __hashrate_time) / 1000000.0);
+        __hashrate_time = timestamp;
+    }
 }
 
 vector<hasher *> hasher::get_hashers() {
@@ -330,5 +343,19 @@ vector<hasher *> hasher::get_hashers_of_type(const string &type) {
             filtered.push_back(*it);
     }
     return filtered;
+}
+
+map<int, device_info> &hasher::get_device_infos() {
+//    map<int, device_info> device_infos_copy;
+//    __hashes_mutex.lock();
+//    device_infos_copy.insert(__device_infos.begin(), __device_infos.end());
+//    __hashes_mutex.unlock();
+    return __device_infos;
+}
+
+void hasher::_store_device_info(int device_id, device_info device) {
+    __hashes_mutex.lock();
+    __device_infos[device_id] = device;
+    __hashes_mutex.unlock();
 }
 

@@ -123,6 +123,12 @@ bool amdgcn_hasher::configure(arguments &args) {
 			_description += "\n";
 			continue;
 		};
+		device_info device;
+		device.name = (*d)->device_string;
+		device.cblocks_intensity = device_intensity_cpu;
+		device.gblocks_intensity = device_intensity_gpu;
+		_store_device_info((*d)->device_index, device);
+
 		total_threads_profile_4_4_16384 += (*d)->profile_info.threads_profile_4_4_16384;
 		total_threads_profile_1_1_524288 += (*d)->profile_info.threads_profile_1_1_524288;
 	}
@@ -767,7 +773,7 @@ void amdgcn_hasher::__run(amdgcn_device_info *device, int thread_id) {
 				input.hash = *it;
 				stored_hashes.push_back(input);
 			}
-			_store_hash(stored_hashes);
+			_store_hash(stored_hashes, device->device_index);
 		}
 	}
 

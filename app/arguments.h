@@ -45,6 +45,8 @@ public:
 
 	bool show_pool_requests();
 
+	int enable_api_port();
+
     string get_help();
 
     static string get_app_folder();
@@ -93,6 +95,8 @@ private:
 	int __ghs_threshold;
 
 	bool __show_pool_requests;
+
+	int __enable_api_port;
 
 	int __cards_count;
     static string __argv_0;

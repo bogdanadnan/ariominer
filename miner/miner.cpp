@@ -10,6 +10,7 @@
 #include "mini-gmp/mini-gmp.h"
 
 #include "miner.h"
+#include "miner_api.h"
 
 miner::miner(arguments &args) : __args(args), __client(args) {
     __nonce = "";
@@ -88,6 +89,7 @@ miner::~miner() {
 
 void miner::run() {
     uint64_t last_update, last_report;
+    miner_api miner_api(__args, *this);
     last_update = last_report = 0;
 
     vector<hasher *> hashers = hasher::get_active_hashers();
@@ -150,7 +152,9 @@ void miner::run() {
                 for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
                     (*it)->set_input(__public_key, __blk, __difficulty, __argon2profile, __recommendation);
                 }
-                __blocks_count++;
+
+                if(__recommendation != "pause")
+                    __blocks_count++;
             }
             last_update = microseconds();
         }
@@ -355,4 +359,34 @@ bool miner::__display_report() {
 void miner::stop() {
     cout << endl << "Received termination request, please wait for cleanup ... " << endl;
     __running = false;
+}
+
+string miner::get_status() {
+    stringstream ss;
+    ss << "{ \"name\": \"" << __args.name() << "\", \"block_height\": " << __height << ", \"time_running\": " << (time(NULL) - __begin_time) <<
+       ", \"total_blocks\": " << __blocks_count << ", \"cblocks_shares\": " << __confirmed_cblocks << ", \"gblocks_shares\": " << __confirmed_gblocks <<
+       ", \"cblocks_rejects\": " << __rejected_cblocks << ", \"gblock_rejects\": " << __rejected_gblocks << ", \"blocks_earned\": " << __found <<
+       ", \"hashers\": [ ";
+
+    vector<hasher*> hashers = hasher::get_active_hashers();
+
+    for(vector<hasher*>::iterator h = hashers.begin(); h != hashers.end();) {
+        ss << "{ \"type\": \"" << (*h)->get_type() << "\", \"subtype\": \"" << (*h)->get_subtype() << "\", \"devices\": [ ";
+        map<int, device_info> devices = (*h)->get_device_infos();
+        for(map<int, device_info>::iterator d = devices.begin(); d != devices.end();) {
+            ss << "{ \"id\": " << d->first << ", \"name\": \"" << d->second.name << "\", \"cblocks_intensity\": " << d->second.cblocks_intensity <<
+                ", \"gblocks_intensity\": " << d->second.gblocks_intensity << ", \"cblocks_hashrate\": " << d->second.cblock_hashrate <<
+                ", \"gblocks_hashrate\": " << d->second.gblock_hashrate << " }";
+            if((++d) != devices.end())
+                ss << ", ";
+        }
+        ss << " ] }";
+
+        if((++h) != hashers.end())
+            ss << ", ";
+    }
+
+    ss << " ] }";
+
+    return ss.str();
 }
