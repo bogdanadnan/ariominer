@@ -11,15 +11,17 @@
 #define DEV_WALLET_ADDRESS      "3ykJiMsURozMLgazT97A5iidWiPLRvY5CQW9ziFJcJAZNJ9AjZimSUQe8nfwQTJqukch2JXEF48sLdoFqzKB9FVL"
 //#define DEVELOPER_OWN_BUILD
 
-ariopool_client::ariopool_client(arguments &args) {
+ariopool_client::ariopool_client(arguments &args, get_status_ptr get_status) {
     __pool_address = args.pool();
-    __worker_id = args.name();
+    __worker_id = args.uid();
+    __worker_name = args.name();
     __client_wallet_address = __used_wallet_address = args.wallet();
     __force_argon2profile = args.argon2_profile();
     __hash_report_interval = args.hash_report_interval();
     __timestamp = __last_hash_report = microseconds();
     __force_hashrate_report = false;
     __show_pool_requests = args.show_pool_requests();
+    __get_status = get_status;
 }
 
 ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double hash_rate_gblocks) {
@@ -37,17 +39,28 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
 
     uint64_t current_timestamp = microseconds();
     string hash_report_query = "";
+    string payload = "";
+
     if(__force_hashrate_report || (current_timestamp - __last_hash_report) > __hash_report_interval) {
         hash_report_query = "&hashrate=" + to_string(hash_rate_cblocks) + "&hrgpu=" + to_string(hash_rate_gblocks);
+        if(__get_status != NULL)
+            payload = __get_status();
+
         __last_hash_report = current_timestamp;
         __force_hashrate_report = false;
     }
-    string url = __pool_address + "/mine.php?q=info&worker=" + __worker_id + "&address=" + __get_wallet_address() + hash_report_query;
+    string url = __pool_address + "/mine.php?q=info&id=" + __worker_id + "&worker=" + __worker_name + "&address=" + __get_wallet_address() + hash_report_query;
 
     if(__show_pool_requests && url.find("hashrate") != string::npos) // log only hashrate requests
         LOG("--> Pool request: " + url);
 
-    string response = _http_get(url);
+    string response;
+    if(__pool_extensions.find("Details") != string::npos && !payload.empty()) {
+        response = _http_post(url, payload, "application/json");
+    }
+    else {
+        response = _http_get(url);
+    }
 
     if(__show_pool_requests && url.find("hashrate") != string::npos) // log only hashrate responses
         LOG("--> Pool response: " + response);
@@ -60,6 +73,13 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
     json::JSON info = json::JSON::Load(response);
 
     result.success = (info["status"].ToString() == "ok");
+
+    if(info.hasKey("version")) {
+        result.version = __pool_version = info["version"].ToString();
+    }
+    if(info.hasKey("extensions")) {
+        result.extensions = __pool_extensions = info["extensions"].ToString();
+    }
 
     if (result.success) {
         json::JSON data = info["data"];
@@ -105,7 +125,7 @@ ariopool_submit_result ariopool_client::submit(const string &hash, const string 
     string response = "";
 
     for(int i=0;i<2;i++) { //try resubmitting if first submit fails
-        response = _http_post(url, payload);
+        response = _http_post(url, payload, "x-www-form-urlencoded");
         result.pool_response = response;
         if(response != "") {
             break;

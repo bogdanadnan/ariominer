@@ -19,15 +19,19 @@ struct ariopool_update_result : public ariopool_result {
     uint32_t height;
     string argon2profile;
     string recommendation;
+    string version;
+    string extensions;
 };
 
 struct ariopool_submit_result : public ariopool_result {
     string pool_response;
 };
 
+typedef function<string ()> get_status_ptr;
+
 class ariopool_client : public http {
 public:
-    ariopool_client(arguments &args);
+    ariopool_client(arguments &args, get_status_ptr get_status);
 
     ariopool_update_result update(double hash_rate_cblocks, double hash_rate_gblocks);
     ariopool_submit_result submit(const string &hash, const string &nonce, const string &public_key);
@@ -37,7 +41,10 @@ private:
 
     string __get_wallet_address();
     string __pool_address;
+    string __pool_version;
+    string __pool_extensions;
     string __worker_id;
+    string __worker_name;
     string __client_wallet_address;
     string __used_wallet_address;
     string __force_argon2profile;
@@ -50,6 +57,7 @@ private:
     uint64_t __last_hash_report;
     bool __first_minute_hashrate;
     bool __last_minute_hashrate;
+    get_status_ptr __get_status;
 };
 
 #endif //PROJECT_CLIENT_H

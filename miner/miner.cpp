@@ -12,7 +12,7 @@
 #include "miner.h"
 #include "miner_api.h"
 
-miner::miner(arguments &args) : __args(args), __client(args) {
+miner::miner(arguments &args) : __args(args), __client(args, [&]() { return this->get_status(); }) {
     __nonce = "";
     __blk = "";
     __difficulty = "";

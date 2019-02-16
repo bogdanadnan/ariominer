@@ -130,7 +130,7 @@ vector<string> http::__resolve_host(const string &hostname)
     return addresses;
 }
 
-string http::__get_response(const string &url, const string &post_data) {
+string http::__get_response(const string &url, const string &post_data, const string &content_type) {
     string reply = "";
 
     http_data query(url, post_data);
@@ -161,7 +161,7 @@ string http::__get_response(const string &url, const string &post_data) {
 
         string request = query.action + " " + query.path + ((query.query == "") ? "" : ("?" + query.query)) + " HTTP/1.1\r\nHost: " + query.host + "\r\n";
         if(query.payload != "") {
-            request += "Content-Type: application/x-www-form-urlencoded\r\nContent-Length: " + to_string(query.payload.length()) + "\r\n\r\n" + query.payload + "\r\n";
+            request += "Content-Type: application/" + content_type + "\r\nContent-Length: " + to_string(query.payload.length()) + "\r\n\r\n" + query.payload + "\r\n";
         }
         request += "\r\n";
 
@@ -228,11 +228,11 @@ string http::__get_response(const string &url, const string &post_data) {
 };
 
 string http::_http_get(const string &url) {
-    return __get_response(url, "");
+    return __get_response(url, "", "");
 }
 
-string http::_http_post(const string &url, const string &post_data) {
-    return __get_response(url, post_data);
+string http::_http_post(const string &url, const string &post_data, const string &content_type) {
+    return __get_response(url, post_data, content_type);
 }
 
 void http::_http_server(int port) {
