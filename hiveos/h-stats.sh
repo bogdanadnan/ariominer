@@ -36,7 +36,7 @@ stats_fan=""
 for i in "${!device_bus[@]}"; do
   found=0
   for j in "${!busids[@]}"; do
-    if [ "${device_bus[$i]}" == "${busids[$j]}" ]; then
+    if [ "${device_bus[$i],,}" == "${busids[$j],,}" ]; then
 	stats_temp="$stats_temp ${temp[$j]}"
 	stats_fan="$stats_fan ${fan[$j]}"
         found=1
