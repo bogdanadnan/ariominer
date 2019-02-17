@@ -14,6 +14,25 @@
 
 #if defined(WITH_OPENCL)
 
+#ifndef CL_DEVICE_BOARD_NAME_AMD
+#define CL_DEVICE_BOARD_NAME_AMD                    0x4038
+#endif
+#ifndef CL_DEVICE_TOPOLOGY_AMD
+#define CL_DEVICE_TOPOLOGY_AMD                      0x4037
+#endif
+#ifndef CL_DEVICE_PCI_BUS_ID_NV
+#define CL_DEVICE_PCI_BUS_ID_NV                     0x4008
+#endif
+#ifndef CL_DEVICE_PCI_SLOT_ID_NV
+#define CL_DEVICE_PCI_SLOT_ID_NV                    0x4009
+#endif
+
+typedef union
+{
+    struct { cl_uint type; cl_uint data[5]; } raw;
+    struct { cl_uint type; cl_char unused[17]; cl_char bus; cl_char device; cl_char function; } pcie;
+} device_topology_amd;
+
 #define KERNEL_WORKGROUP_SIZE   32
 
 opencl_device_info *opencl_hasher::__get_device_info(cl_platform_id platform, cl_device_id device) {
@@ -44,10 +63,6 @@ opencl_device_info *opencl_hasher::__get_device_info(cl_platform_id platform, cl
 
     string device_name;
 	cl_device_info query_type = CL_DEVICE_NAME;
-
-#ifndef CL_DEVICE_BOARD_NAME_AMD
-#define CL_DEVICE_BOARD_NAME_AMD                    0x4038
-#endif
 
     if(device_vendor.find("Advanced Micro Devices") != string::npos)
 	query_type = CL_DEVICE_BOARD_NAME_AMD;
@@ -581,6 +596,28 @@ bool opencl_hasher::configure(arguments &args) {
         };
 
         device_info device;
+
+	if((*d)->device_string.find("Advanced Micro Devices") != string::npos) {
+        	device_topology_amd amdtopo;
+        	if(clGetDeviceInfo((*d)->device, CL_DEVICE_TOPOLOGY_AMD, sizeof(amdtopo), &amdtopo, NULL) == CL_SUCCESS) {
+            		char bus_id[50];
+            		sprintf(bus_id, "%02d:%02d.%d", amdtopo.pcie.bus, amdtopo.pcie.device, amdtopo.pcie.function);
+            		device.bus_id = bus_id;
+        	}
+	}
+	else if((*d)->device_string.find("NVIDIA") != string::npos) {
+		cl_uint bus;
+		cl_uint slot;
+
+		if(clGetDeviceInfo ((*d)->device, CL_DEVICE_PCI_BUS_ID_NV, sizeof(bus), &bus, NULL) == CL_SUCCESS) {
+			if(clGetDeviceInfo ((*d)->device, CL_DEVICE_PCI_SLOT_ID_NV, sizeof(slot), &slot, NULL) == CL_SUCCESS) {
+	            		char bus_id[50];
+        	    		sprintf(bus_id, "%02d:%02d.0", bus, slot);
+	            		device.bus_id = bus_id;
+			}
+		}
+	}
+
         device.name = (*d)->device_string;
         device.cblocks_intensity = device_intensity_cpu;
         device.gblocks_intensity = device_intensity_gpu;

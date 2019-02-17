@@ -79,7 +79,7 @@ bool cuda_hasher::configure(arguments &args) {
 		stringstream ss;
 		ss << "["<< (index + 1) << "] " << (*d)->device_string;
 		string device_description = ss.str();
-        (*d)->device_index = index;
+	        (*d)->device_index = index;
 
 		if(filter.size() > 0) {
 			bool found = false;
@@ -121,6 +121,16 @@ bool cuda_hasher::configure(arguments &args) {
 		};
 
 		device_info device;
+
+		char bus_id[100];
+		if(cudaDeviceGetPCIBusId(bus_id, 100, (*d)->cuda_index) == cudaSuccess) {
+			device.bus_id = bus_id;
+			int domain_separator = device.bus_id.find(":");
+			if(domain_separator != string::npos) {
+				device.bus_id.erase(0, domain_separator + 1);
+			}
+		}
+
 		device.name = (*d)->device_string;
 		device.cblocks_intensity = device_intensity_cpu;
 		device.gblocks_intensity = device_intensity_gpu;

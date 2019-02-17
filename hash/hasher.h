@@ -36,6 +36,7 @@ struct device_info {
 	}
 
 	string name;
+	string bus_id;
 	double cblocks_intensity;
 	double gblocks_intensity;
 	double cblock_hashrate;

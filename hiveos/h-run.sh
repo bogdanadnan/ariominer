@@ -14,6 +14,7 @@ while true; do
 		break
 done
 
-echo -e "Running ${CYAN}ariominer${NOCOLOR}" | tee ${CUSTOM_LOG_BASENAME}.log
+mkdir -p $CUSTOM_LOG_FOLDER
+echo -e "Running ${CYAN}ariominer${NOCOLOR}" | tee ${CUSTOM_LOG_FOLDER}/${CUSTOM_NAME}.log
 
-./ariominer --mode miner $(< $CUSTOM_NAME.conf)$@ 2>&1 | tee ${CUSTOM_LOG_BASENAME}.log
+./ariominer --mode miner $(< $CUSTOM_NAME.conf)$@ 2>&1 | tee ${CUSTOM_LOG_FOLDER}/${CUSTOM_NAME}.log

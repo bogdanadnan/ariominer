@@ -53,6 +53,16 @@ bool amdgcn_hasher::initialize() {
 	return true;
 }
 
+#ifndef CL_DEVICE_TOPOLOGY_AMD
+#define CL_DEVICE_TOPOLOGY_AMD                      0x4037
+#endif
+
+typedef union
+{
+    struct { cl_uint type; cl_uint data[5]; } raw;
+    struct { cl_uint type; cl_char unused[17]; cl_char bus; cl_char device; cl_char function; } pcie;
+} device_topology_amd;
+
 bool amdgcn_hasher::configure(arguments &args) {
 	int index = args.get_cards_count();
 	double intensity_cpu = 0;
@@ -123,7 +133,16 @@ bool amdgcn_hasher::configure(arguments &args) {
 			_description += "\n";
 			continue;
 		};
+
 		device_info device;
+
+		device_topology_amd amdtopo;
+		if(clGetDeviceInfo((*d)->device, CL_DEVICE_TOPOLOGY_AMD, sizeof(amdtopo), &amdtopo, NULL) == CL_SUCCESS) {
+			char bus_id[50];
+			sprintf(bus_id, "%02d:%02d.%d", amdtopo.pcie.bus, amdtopo.pcie.device, amdtopo.pcie.function);
+			device.bus_id = bus_id;
+		}
+
 		device.name = (*d)->device_string;
 		device.cblocks_intensity = device_intensity_cpu;
 		device.gblocks_intensity = device_intensity_gpu;

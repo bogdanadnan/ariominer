@@ -39,12 +39,9 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
 
     uint64_t current_timestamp = microseconds();
     string hash_report_query = "";
-    string payload = "";
 
     if(__force_hashrate_report || (current_timestamp - __last_hash_report) > __hash_report_interval) {
         hash_report_query = "&hashrate=" + to_string(hash_rate_cblocks) + "&hrgpu=" + to_string(hash_rate_gblocks);
-        if(__get_status != NULL)
-            payload = __get_status();
 
         __last_hash_report = current_timestamp;
         __force_hashrate_report = false;
@@ -55,8 +52,14 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
         LOG("--> Pool request: " + url);
 
     string response;
-    if(__pool_extensions.find("Details") != string::npos && !payload.empty()) {
-        response = _http_post(url, payload, "application/json");
+    if(__pool_extensions.find("Details") != string::npos && url.find("hashrate") != string::npos) {
+	string payload = "";
+        if(__get_status != NULL)
+            payload = __get_status();
+	if(!payload.empty())
+	        response = _http_post(url, payload, "application/json");
+	else
+	        response = _http_get(url);
     }
     else {
         response = _http_get(url);

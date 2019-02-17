@@ -374,7 +374,7 @@ string miner::get_status() {
         ss << "{ \"type\": \"" << (*h)->get_type() << "\", \"subtype\": \"" << (*h)->get_subtype() << "\", \"devices\": [ ";
         map<int, device_info> devices = (*h)->get_device_infos();
         for(map<int, device_info>::iterator d = devices.begin(); d != devices.end();) {
-            ss << "{ \"id\": " << d->first << ", \"name\": \"" << d->second.name << "\", \"cblocks_intensity\": " << d->second.cblocks_intensity <<
+            ss << "{ \"id\": " << d->first << ", \"bus_id\": \"" << d->second.bus_id << "\", \"name\": \"" << d->second.name << "\", \"cblocks_intensity\": " << d->second.cblocks_intensity <<
                 ", \"gblocks_intensity\": " << d->second.gblocks_intensity << ", \"cblocks_hashrate\": " << d->second.cblock_hashrate <<
                 ", \"gblocks_hashrate\": " << d->second.gblock_hashrate << " }";
             if((++d) != devices.end())
