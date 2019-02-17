@@ -65,4 +65,5 @@ stats=$(jq -nc \
 	--arg uptime "$uptime" \
 	--arg ac "$total_shares" --arg rj "$total_rejects" \
 	--arg algo "argon2i" \
-	'{$hs, $hs_units, $temp, $fan, $uptime,ar: [$ac, $rj], $algo}')
+	--argjson bus_numbers "`echo "$device_bus_data" | tr " " "\n" | jq -cs '.'`" \
+	'{$hs, $hs_units, $temp, $fan, $uptime,ar: [$ac, $rj], $bus_numbers, $algo}')
