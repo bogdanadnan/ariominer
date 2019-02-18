@@ -47,8 +47,14 @@ string hasher::get_type() {
 	return _type;
 }
 
-string hasher::get_subtype() {
-	return _subtype;
+string hasher::get_subtype(bool short_subtype) {
+    if(short_subtype && !(_short_subtype.empty())) {
+        string short_version = _short_subtype;
+        short_version.erase(3);
+        return short_version;
+    }
+    else
+    	return _subtype;
 }
 
 int hasher::get_priority() {

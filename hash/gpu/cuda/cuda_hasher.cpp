@@ -19,6 +19,7 @@
 cuda_hasher::cuda_hasher() {
 	_type = "GPU";
 	_subtype = "CUDA";
+	_short_subtype = "NVD";
 	_priority = 2;
 	_intensity = 0;
 	__running = false;

@@ -514,6 +514,7 @@ vector<opencl_device_info*> opencl_hasher::__query_opencl_devices(cl_int &error,
 opencl_hasher::opencl_hasher() {
     _type = "GPU";
 	_subtype = "OPENCL";
+	_short_subtype = "OCL";
 	_priority = 1;
     _intensity = 0;
     __running = false;

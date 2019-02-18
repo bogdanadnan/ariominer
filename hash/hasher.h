@@ -56,7 +56,7 @@ public:
     virtual void cleanup() = 0;
 
     string get_type();
-	string get_subtype();
+	string get_subtype(bool short_name = false);
 	int get_priority();
     string get_info();
     void set_input(const string &public_key, const string &blk, const string &difficulty, const string &argon2profile_string, const string &recommendation);
@@ -81,6 +81,7 @@ protected:
     double _intensity;
     string _type;
 	string _subtype;
+	string _short_subtype; //max 3 characters
 	int _priority;
     string _description;
 

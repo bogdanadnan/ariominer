@@ -29,8 +29,11 @@ miner::miner(arguments &args) : __args(args), __client(args, [&]() { return this
     __chs_threshold_hit = 0;
     __ghs_threshold_hit = 0;
     __running = false;
+    __display_hits = 0;
 
-    LOG("Initializing miner with name: " + __args.name());
+    LOG("Miner name: " + __args.name());
+    LOG("Wallet: " + __args.wallet());
+    LOG("Pool address: " + __args.pool());
 
     vector<hasher*> hashers = hasher::get_hashers();
 	for (vector<hasher*>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
@@ -254,10 +257,11 @@ bool miner::__update_pool_data() {
             ss << "-----------------------------------------------------------------------------------------------------------------------------------------" << endl;
             ss << "--> Pool data updated   Block: " << __blk << endl;
             ss << "--> " << ((new_settings.argon2profile == "1_1_524288") ? "CPU round" : (new_settings.recommendation == "pause" ? "Masternode round" : "GPU round"));
-            ss << "  Height: " << __height << "  Limit: " << __limit << "  Difficulty: " << __difficulty << endl;
+            ss << "  Height: " << __height << "  Limit: " << __limit << "  Difficulty: " << __difficulty << "  MinerName: " << __args.name() << endl;
             ss << "-----------------------------------------------------------------------------------------------------------------------------------------";
 
             LOG(ss.str());
+            __display_hits = 0;
         }
         return true;
     }
@@ -277,7 +281,54 @@ bool miner::__display_report() {
 
     time_t total_time = time(NULL) - __begin_time;
 
-    if(!__args.is_verbose()) {
+    stringstream header;
+    stringstream log;
+
+    for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
+        hash_rate += (*it)->get_current_hash_rate();
+        avg_hash_rate_cblocks += (*it)->get_avg_hash_rate_cblocks();
+        hash_count_cblocks += (*it)->get_hash_count_cblocks();
+        avg_hash_rate_gblocks += (*it)->get_avg_hash_rate_gblocks();
+        hash_count_gblocks += (*it)->get_hash_count_gblocks();
+    }
+
+    header << "|TotalHR";
+    log << "|" << setw(7) << (int)hash_rate;
+    for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
+        map<int, device_info> devices = (*it)->get_device_infos();
+        for(map<int, device_info>::iterator d = devices.begin(); d != devices.end(); ++d) {
+            header << "|" << (*it)->get_type() << d->first << ((d->first < 10) ? " " : "");
+
+            if(__argon2profile == "1_1_524288")
+                log << "|" << fixed << setprecision(1) << setw(5) << d->second.cblock_hashrate;
+            else
+                log << "|" << setw(5) << (int)(d->second.gblock_hashrate);
+        }
+    }
+    header << "|Avg(C)|Avg(G)|Time(s) |Acc(C)|Acc(G)|Rej(C)|Rej(G)|Block|";
+    log << "|" << setw(6) << (int)avg_hash_rate_cblocks
+            << "|" << setw(6) << (int)avg_hash_rate_gblocks
+            << "|" << setw(8) << total_time
+            << "|" << setw(6) << __confirmed_cblocks
+            << "|" << setw(6) << __confirmed_gblocks
+            << "|" << setw(6) << __rejected_cblocks
+            << "|" << setw(6) << __rejected_gblocks
+            << "|" << setw(5) << __found << "|";
+
+    if((__display_hits % 10) == 0) {
+        string header_str = header.str();
+        string separator(header_str.size(), '-');
+
+        if(__display_hits > 0)
+            LOG(separator);
+
+        LOG(header_str);
+        LOG(separator);
+    }
+
+    LOG(log.str());
+
+/*    if(!__args.is_verbose()) {
         for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
             hash_rate += (*it)->get_current_hash_rate();
             avg_hash_rate_cblocks += (*it)->get_avg_hash_rate_cblocks();
@@ -327,7 +378,7 @@ bool miner::__display_report() {
                "Avg. (G): " << setw(6) << avg_hash_rate_gblocks << "  " <<
                "Count: " << setw(4) << (hash_count_cblocks + hash_count_gblocks);
         }
-    }
+    } */
 
     if(avg_hash_rate_cblocks <= __args.chs_threshold() && (__blocks_count > 1 || __argon2profile == "1_1_524288")) {
         __chs_threshold_hit++;
@@ -352,7 +403,9 @@ bool miner::__display_report() {
         exit(0);
     }
 
-    LOG(ss.str());
+//    LOG(ss.str());
+    __display_hits++;
+
     return true;
 }
 

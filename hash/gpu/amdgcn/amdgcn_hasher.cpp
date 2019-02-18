@@ -24,6 +24,7 @@
 amdgcn_hasher::amdgcn_hasher() {
 	_type = "GPU";
 	_subtype = "AMDGCN";
+	_short_subtype = "GCN";
 	_priority = 0;
 	_intensity = 0;
 	__running = false;

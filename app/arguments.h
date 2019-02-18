@@ -43,6 +43,7 @@ public:
 
 	int chs_threshold();
 	int ghs_threshold();
+	double hs_threshold();
 
 	bool show_pool_requests();
 
@@ -95,6 +96,7 @@ private:
 
 	int __chs_threshold;
 	int __ghs_threshold;
+	double __hs_threshold;
 
 	bool __show_pool_requests;
 

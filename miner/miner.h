@@ -41,6 +41,7 @@ private:
     int __chs_threshold_hit;
     int __ghs_threshold_hit;
     int __blocks_count;
+	uint64_t __display_hits;
 
     time_t __begin_time;
 

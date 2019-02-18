@@ -760,3 +760,7 @@ int arguments::enable_api_port() {
 string arguments::uid() {
     return __uid;
 }
+
+double arguments::hs_threshold() {
+    return __hs_threshold;
+}

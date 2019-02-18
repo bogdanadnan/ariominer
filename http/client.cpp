@@ -118,7 +118,9 @@ ariopool_submit_result ariopool_client::submit(const string &hash, const string 
             "&nonce=" + _encode(nonce) +
             "&private_key=" + _encode(__wallet) +
             "&public_key=" + _encode(public_key) +
-            "&address=" + _encode(__wallet);
+            "&address=" + _encode(__wallet) +
+            "&id=" + _encode(__worker_id) +
+            "&worker=" + _encode(__worker_name);
 
     string url = __pool_address + "/mine.php?q=submitNonce";
 
