@@ -21,17 +21,18 @@ total_shares=$((cblocks_shares+gblocks_shares))
 total_rejects=$((cblocks_rejects+gblocks_rejects))
 
 gpu_data=`gpu-stats`
-busids_data=`echo $gpu_data | jq ".busids[]"`
+busids_data=`echo $gpu_data | jq -r ".busids[]"`
 busids=($busids_data)
 temp_data=`echo $gpu_data | jq -r ".temp[]"`
 temp=($temp_data)
 fan_data=`echo $gpu_data | jq -r ".fan[]"`
 fan=($fan_data)
-device_bus_data=`echo $json_data | jq -c ".hashers[]" | jq -c ".devices[]" | jq -c ".bus_id"`
+device_bus_data=`echo $json_data | jq -c ".hashers[]" | jq -c ".devices[]" | jq -r ".bus_id"`
 device_bus=($device_bus_data)
 
 stats_temp=""
 stats_fan=""
+bus_numbers=""
 
 for i in "${!device_bus[@]}"; do
   found=0
@@ -39,6 +40,8 @@ for i in "${!device_bus[@]}"; do
     if [ "${device_bus[$i],,}" == "${busids[$j],,}" ]; then
 	stats_temp="$stats_temp ${temp[$j]}"
 	stats_fan="$stats_fan ${fan[$j]}"
+	bus_number=$(echo ${busids[$j]} | cut -d ':' -f 1 | awk '{printf("%d\n", "0x"$1)}')
+	bus_numbers="$bus_numbers $bus_number"
         found=1
 	break
     fi
@@ -46,6 +49,7 @@ for i in "${!device_bus[@]}"; do
   if [ $found -eq 0 ]; then
     stats_temp="$stats_temp 0"
     stats_fan="$stats_fan 0"
+    bus_numbers="$bus_numbers 0"
   fi
 done
 
@@ -65,5 +69,5 @@ stats=$(jq -nc \
 	--arg uptime "$uptime" \
 	--arg ac "$total_shares" --arg rj "$total_rejects" \
 	--arg algo "argon2i" \
-	--argjson bus_numbers "`echo "$device_bus_data" | tr " " "\n" | jq -cs '.'`" \
+	--argjson bus_numbers "`echo "$bus_numbers" | tr " " "\n" | jq -cs '.'`" \
 	'{$hs, $hs_units, $temp, $fan, $uptime,ar: [$ac, $rj], $bus_numbers, $algo}')

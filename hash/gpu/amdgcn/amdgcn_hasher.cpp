@@ -139,7 +139,7 @@ bool amdgcn_hasher::configure(arguments &args) {
 		device_topology_amd amdtopo;
 		if(clGetDeviceInfo((*d)->device, CL_DEVICE_TOPOLOGY_AMD, sizeof(amdtopo), &amdtopo, NULL) == CL_SUCCESS) {
 			char bus_id[50];
-			sprintf(bus_id, "%02d:%02d.%d", amdtopo.pcie.bus, amdtopo.pcie.device, amdtopo.pcie.function);
+			sprintf(bus_id, "%02x:%02x.%x", amdtopo.pcie.bus, amdtopo.pcie.device, amdtopo.pcie.function);
 			device.bus_id = bus_id;
 		}
 

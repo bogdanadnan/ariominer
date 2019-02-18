@@ -601,7 +601,7 @@ bool opencl_hasher::configure(arguments &args) {
         	device_topology_amd amdtopo;
         	if(clGetDeviceInfo((*d)->device, CL_DEVICE_TOPOLOGY_AMD, sizeof(amdtopo), &amdtopo, NULL) == CL_SUCCESS) {
             		char bus_id[50];
-            		sprintf(bus_id, "%02d:%02d.%d", amdtopo.pcie.bus, amdtopo.pcie.device, amdtopo.pcie.function);
+            		sprintf(bus_id, "%02x:%02x.%x", amdtopo.pcie.bus, amdtopo.pcie.device, amdtopo.pcie.function);
             		device.bus_id = bus_id;
         	}
 	}
@@ -612,7 +612,7 @@ bool opencl_hasher::configure(arguments &args) {
 		if(clGetDeviceInfo ((*d)->device, CL_DEVICE_PCI_BUS_ID_NV, sizeof(bus), &bus, NULL) == CL_SUCCESS) {
 			if(clGetDeviceInfo ((*d)->device, CL_DEVICE_PCI_SLOT_ID_NV, sizeof(slot), &slot, NULL) == CL_SUCCESS) {
 	            		char bus_id[50];
-        	    		sprintf(bus_id, "%02d:%02d.0", bus, slot);
+        	    		sprintf(bus_id, "%02x:%02x.0", bus, slot);
 	            		device.bus_id = bus_id;
 			}
 		}
