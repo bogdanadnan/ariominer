@@ -297,18 +297,22 @@ bool miner::__display_report() {
     for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
         map<int, device_info> devices = (*it)->get_device_infos();
         for(map<int, device_info>::iterator d = devices.begin(); d != devices.end(); ++d) {
-            header << "|" << (*it)->get_type() << d->first << ((d->first < 10) ? " " : "");
+            header << "|" << ((d->first < 10) ? " " : "") << (*it)->get_type() << d->first;
 
-            if(__argon2profile == "1_1_524288")
-                log << "|" << fixed << setprecision(1) << setw(5) << d->second.cblock_hashrate;
+            if(__argon2profile == "1_1_524288") {
+                if(d->second.cblock_hashrate < 999)
+                    log << "|" << fixed << setprecision(1) << setw(5) << d->second.cblock_hashrate;
+                else
+                    log << "|" << fixed << setw(5) << (int)d->second.cblock_hashrate;
+            }
             else
                 log << "|" << setw(5) << (int)(d->second.gblock_hashrate);
         }
     }
-    header << "|Avg(C)|Avg(G)|Time(s) |Acc(C)|Acc(G)|Rej(C)|Rej(G)|Block|";
+    header << "|Avg(C)|Avg(G)|Time(h:m:s)|Acc(C)|Acc(G)|Rej(C)|Rej(G)|Block|";
     log << "|" << setw(6) << (int)avg_hash_rate_cblocks
             << "|" << setw(6) << (int)avg_hash_rate_gblocks
-            << "|" << setw(8) << total_time
+            << "|" << setw(11) << format_seconds(total_time)
             << "|" << setw(6) << __confirmed_cblocks
             << "|" << setw(6) << __confirmed_gblocks
             << "|" << setw(6) << __rejected_cblocks

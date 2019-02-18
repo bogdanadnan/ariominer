@@ -41,3 +41,12 @@ string generate_uid(size_t length) {
 
 	return randomString;
 }
+
+string format_seconds(uint64_t seconds) {
+	uint64_t hours = seconds / 3600;
+	uint64_t minutes = (seconds - hours * 3600) / 60;
+	uint64_t reminder = seconds - hours * 3600 - minutes * 60;
+	stringstream ss;
+	ss << std::setw(2) << std::setfill('0') << hours << ":" << std::setw(2) << std::setfill('0') << minutes << ":" << std::setw(2) << std::setfill('0') << reminder;
+	return ss.str();
+}
