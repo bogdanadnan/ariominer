@@ -309,10 +309,10 @@ bool miner::__display_report() {
                 log << "|" << setw(5) << (int)(d->second.gblock_hashrate);
         }
     }
-    header << "|Avg(C)|Avg(G)|Time(h:m:s)|Acc(C)|Acc(G)|Rej(C)|Rej(G)|Block|";
+    header << "|Avg(C)|Avg(G)|     Time|Acc(C)|Acc(G)|Rej(C)|Rej(G)|Block|";
     log << "|" << setw(6) << (int)avg_hash_rate_cblocks
             << "|" << setw(6) << (int)avg_hash_rate_gblocks
-            << "|" << setw(11) << format_seconds(total_time)
+            << "|" << setw(9) << format_seconds(total_time)
             << "|" << setw(6) << __confirmed_cblocks
             << "|" << setw(6) << __confirmed_gblocks
             << "|" << setw(6) << __rejected_cblocks
