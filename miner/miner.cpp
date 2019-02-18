@@ -257,7 +257,7 @@ bool miner::__update_pool_data() {
             ss << "-----------------------------------------------------------------------------------------------------------------------------------------" << endl;
             ss << "--> Pool data updated   Block: " << __blk << endl;
             ss << "--> " << ((new_settings.argon2profile == "1_1_524288") ? "CPU round" : (new_settings.recommendation == "pause" ? "Masternode round" : "GPU round"));
-            ss << "  Height: " << __height << "  Limit: " << __limit << "  Difficulty: " << __difficulty << "  MinerName: " << __args.name() << endl;
+            ss << "  Height: " << __height << "  Limit: " << __limit << "  Difficulty: " << __difficulty << "  Miner: " << __args.name() << endl;
             ss << "-----------------------------------------------------------------------------------------------------------------------------------------";
 
             LOG(ss.str());
