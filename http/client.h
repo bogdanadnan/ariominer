@@ -6,6 +6,7 @@
 #define PROJECT_CLIENT_H
 
 #include "http.h"
+#include "../miner/pool_settings_provider.h"
 
 struct ariopool_result {
     bool success;
@@ -38,15 +39,12 @@ public:
 
 private:
     bool __validate_response(const string &response);
+    pool_settings &__get_pool_settings();
 
-    string __get_wallet_address();
-    string __pool_address;
-    string __pool_version;
-    string __pool_extensions;
+    pool_settings_provider __pool_settings_provider;
+    bool __is_devfee_time;
     string __worker_id;
     string __worker_name;
-    string __client_wallet_address;
-    string __used_wallet_address;
     string __force_argon2profile;
     int64_t __hash_report_interval;
 

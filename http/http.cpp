@@ -78,23 +78,31 @@ public:
     string payload;
 };
 
+int http::__socketlib_reference = 0;
+
 http::http() {
 #ifdef _WIN64
-	WSADATA wsaData;
-	int iResult;
+    if(__socketlib_reference == 0) {
+        WSADATA wsaData;
+        int iResult;
 
-	// Initialize Winsock
-	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (iResult != 0) {
-		LOG("WSAStartup failed:"+ to_string(iResult));
-		exit(1);
+        // Initialize Winsock
+        iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+        if (iResult != 0) {
+            LOG("WSAStartup failed:"+ to_string(iResult));
+            exit(1);
+        }
 	}
 #endif
+    __socketlib_reference++;
 }
 
 http::~http() {
+    __socketlib_reference--;
 #ifdef _WIN64
-	WSACleanup();
+    if(__socketlib_reference == 0) {
+    	WSACleanup();
+	}
 #endif
 }
 
@@ -233,12 +241,6 @@ string http::_http_get(const string &url) {
 
 string http::_http_post(const string &url, const string &post_data, const string &content_type) {
     return __get_response(url, post_data, content_type);
-}
-
-void http::_http_server(int port) {
-}
-
-void http::_http_server_stop() {
 }
 
 string http::_encode(const string &src) {

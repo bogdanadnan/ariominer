@@ -51,7 +51,8 @@ public:
 
     string get_help();
 
-    static string get_app_folder();
+	static string get_app_folder();
+	static string get_app_name();
 
     int get_cards_count() { return __cards_count; }
     void set_cards_count(int count) { __cards_count = count; }

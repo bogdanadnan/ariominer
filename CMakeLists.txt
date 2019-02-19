@@ -23,9 +23,10 @@ set(SOURCE
         miner/mini-gmp/mini-gmp.h miner/mini-gmp/mini-gmp.c
         autotune/autotune.cpp autotune/autotune.h
         app/runner.h
-        miner/miner_api.cpp miner/miner_api.h)
+        miner/miner_api.cpp miner/miner_api.h miner/pool_settings_provider.cpp miner/pool_settings_provider.h http/simplejson/json.cpp)
 set(SOURCE_COMMON app/arguments.cpp app/arguments.h common/common.h common/common.cpp common/dllimport.h common/dllexport.h
-        crypt/sha512.cpp crypt/sha512.h crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h)
+        crypt/sha512.cpp crypt/sha512.h crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h
+        common/cfgpath.h)
 set(SOURCE_HASHER hash/hasher.cpp hash/hasher.h hash/argon2/argon2.cpp hash/argon2/argon2.h
         hash/argon2/defs.h hash/argon2/blake2/blake2b.c hash/argon2/blake2/blake2.h hash/argon2/blake2/blake2b-round.h
         hash/argon2/blake2/blake2b-load-sse41.h hash/argon2/blake2/blake2b-load-sse2.h hash/argon2/blake2/blake2-config.h
@@ -144,6 +145,9 @@ endif()
 target_link_libraries(ariominer common hasher)
 if(WIN32)
     target_link_libraries(ariominer ws2_32.lib)
+endif()
+if(APPLE)
+    set_target_properties(ariominer PROPERTIES LINK_FLAGS "-framework CoreServices")
 endif()
 
 add_library(argon2_fill_blocks_REF MODULE ${ARGON2_FILL_BLOCKS_SRC})

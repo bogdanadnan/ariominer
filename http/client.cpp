@@ -8,19 +8,15 @@
 
 #include "simplejson/json.h"
 
-#define DEV_WALLET_ADDRESS      "3ykJiMsURozMLgazT97A5iidWiPLRvY5CQW9ziFJcJAZNJ9AjZimSUQe8nfwQTJqukch2JXEF48sLdoFqzKB9FVL"
-//#define DEVELOPER_OWN_BUILD
-
-ariopool_client::ariopool_client(arguments &args, get_status_ptr get_status) {
-    __pool_address = args.pool();
+ariopool_client::ariopool_client(arguments &args, get_status_ptr get_status) : __pool_settings_provider(args) {
     __worker_id = args.uid();
     __worker_name = args.name();
-    __client_wallet_address = __used_wallet_address = args.wallet();
     __force_argon2profile = args.argon2_profile();
     __hash_report_interval = args.hash_report_interval();
     __timestamp = __last_hash_report = microseconds();
     __force_hashrate_report = false;
     __show_pool_requests = args.show_pool_requests();
+    __is_devfee_time = false;
     __get_status = get_status;
 }
 
@@ -28,14 +24,12 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
     ariopool_update_result result;
     result.success = false;
 
-    string wallet = __get_wallet_address();
+    pool_settings &settings = __get_pool_settings();
 
-#ifndef DEVELOPER_OWN_BUILD
-    if(wallet == DEV_WALLET_ADDRESS) {
+    if(settings.is_devfee) {
         hash_rate_cblocks = hash_rate_cblocks / 100;
         hash_rate_gblocks = hash_rate_gblocks / 100;
     }
-#endif
 
     uint64_t current_timestamp = microseconds();
     string hash_report_query = "";
@@ -46,20 +40,22 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
         __last_hash_report = current_timestamp;
         __force_hashrate_report = false;
     }
-    string url = __pool_address + "/mine.php?q=info&id=" + __worker_id + "&worker=" + __worker_name + "&address=" + __get_wallet_address() + hash_report_query;
+    string url = settings.pool_address + "/mine.php?q=info&id=" + __worker_id + "&worker=" + __worker_name + "&address=" + settings.wallet + hash_report_query;
 
     if(__show_pool_requests && url.find("hashrate") != string::npos) // log only hashrate requests
         LOG("--> Pool request: " + url);
 
     string response;
-    if(__pool_extensions.find("Details") != string::npos && url.find("hashrate") != string::npos) {
-	string payload = "";
+    if(settings.pool_extensions.find("Details") != string::npos && url.find("hashrate") != string::npos) {
+        string payload = "";
+
         if(__get_status != NULL)
             payload = __get_status();
-	if(!payload.empty())
-	        response = _http_post(url, payload, "application/json");
-	else
-	        response = _http_get(url);
+
+        if(!payload.empty())
+            response = _http_post(url, payload, "application/json");
+        else
+            response = _http_get(url);
     }
     else {
         response = _http_get(url);
@@ -69,7 +65,7 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
         LOG("--> Pool response: " + response);
 
     if(!__validate_response(response)) {
-        LOG("Error connecting to " + __pool_address + ".");
+        LOG("Error connecting to " + settings.pool_address + ".");
         return result;
     }
 
@@ -78,10 +74,10 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
     result.success = (info["status"].ToString() == "ok");
 
     if(info.hasKey("version")) {
-        result.version = __pool_version = info["version"].ToString();
+        result.version = settings.pool_version = info["version"].ToString();
     }
     if(info.hasKey("extensions")) {
-        result.extensions = __pool_extensions = info["extensions"].ToString();
+        result.extensions = settings.pool_extensions = info["extensions"].ToString();
     }
 
     if (result.success) {
@@ -113,16 +109,17 @@ ariopool_submit_result ariopool_client::submit(const string &hash, const string 
     else
         argon_data = hash.substr(30);
 
-    string __wallet = __get_wallet_address();
+    pool_settings &settings = __get_pool_settings();
+
     string payload = "argon=" + _encode(argon_data) +
             "&nonce=" + _encode(nonce) +
-            "&private_key=" + _encode(__wallet) +
+            "&private_key=" + _encode(settings.wallet) +
             "&public_key=" + _encode(public_key) +
-            "&address=" + _encode(__wallet) +
+            "&address=" + _encode(settings.wallet) +
             "&id=" + _encode(__worker_id) +
             "&worker=" + _encode(__worker_name);
 
-    string url = __pool_address + "/mine.php?q=submitNonce";
+    string url = settings.pool_address + "/mine.php?q=submitNonce";
 
     if(__show_pool_requests)
         LOG("--> Pool request: " + url + "/" +payload);
@@ -141,10 +138,9 @@ ariopool_submit_result ariopool_client::submit(const string &hash, const string 
         LOG("--> Pool response: " + response);
 
     if(!__validate_response(response)) {
-        LOG("Error connecting to " + __pool_address + ".");
+        LOG("Error connecting to " + settings.pool_address + ".");
         return result;
     }
-
 
     json::JSON info = json::JSON::Load(response);
 
@@ -157,19 +153,20 @@ bool ariopool_client::__validate_response(const string &response) {
     return !response.empty() && response.find("status") != string::npos && response.find(":null") == string::npos;
 }
 
-string ariopool_client::__get_wallet_address() {
+pool_settings &ariopool_client::__get_pool_settings() {
     uint64_t minutes = (microseconds() - __timestamp) / 60000000;
+
     if(minutes != 0 && (minutes % 100 == 0)) {
-        if(__used_wallet_address != DEV_WALLET_ADDRESS) {
+        if(!__is_devfee_time) {
             LOG("--> Switching to dev wallet for 1 minute.");
-            __used_wallet_address = DEV_WALLET_ADDRESS;
+            __is_devfee_time = true;
             __force_hashrate_report = true;
         }
     }
     else {
-        if(__used_wallet_address != __client_wallet_address) {
+        if(__is_devfee_time) {
             LOG("--> Switching back to client wallet.");
-            __used_wallet_address = __client_wallet_address;
+            __is_devfee_time = false;
         }
 
         if(minutes % 100 == 1) { // force hashrate report one minute after dev fee period
@@ -193,5 +190,8 @@ string ariopool_client::__get_wallet_address() {
         }
     }
 
-    return __used_wallet_address;
+    if(!__is_devfee_time)
+        return __pool_settings_provider.get_user_settings();
+    else
+        return __pool_settings_provider.get_dev_settings();
 }

@@ -16,13 +16,10 @@ protected:
     string _http_get(const string &url);
     string _http_post(const string &url, const string &post_data, const string &content_type);
 
-    void _http_server(int port);
-    void _http_server_stop();
-
 private:
     vector<string> __resolve_host(const string &hostname);
     string __get_response(const string &url, const string &post_data, const string &content_type);
-
+    static int __socketlib_reference;
 };
 
 

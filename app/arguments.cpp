@@ -709,6 +709,18 @@ string arguments::get_app_folder() {
     return app_folder;
 }
 
+string arguments::get_app_name() {
+    size_t last_slash = __argv_0.find_last_of("/\\");
+    if (last_slash == string::npos)
+        return __argv_0;
+
+    string app_name = __argv_0.substr(last_slash + 1);
+    if(app_name.empty()) {
+        app_name = "ariominer";
+    }
+    return app_name;
+}
+
 vector<string> arguments::__parse_multiarg(const string &arg) {
     string::size_type pos, lastPos = 0, length = arg.length();
     vector<string> tokens;
