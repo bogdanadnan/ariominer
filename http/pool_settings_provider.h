@@ -6,7 +6,7 @@
 #define ARIOMINER_DEVFEE_CONFIG_H
 
 #include "../app/arguments.h"
-#include "../http/http.h"
+#include "http.h"
 
 struct pool_settings {
     string wallet;

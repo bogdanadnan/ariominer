@@ -23,7 +23,7 @@ set(SOURCE
         miner/mini-gmp/mini-gmp.h miner/mini-gmp/mini-gmp.c
         autotune/autotune.cpp autotune/autotune.h
         app/runner.h
-        miner/miner_api.cpp miner/miner_api.h miner/pool_settings_provider.cpp miner/pool_settings_provider.h http/simplejson/json.cpp)
+        miner/miner_api.cpp miner/miner_api.h http/pool_settings_provider.cpp http/pool_settings_provider.h http/simplejson/json.cpp proxy/proxy_server.cpp proxy/proxy_server.h proxy/index_html.cpp proxy/index_html.h)
 set(SOURCE_COMMON app/arguments.cpp app/arguments.h common/common.h common/common.cpp common/dllimport.h common/dllexport.h
         crypt/sha512.cpp crypt/sha512.h crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h
         common/cfgpath.h)

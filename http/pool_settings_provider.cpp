@@ -4,7 +4,7 @@
 
 #include "../common/common.h"
 #include "../common/cfgpath.h"
-#include "../http/simplejson/json.h"
+#include "simplejson/json.h"
 
 #include "pool_settings_provider.h"
 

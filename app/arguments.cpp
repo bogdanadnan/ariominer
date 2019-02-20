@@ -459,8 +459,44 @@ bool arguments::valid(string &error) {
             return false;
         }
     }
-    else {
-        error = "Only miner or autotune mode are supported for the moment";
+    else if(__proxy_flag == 1) {
+        if(__proxy_port < 1024) {
+            error = "Proxy listening port must be at least 1024, lower port numbers are usually reserved by system and requires administrator privileges.";
+            return false;
+        }
+
+        if (__pool.empty()) {
+            error = "Pool address is mandatory.";
+            return false;
+        }
+
+        if (__pool.find("https://") == 0) {
+            error = "Only HTTP protocol is allowed for pool connection, HTTPS is not supported.";
+            return false;
+        }
+
+        if (__wallet.empty()) {
+            error = "Wallet is mandatory.";
+            return false;
+        }
+
+        if (__name.empty()) {
+            error = "Worker name is mandatory.";
+            return false;
+        }
+
+        if (__update_interval < 2000000) {
+            error = "Pool update interval must be at least 2 sec.";
+            return false;
+        }
+
+        if (__hash_report_interval < 60000000) {
+            error = "Reporting interval must be at least 1 min.";
+            return false;
+        }
+    }
+    else  {
+        error = "You need to specify an operation mode (miner/autotune/proxy).";
         return false;
     }
 

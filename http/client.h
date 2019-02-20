@@ -6,7 +6,7 @@
 #define PROJECT_CLIENT_H
 
 #include "http.h"
-#include "../miner/pool_settings_provider.h"
+#include "pool_settings_provider.h"
 
 struct ariopool_result {
     bool success;
@@ -22,6 +22,51 @@ struct ariopool_update_result : public ariopool_result {
     string recommendation;
     string version;
     string extensions;
+
+    bool update(ariopool_update_result &src) {
+        if(block != src.block ||
+                difficulty != src.difficulty ||
+                limit != src.limit ||
+                public_key != src.public_key ||
+                height != src.height ||
+                argon2profile != src.argon2profile ||
+                recommendation != src.recommendation ||
+                version != src.version ||
+                extensions != src.extensions) {
+            block = src.block;
+            difficulty = src.difficulty;
+            limit = src.limit;
+            public_key = src.public_key;
+            height = src.height;
+            argon2profile = src.argon2profile;
+            recommendation = src.recommendation;
+            version = src.version;
+            extensions = src.extensions;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    string response() {
+        stringstream ss;
+        string argon_mem = "524288";
+        string argon_threads = "1";
+        string argon_time = "1";
+        if(argon2profile == "4_4_16384") {
+            argon_mem = "16384";
+            argon_threads = "4";
+            argon_time = "4";
+        }
+
+        ss << "{ \"status\": \"ok\", \"data\": { \"recommendation\": \"" << recommendation << "\", \"argon_mem\": " << argon_mem
+           << ", \"argon_threads\": " << argon_threads << ", \"argon_time\": " << argon_time <<", \"difficulty\": \"" << difficulty
+           << "\", \"block\": \"" << block << "\", \"height\": " << height << ", \"public_key\": \"" << public_key
+           << "\", \"limit\": " << limit << " }, \"coin\": \"arionum\" }";
+
+        return ss.str();
+    }
 };
 
 struct ariopool_submit_result : public ariopool_result {
