@@ -6,14 +6,14 @@
 
 json_data=`curl -s http://localhost:${CUSTOM_API_PORT}/status`
 
-cblocks_hashrates=`echo $json_data | jq -c ".hashers[]" | jq -c ".devices[]" | jq -c ".cblocks_hashrate"`
-gblocks_hashrates=`echo $json_data | jq -c ".hashers[]" | jq -c ".devices[]" | jq -c ".gblocks_hashrate"`
-block_height=`echo $json_data | jq -c ".block_height"`
-cblocks_shares=`echo $json_data | jq -c ".cblocks_shares"`
-gblocks_shares=`echo $json_data | jq -c ".gblocks_shares"`
-cblocks_rejects=`echo $json_data | jq -c ".cblocks_rejects"`
-gblocks_rejects=`echo $json_data | jq -c ".gblocks_rejects"`
-uptime=`echo $json_data | jq -c ".time_running"`
+cblocks_hashrates=`echo $json_data | jq -c ".[]" | jq -c ".hashers[]" | jq -c ".devices[]" | jq -c ".cblocks_hashrate"`
+gblocks_hashrates=`echo $json_data | jq -c ".[]" | jq -c ".hashers[]" | jq -c ".devices[]" | jq -c ".gblocks_hashrate"`
+block_height=`echo $json_data | jq -c ".[]" | jq -c ".block_height"`
+cblocks_shares=`echo $json_data | jq -c ".[]" | jq -c ".cblocks_shares"`
+gblocks_shares=`echo $json_data | jq -c ".[]" | jq -c ".gblocks_shares"`
+cblocks_rejects=`echo $json_data | jq -c ".[]" | jq -c ".cblocks_rejects"`
+gblocks_rejects=`echo $json_data | jq -c ".[]" | jq -c ".gblocks_rejects"`
+uptime=`echo $json_data | jq -c ".[]" | jq -c ".time_running"`
 
 total_cblocks_hashrate=`echo $cblocks_hashrates | awk '{sum=0; for(i=1; i<=NF; i++) sum += $i; sum = sum/1000; print sum}'`
 total_gblocks_hashrate=`echo $gblocks_hashrates | awk '{sum=0; for(i=1; i<=NF; i++) sum += $i; sum = sum/1000; print sum}'`
@@ -27,7 +27,7 @@ temp_data=`echo $gpu_data | jq -r ".temp[]"`
 temp=($temp_data)
 fan_data=`echo $gpu_data | jq -r ".fan[]"`
 fan=($fan_data)
-device_bus_data=`echo $json_data | jq -c ".hashers[]" | jq -c ".devices[]" | jq -r ".bus_id"`
+device_bus_data=`echo $json_data | jq -c ".[]" | jq -c ".hashers[]" | jq -c ".devices[]" | jq -r ".bus_id"`
 device_bus=($device_bus_data)
 
 stats_temp=""
