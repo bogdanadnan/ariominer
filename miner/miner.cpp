@@ -116,8 +116,8 @@ void miner::run() {
                 if (hash->block != __blk) //the block expired
                     continue;
 
-                string duration = __calc_duration(hash->base, hash->hash);
-                uint64_t result = __calc_compare(duration);
+                string duration = miner::calc_duration(hash->base, hash->hash);
+                uint64_t result = miner::calc_compare(duration, __difficulty);
                 if (result > 0 && result <= __limit) {
                     if (__args.is_verbose())
                         LOG("--> Submitting nonce: " + hash->nonce + " / " + hash->hash.substr(30));
@@ -177,7 +177,7 @@ void miner::run() {
     }
 }
 
-string miner::__calc_duration(const string &base, const string &hash) {
+string miner::calc_duration(const string &base, const string &hash) {
     string combined = base + hash;
 
     unsigned char *sha512_hash = SHA512::hash((unsigned char*)combined.c_str(), combined.length());
@@ -201,15 +201,15 @@ string miner::__calc_duration(const string &base, const string &hash) {
     return duration;
 }
 
-uint64_t miner::__calc_compare(const string &duration) {
-    if(__difficulty.empty()) {
+uint64_t miner::calc_compare(const string &duration, const string &difficulty) {
+    if(difficulty.empty()) {
         return -1;
     }
 
     mpz_t mpzDiff, mpzDuration;
     mpz_t mpzResult;
     mpz_init(mpzResult);
-    mpz_init_set_str(mpzDiff, __difficulty.c_str(), 10);
+    mpz_init_set_str(mpzDiff, difficulty.c_str(), 10);
     mpz_init_set_str(mpzDuration, duration.c_str(), 10);
 
     mpz_tdiv_q(mpzResult, mpzDuration, mpzDiff);
@@ -420,7 +420,7 @@ void miner::stop() {
 
 string miner::get_status() {
     stringstream ss;
-    ss << "{ \"name\": \"" << __args.name() << "\", \"block_height\": " << __height << ", \"time_running\": " << (time(NULL) - __begin_time) <<
+    ss << "[ { \"name\": \"" << __args.name() << "\", \"block_height\": " << __height << ", \"time_running\": " << (time(NULL) - __begin_time) <<
        ", \"total_blocks\": " << __blocks_count << ", \"cblocks_shares\": " << __confirmed_cblocks << ", \"gblocks_shares\": " << __confirmed_gblocks <<
        ", \"cblocks_rejects\": " << __rejected_cblocks << ", \"gblocks_rejects\": " << __rejected_gblocks << ", \"blocks_earned\": " << __found <<
        ", \"hashers\": [ ";
@@ -431,7 +431,7 @@ string miner::get_status() {
         ss << "{ \"type\": \"" << (*h)->get_type() << "\", \"subtype\": \"" << (*h)->get_subtype() << "\", \"devices\": [ ";
         map<int, device_info> devices = (*h)->get_device_infos();
         for(map<int, device_info>::iterator d = devices.begin(); d != devices.end();) {
-            ss << "{ \"id\": \"" << d->first << "\", \"bus_id\": \"" << d->second.bus_id << "\", \"name\": \"" << d->second.name << "\", \"cblocks_intensity\": " << d->second.cblocks_intensity <<
+            ss << "{ \"id\": " << d->first << ", \"bus_id\": \"" << d->second.bus_id << "\", \"name\": \"" << d->second.name << "\", \"cblocks_intensity\": " << d->second.cblocks_intensity <<
                 ", \"gblocks_intensity\": " << d->second.gblocks_intensity << ", \"cblocks_hashrate\": " << d->second.cblock_hashrate <<
                 ", \"gblocks_hashrate\": " << d->second.gblock_hashrate << " }";
             if((++d) != devices.end())
@@ -443,7 +443,7 @@ string miner::get_status() {
             ss << ", ";
     }
 
-    ss << " ] }";
+    ss << " ] } ]";
 
     return ss.str();
 }

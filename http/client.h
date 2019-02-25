@@ -63,7 +63,7 @@ struct ariopool_update_result : public ariopool_result {
         ss << "{ \"status\": \"ok\", \"data\": { \"recommendation\": \"" << recommendation << "\", \"argon_mem\": " << argon_mem
            << ", \"argon_threads\": " << argon_threads << ", \"argon_time\": " << argon_time <<", \"difficulty\": \"" << difficulty
            << "\", \"block\": \"" << block << "\", \"height\": " << height << ", \"public_key\": \"" << public_key
-           << "\", \"limit\": " << limit << " }, \"coin\": \"arionum\" }";
+           << "\", \"limit\": " << limit << " }, \"coin\": \"arionum\", \"version\": \"" << version << "\", \"extensions\": \"" << extensions << "\" }";
 
         return ss.str();
     }

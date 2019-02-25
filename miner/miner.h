@@ -5,8 +5,6 @@
 #ifndef PROJECT_MINER_H
 #define PROJECT_MINER_H
 
-#define GOLD_RESULT         240
-
 #include "../http/client.h"
 #include "../app/runner.h"
 
@@ -19,9 +17,11 @@ public:
     virtual void stop();
 
     string get_status();
+
+	static string calc_duration(const string &base, const string &hash);
+	static uint64_t calc_compare(const string &duration, const string &difficulty);
+
 private:
-    string __calc_duration(const string &base, const string &hash);
-    uint64_t __calc_compare(const string &duration);
     bool __update_pool_data();
     bool __display_report();
 

@@ -11,10 +11,21 @@
 #define close closesocket
 #endif
 
+struct http_callback_data {
+    string body;
+    bool complete;
+};
+
 int http_callback (http_parser* parser, const char *at, size_t length) {
-    string *body = (string *)parser->data;
-    (*body) += string(at, length);
+    http_callback_data *data = (http_callback_data *)parser->data;
+    data->body += string(at, length);
     return 0;
+}
+
+int http_complete_callback (http_parser* parser) {
+    http_callback_data *data = (http_callback_data *)parser->data;
+    data->complete = true;
+    return  0;
 }
 
 struct http_data {
@@ -139,7 +150,8 @@ vector<string> http::__resolve_host(const string &hostname)
 }
 
 string http::__get_response(const string &url, const string &post_data, const string &content_type) {
-    string reply = "";
+    http_callback_data reply;
+    reply.complete = false;
 
     http_data query(url, post_data);
     if(query.protocol != "http")
@@ -192,6 +204,7 @@ string http::__get_response(const string &url, const string &post_data, const st
         http_parser_settings settings;
         memset(&settings, 0, sizeof(settings));
         settings.on_body = http_callback;
+        settings.on_message_complete = http_complete_callback;
 
         http_parser parser;
         http_parser_init(&parser, HTTP_RESPONSE);
@@ -221,18 +234,18 @@ string http::__get_response(const string &url, const string &post_data, const st
                 else if(n <= 0)
                     break;
 
-                if (reply != "")
+                if (reply.complete)
                     break;
             }
         }
 
         close(sockfd);
 
-        if(reply != "")
+        if(reply.body != "")
             break;
     }
 
-    return reply;
+    return reply.body;
 };
 
 string http::_http_get(const string &url) {

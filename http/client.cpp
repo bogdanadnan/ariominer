@@ -42,9 +42,6 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
     }
     string url = settings.pool_address + "/mine.php?q=info&id=" + __worker_id + "&worker=" + __worker_name + "&address=" + settings.wallet + hash_report_query;
 
-    if(__show_pool_requests && url.find("hashrate") != string::npos) // log only hashrate requests
-        LOG("--> Pool request: " + url);
-
     string response;
     if(settings.pool_extensions.find("Details") != string::npos && url.find("hashrate") != string::npos) {
         string payload = "";
@@ -52,12 +49,23 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
         if(__get_status != NULL)
             payload = __get_status();
 
-        if(!payload.empty())
+        if(!payload.empty()) {
+            if(__show_pool_requests && url.find("hashrate") != string::npos) // log only hashrate requests
+                LOG("--> Pool request: " + url + "/" + payload);
+
             response = _http_post(url, payload, "application/json");
-        else
+        }
+        else {
+            if(__show_pool_requests && url.find("hashrate") != string::npos) // log only hashrate requests
+                LOG("--> Pool request: " + url);
+
             response = _http_get(url);
+        }
     }
     else {
+        if(__show_pool_requests && url.find("hashrate") != string::npos) // log only hashrate requests
+            LOG("--> Pool request: " + url);
+
         response = _http_get(url);
     }
 
@@ -154,6 +162,12 @@ bool ariopool_client::__validate_response(const string &response) {
 }
 
 pool_settings &ariopool_client::__get_pool_settings() {
+    pool_settings &user_settings = __pool_settings_provider.get_user_settings();
+
+    if(user_settings.pool_extensions.find("Proxy") != string::npos) { // disable dev fee when connected to proxy
+        return user_settings;
+    }
+
     uint64_t minutes = (microseconds() - __timestamp) / 60000000;
 
     if(minutes != 0 && (minutes % 100 == 0)) {

@@ -55,4 +55,6 @@ DLLEXPORT bool is_number(const string &s);
 DLLEXPORT string generate_uid(size_t length);
 DLLEXPORT string format_seconds(uint64_t seconds);
 
+#define GOLD_RESULT         240
+
 #endif //ARIOMINER_COMMON_H
