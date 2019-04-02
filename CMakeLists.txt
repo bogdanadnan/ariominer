@@ -180,7 +180,7 @@ if(ARCH STREQUAL "x86_64")
     add_dependencies(ariominer argon2_fill_blocks_SSE2 argon2_fill_blocks_SSSE3 argon2_fill_blocks_AVX argon2_fill_blocks_AVX2 argon2_fill_blocks_AVX512F)
 endif(ARCH STREQUAL "x86_64")
 
-if(ARCH STREQUAL "arm")
+if(ARCH STREQUAL "arm" OR ARCH STREQUAL "aarch64")
     add_library(argon2_fill_blocks_NEON MODULE ${ARGON2_FILL_BLOCKS_SRC})
     set_target_properties(argon2_fill_blocks_NEON
             PROPERTIES
@@ -188,9 +188,15 @@ if(ARCH STREQUAL "arm")
             SUFFIX ".opt"
             LIBRARY_OUTPUT_DIRECTORY modules
             )
-    target_compile_options(argon2_fill_blocks_NEON PRIVATE -D__NEON__ -mfpu=neon -funsafe-math-optimizations)
+    target_compile_options(common PRIVATE -D__NEON__)
+    if(ARCH STREQUAL "arm")
+       target_compile_options(argon2_fill_blocks_NEON PRIVATE -D__NEON__ -mfpu=neon -funsafe-math-optimizations)
+    else()
+       target_compile_options(argon2_fill_blocks_NEON PRIVATE -D__NEON__)
+    endif(ARCH STREQUAL "arm")
+
     add_dependencies(ariominer argon2_fill_blocks_NEON)
-endif(ARCH STREQUAL "arm")
+endif(ARCH STREQUAL "arm" OR ARCH STREQUAL "aarch64")
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D_CRT_SECURE_NO_WARNINGS=1")

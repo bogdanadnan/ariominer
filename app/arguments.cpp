@@ -209,7 +209,7 @@ arguments::arguments(int argc, char **argv) {
 						__cpu_optimization = "AVX2";
 					else if (strcmp(optarg, "AVX512F") == 0)
 						__cpu_optimization = "AVX512F";
-#elif defined(__arm__)
+#elif defined(__NEON__)
 					else if (strcmp(optarg, "NEON") == 0)
 						__cpu_optimization = "NEON";
 #endif
@@ -662,7 +662,7 @@ string arguments::get_help() {
 			"   --force-cpu-optimization: miner specific option, what type of CPU optimization to use\n"
 #if defined(__x86_64__) || defined(_WIN64)
 			"                    values: REF, SSE2, SSSE3, AVX, AVX2, AVX512F\n"
-#elif defined(__arm__)
+#elif defined(__NEON__)
 			"                    values: REF, NEON\n"
 #else
 			"                    values: REF\n"
