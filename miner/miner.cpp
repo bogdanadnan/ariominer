@@ -50,25 +50,25 @@ miner::miner(arguments &args) : __args(args), __client(args, [&]() { return this
 	vector<string> requested_hashers = args.gpu_optimization();
 	for (vector<hasher*>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
 		if ((*it)->get_type() == "GPU") {
-			if ((*it)->initialize()) {
-			    if(requested_hashers.size() > 0) {
-			        if(find(requested_hashers.begin(), requested_hashers.end(), (*it)->get_subtype()) != requested_hashers.end()) {
-			            selected_gpu_hashers.push_back(*it);
-			        }
-			    }
-			    else {
-                    if (selected_gpu_hashers.size() == 0 || selected_gpu_hashers[0]->get_priority() < (*it)->get_priority()) {
-                        selected_gpu_hashers.clear();
-                        selected_gpu_hashers.push_back(*it);
-                    }
-			    }
-			}
+            if(requested_hashers.size() > 0) {
+                if(find(requested_hashers.begin(), requested_hashers.end(), (*it)->get_subtype()) != requested_hashers.end()) {
+                    selected_gpu_hashers.push_back(*it);
+                }
+            }
+            else {
+                if (selected_gpu_hashers.size() == 0 || selected_gpu_hashers[0]->get_priority() < (*it)->get_priority()) {
+                    selected_gpu_hashers.clear();
+                    selected_gpu_hashers.push_back(*it);
+                }
+            }
 		}
 	}
 
 	if (selected_gpu_hashers.size() > 0) {
         for (vector<hasher*>::iterator it = selected_gpu_hashers.begin(); it != selected_gpu_hashers.end(); ++it) {
-            (*it)->configure(__args);
+            if ((*it)->initialize()) {
+                (*it)->configure(__args);
+            }
             LOG("Compute unit: " + (*it)->get_type() + " - " + (*it)->get_subtype());
             LOG((*it)->get_info());
         }
@@ -175,6 +175,8 @@ void miner::run() {
     for (vector<hasher *>::iterator it = hashers.begin(); it != hashers.end(); ++it) {
         (*it)->cleanup();
     }
+
+    __disconnect_from_pool();
 }
 
 string miner::calc_duration(const string &base, const string &hash) {
@@ -384,25 +386,29 @@ bool miner::__display_report() {
         }
     } */
 
-    if(avg_hash_rate_cblocks <= __args.chs_threshold() && (__blocks_count > 1 || __argon2profile == "1_1_524288")) {
-        __chs_threshold_hit++;
-    }
-    else {
-        __chs_threshold_hit = 0;
-    }
-
-    if(avg_hash_rate_gblocks <= __args.ghs_threshold() && (__blocks_count > 1 || __argon2profile == "4_4_16384")) {
-        __ghs_threshold_hit++;
-    }
-    else {
-        __ghs_threshold_hit = 0;
+    if(__argon2profile == "1_1_524288") {
+        if (hash_rate <= __args.chs_threshold() &&
+            __recommendation != "pause") {
+            __chs_threshold_hit++;
+        } else {
+            __chs_threshold_hit = 0;
+        }
     }
 
-    if(__chs_threshold_hit >= 12 && (__blocks_count > 1 || __argon2profile == "1_1_524288")) {
+    if(__argon2profile == "4_4_16384") {
+        if (hash_rate <= __args.ghs_threshold() &&
+            __recommendation != "pause") {
+            __ghs_threshold_hit++;
+        } else {
+            __ghs_threshold_hit = 0;
+        }
+    }
+
+    if(__chs_threshold_hit >= 10 && (__blocks_count > 1 || __argon2profile == "1_1_524288")) {
         LOG("CBlocks hashrate is lower than requested threshold, exiting.");
         exit(0);
     }
-    if(__ghs_threshold_hit >= 12 && (__blocks_count > 1 || __argon2profile == "4_4_16384")) {
+    if(__ghs_threshold_hit >= 10 && (__blocks_count > 1 || __argon2profile == "4_4_16384")) {
         LOG("GBlocks hashrate is lower than requested threshold, exiting.");
         exit(0);
     }
@@ -446,4 +452,8 @@ string miner::get_status() {
     ss << " ] } ]";
 
     return ss.str();
+}
+
+void miner::__disconnect_from_pool() {
+    __client.disconnect();
 }

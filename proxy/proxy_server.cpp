@@ -46,6 +46,9 @@ bool proxy_mine_handler::handleGet(CivetServer *server, struct mg_connection *co
     if(query == "info") {
         return __handleMining(queryString, server, conn, "");
     }
+    else if(query == "disconnect") {
+        return __handleDisconnect(queryString, server, conn);
+    }
 
     return false;
 }
@@ -81,6 +84,27 @@ bool proxy_mine_handler::handlePost(CivetServer *server, struct mg_connection *c
     }
 
     return false;
+}
+
+bool proxy_mine_handler::__handleDisconnect(const string &query, CivetServer *server, struct mg_connection *conn) {
+    const mg_request_info *req_info = mg_get_request_info(conn);
+
+    string ip = "<ip unknown>";
+
+    if(req_info != NULL)
+        ip = req_info->remote_addr;
+
+    string miner_id;
+    CivetServer::getParam(query.c_str(), query.size(), "id", miner_id);
+
+    string miner_name;
+    CivetServer::getParam(query.c_str(), query.size(), "worker", miner_name);
+
+    string response = __server.get_proxy().process_disconnect_request(ip, miner_id, miner_name);
+
+    mg_printf(conn, response.c_str());
+
+    return true;
 }
 
 bool proxy_mine_handler::__handleMining(const string &query, CivetServer *server, struct mg_connection *conn, const string &payload) {
@@ -295,7 +319,7 @@ bool proxy_api_handler::handlePost(CivetServer *server, struct mg_connection *co
               "HTTP/1.1 200 OK\r\nContent-Type: "
               "text/html\r\nConnection: close\r\n\r\n");
 
-    string status = "Test data api post";
+    string status = "Not implemented.";
     mg_printf(conn, status.c_str());
 
     return true;

@@ -126,6 +126,7 @@ public:
 
     string process_info_request(const string &ip, const string &miner_id, const string &miner_name, double cblocks_hashrate, double gblocks_hashrate, const string &details);
     string process_submit_request(const string &ip, const string &miner_id, const string &miner_name, const string &argon, const string &nonce, const string &public_key);
+    string process_disconnect_request(const string &ip, const string &miner_id, const string &miner_name);
 
     map<string, string> get_workers();
 

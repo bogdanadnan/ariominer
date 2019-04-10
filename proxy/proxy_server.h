@@ -19,6 +19,7 @@ public:
 private:
     bool __handleMining(const string &query, CivetServer *server, struct mg_connection *conn, const string &payload);
     bool __handleSubmit(CivetServer *server, struct mg_connection *conn, const string &payload);
+    bool __handleDisconnect(const string &query, CivetServer *server, struct mg_connection *conn);
     proxy_server &__server;
 };
 

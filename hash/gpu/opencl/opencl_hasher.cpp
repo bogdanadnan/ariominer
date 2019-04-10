@@ -551,6 +551,8 @@ bool opencl_hasher::configure(arguments &args) {
         return false;
     }
 
+    bool cards_selected = false;
+
     for(vector<opencl_device_info *>::iterator d = __devices.begin(); d != __devices.end(); d++, index++) {
         stringstream ss;
         ss << "["<< (index + 1) << "] " << (*d)->device_string;
@@ -572,6 +574,12 @@ bool opencl_hasher::configure(arguments &args) {
                 _description += ss.str();
                 continue;
             }
+            else {
+                cards_selected = true;
+            }
+        }
+        else {
+            cards_selected = true;
         }
 
         ss << endl;
@@ -629,6 +637,12 @@ bool opencl_hasher::configure(arguments &args) {
     }
 
     args.set_cards_count(index);
+
+    if(!cards_selected) {
+        _intensity = 0;
+        _description += "Status: DISABLED - no card enabled because of filtering.";
+        return false;
+    }
 
     if (total_threads_profile_4_4_16384 == 0 && total_threads_profile_1_1_524288 == 0) {
         _intensity = 0;

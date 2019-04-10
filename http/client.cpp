@@ -18,6 +18,7 @@ ariopool_client::ariopool_client(arguments &args, get_status_ptr get_status) : _
     __show_pool_requests = args.show_pool_requests();
     __is_devfee_time = false;
     __get_status = get_status;
+    __pool_extensions = "";
 }
 
 ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double hash_rate_gblocks) {
@@ -86,6 +87,10 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
     }
     if(info.hasKey("extensions")) {
         result.extensions = settings.pool_extensions = info["extensions"].ToString();
+        if(result.extensions.find("Proxy") != string::npos) { // in case we are talking to a proxy set hashrate update interval to 30 seconds
+            __hash_report_interval = 30000000;
+            __pool_extensions = result.extensions;
+        }
     }
 
     if (result.success) {
@@ -208,4 +213,12 @@ pool_settings &ariopool_client::__get_pool_settings() {
         return __pool_settings_provider.get_user_settings();
     else
         return __pool_settings_provider.get_dev_settings();
+}
+
+void ariopool_client::disconnect() {
+    if(__pool_extensions.find("Proxy") != string::npos) { // only send disconnect if pool supports it
+        pool_settings &settings = __pool_settings_provider.get_user_settings();
+        string url = settings.pool_address + "/mine.php?q=disconnect&id=" + __worker_id + "&worker=" + __worker_name;
+        _http_get(url);
+    }
 }

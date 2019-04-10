@@ -24,24 +24,32 @@ void autotune::run() {
 
 	for (vector<hasher*>::iterator it = all_hashers.begin(); it != all_hashers.end(); ++it) {
 		if ((*it)->get_type() == "GPU") {
-			if ((*it)->initialize()) {
-				if (selected_hasher == NULL || selected_hasher->get_priority() < (*it)->get_priority()) {
-					selected_hasher = *it;
-				}
-				if ((*it)->get_subtype() == gpu_optimization) {
-					selected_hasher = *it;
-					break;
-				}
-			}
+            if (selected_hasher == NULL || selected_hasher->get_priority() < (*it)->get_priority()) {
+                selected_hasher = *it;
+            }
+            if ((*it)->get_subtype() == gpu_optimization) {
+                selected_hasher = *it;
+                break;
+            }
 		}
 	}
+
+    bool initialized = false;
+
 	if (selected_hasher != NULL) {
-		selected_hasher->configure(__args);
-		selected_hasher->set_input("test_public_key", "test_blk", "test_difficulty", __args.argon2_profile(), "mine");
+	    initialized = selected_hasher->initialize();
+        if (initialized) {
+            selected_hasher->configure(__args);
+            selected_hasher->set_input("test_public_key", "test_blk", "test_difficulty", __args.argon2_profile(),
+                                       "mine");
+        }
 		LOG("Compute unit: " + selected_hasher->get_type() + " - " + selected_hasher->get_subtype());
 		LOG(selected_hasher->get_info());
 	}
-	
+
+    if(!initialized)
+        return;
+
     double best_intensity = 0;
     double best_hashrate = 0;
 

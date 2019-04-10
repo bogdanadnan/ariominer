@@ -454,3 +454,21 @@ void proxy::get_worker_hashrate_history(const string &worker_id, list<miner_hash
     }
     __miner_clients_lock.unlock();
 }
+
+string proxy::process_disconnect_request(const string &ip, const string &miner_id, const string &miner_name) {
+    string miner_key = miner_id + "_" + miner_name;
+    bool erased = false;
+
+    __miner_clients_lock.lock();
+    if(__miner_clients.find(miner_key) != __miner_clients.end()) {
+        LOG("--> Client " + __miner_clients[miner_key].worker_name + " disconnected.");
+        __miner_clients.erase(miner_key);
+        erased = true;
+    }
+    __miner_clients_lock.unlock();
+
+    if(erased)
+        return "{ \"status\": \"ok\", \"data\": \"disconnected\", \"coin\": \"arionum\" }";
+    else
+        return "{ \"status\": \"error\", \"data\": \"invalid client\", \"coin\": \"arionum\" }";
+}

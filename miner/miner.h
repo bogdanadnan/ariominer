@@ -24,6 +24,7 @@ public:
 private:
     bool __update_pool_data();
     bool __display_report();
+    void __disconnect_from_pool();
 
     string __argon2profile;
     string __recommendation;

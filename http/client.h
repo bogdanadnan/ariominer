@@ -81,6 +81,7 @@ public:
 
     ariopool_update_result update(double hash_rate_cblocks, double hash_rate_gblocks);
     ariopool_submit_result submit(const string &hash, const string &nonce, const string &public_key);
+    void disconnect();
 
 private:
     bool __validate_response(const string &response);
@@ -101,6 +102,8 @@ private:
     bool __first_minute_hashrate;
     bool __last_minute_hashrate;
     get_status_ptr __get_status;
+
+    string __pool_extensions;
 };
 
 #endif //PROJECT_CLIENT_H
