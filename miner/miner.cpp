@@ -386,29 +386,29 @@ bool miner::__display_report() {
         }
     } */
 
-    if(__argon2profile == "1_1_524288") {
-        if (hash_rate <= __args.chs_threshold() &&
-            __recommendation != "pause") {
+    if(__argon2profile == "1_1_524288" &&
+       __recommendation != "pause") {
+        if (hash_rate <= __args.chs_threshold()) {
             __chs_threshold_hit++;
         } else {
             __chs_threshold_hit = 0;
         }
     }
 
-    if(__argon2profile == "4_4_16384") {
-        if (hash_rate <= __args.ghs_threshold() &&
-            __recommendation != "pause") {
+    if(__argon2profile == "4_4_16384" &&
+       __recommendation != "pause") {
+        if (hash_rate <= __args.ghs_threshold()) {
             __ghs_threshold_hit++;
         } else {
             __ghs_threshold_hit = 0;
         }
     }
 
-    if(__chs_threshold_hit >= 10 && (__blocks_count > 1 || __argon2profile == "1_1_524288")) {
+    if(__chs_threshold_hit >= 5 && (__blocks_count > 1 || __argon2profile == "1_1_524288")) {
         LOG("CBlocks hashrate is lower than requested threshold, exiting.");
         exit(0);
     }
-    if(__ghs_threshold_hit >= 10 && (__blocks_count > 1 || __argon2profile == "4_4_16384")) {
+    if(__ghs_threshold_hit >= 5 && (__blocks_count > 1 || __argon2profile == "4_4_16384")) {
         LOG("GBlocks hashrate is lower than requested threshold, exiting.");
         exit(0);
     }
