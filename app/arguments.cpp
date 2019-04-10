@@ -809,6 +809,11 @@ string arguments::uid() {
     return __uid;
 }
 
+// todo - add support for percentage hashrate threshold
 double arguments::hs_threshold() {
     return __hs_threshold;
+}
+
+string arguments::get_app_version() {
+    return "ariominer_" ArioMiner_VERSION_MAJOR "_" ArioMiner_VERSION_MINOR "_" ArioMiner_VERSION_REVISION;
 }

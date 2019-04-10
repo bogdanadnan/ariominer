@@ -89,6 +89,7 @@ private:
 
     pool_settings_provider __pool_settings_provider;
     bool __is_devfee_time;
+    string __miner_version;
     string __worker_id;
     string __worker_name;
     string __force_argon2profile;

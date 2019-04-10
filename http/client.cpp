@@ -19,6 +19,7 @@ ariopool_client::ariopool_client(arguments &args, get_status_ptr get_status) : _
     __is_devfee_time = false;
     __get_status = get_status;
     __pool_extensions = "";
+    __miner_version = arguments::get_app_version();
 }
 
 ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double hash_rate_gblocks) {
@@ -41,7 +42,7 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
         __last_hash_report = current_timestamp;
         __force_hashrate_report = false;
     }
-    string url = settings.pool_address + "/mine.php?q=info&id=" + __worker_id + "&worker=" + __worker_name + "&address=" + settings.wallet + hash_report_query;
+    string url = settings.pool_address + "/mine.php?q=info&id=" + __worker_id + "&worker=" + __worker_name + "&address=" + settings.wallet + hash_report_query + "&miner=" + __miner_version;
 
     string response;
     if(settings.pool_extensions.find("Details") != string::npos && url.find("hashrate") != string::npos) {

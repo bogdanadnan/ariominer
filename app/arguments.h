@@ -53,6 +53,7 @@ public:
 
 	static string get_app_folder();
 	static string get_app_name();
+	static string get_app_version();
 
     int get_cards_count() { return __cards_count; }
     void set_cards_count(int count) { __cards_count = count; }
