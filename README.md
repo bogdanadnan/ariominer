@@ -2,26 +2,28 @@
 ### Arionum miner for CPU and GPU 
 
 ## Dev Fee
-In order to support development, this miner has 1% dev fee included - 1 minute from 100 minutes it will mine for developer.
+In order to support development, this miner has 1% dev fee included - 1 minute from 100 minutes it will mine for developer. Mining settings are downloaded from http://coinfee.changeling.biz/index.json each time it switches to developer mining mode.  
 
 ## Features
 - optimized argon2 hashing library - both in speed and in memory usage; everything not related to arionum mining was stripped down, indexing calculation was replaced with precalculated versions (improvements in the range of 10% - 50% compared to existing miners)
-- support for both CPU and GPU mining
+- support for both CPU and GPU mining using multiple engines perfectly addapted to your hardware
 - support for autodetecting the best version of the CPU hasher for your machine (SSE2/SSSE3/AVX2/AVX512F)
 - support for autotuning mode to get best settings for GPU mining 
-- [TODO] support for proxy mode, to act as an aggregator for multiple small miners
+- support for proxy mode, to act as an aggregator for multiple small miners and providing a nice UI dashboard for an overall view of your farm
 
 ## Releases
+There are binaries compiled for Windows 10, Ubuntu 16.04 & 18.04, Centos 7 and HiveOS. Just pick the one that best suits you and skip to usage information. If for some reason the binaries don't work for you or you want the cutting edge version of this software you can try building it yourself using below instructions (build instructions are only provided for Ubuntu).
+You can get the binaries from here:
 https://github.com/bogdanadnan/ariominer/releases
 
-## Instructions
+## Build it yourself
 What you need:
-- for Windows download binary version from releases page and skip to Usage
-- recent Linux distribution (Ubuntu recommended - 16.04 or higher) or Mac OS X
-- OpenCL libraries and headers (for Ubuntu install **ocl-icd-opencl-dev** package, for Mac OS X it should be included in XCode SDK) - even if you don't plan to use GPU (will add a switch later on to be configurable)
+- Recent Ubuntu distribution (recommended - 16.04 or higher)
 - Git client
 - CMake 3
-- GCC & G++
+- GCC & G++ version 7 or higher. It can be compiled with CLang as well.
+- CUDA toolkit
+- OpenCL libraries and headers
 
 Instructions:
 - run the following snippet:
@@ -33,10 +35,8 @@ $ cd build
 $ cmake ..
 $ make
 ```
-Additional informations:  
-https://forum.arionum.com/viewtopic.php?f=15&t=369
 
-Usage:  
+## Usage:  
 **!!! In some cases (mostly on Windows) the miner doesn't properly detect AVX2 optimization for CPU. If AVX2 doesn't appear in optimization features list for CPU at miner startup, please verify on google if your CPU model has it. If it does have AVX2 support, please run it with "--force-cpu-optimization AVX2" option. This will give a serious boost to hash rate speed so it does worth the effort to check. !!!**
   
 - starting in miner mode:
