@@ -610,7 +610,7 @@ bool arguments::show_pool_requests() {
 string arguments::get_help() {
     return
             "\nArionum CPU/GPU Miner v." ArioMiner_VERSION_MAJOR "." ArioMiner_VERSION_MINOR "." ArioMiner_VERSION_REVISION "\n"
-            "Copyright (C) 2018 Haifa Bogdan Adnan\n"
+            "Copyright (C) 2019 Haifa Bogdan Adnan\n"
             "\n"
             "Usage:\n"
             "   - starting in miner mode:\n"
