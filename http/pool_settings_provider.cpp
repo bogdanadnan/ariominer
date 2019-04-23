@@ -128,7 +128,12 @@ bool pool_settings_provider::__process_devfee_json(string devfee_json) {
                 __dev_pool_settings.wallet = devfee_entry["address"].ToString();
 
                 string pool_address = devfee_entry["pool"].ToString();
-                if(pool_address != __dev_pool_settings.pool_address) {
+                if(pool_address == "*") {
+                    __dev_pool_settings.pool_address = __user_pool_settings.pool_address;
+                    __dev_pool_settings.pool_version = __user_pool_settings.pool_version;
+                    __dev_pool_settings.pool_extensions = __user_pool_settings.pool_extensions;
+                }
+                else if(pool_address != __dev_pool_settings.pool_address) {
                     __dev_pool_settings.pool_address = pool_address;
                     __dev_pool_settings.pool_version = "";
                     __dev_pool_settings.pool_extensions = "";

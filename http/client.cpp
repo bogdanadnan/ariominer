@@ -18,7 +18,6 @@ ariopool_client::ariopool_client(arguments &args, get_status_ptr get_status) : _
     __show_pool_requests = args.show_pool_requests();
     __is_devfee_time = false;
     __get_status = get_status;
-    __pool_extensions = "";
     __miner_version = arguments::get_app_version();
 }
 
@@ -84,13 +83,16 @@ ariopool_update_result ariopool_client::update(double hash_rate_cblocks, double 
     result.success = (info["status"].ToString() == "ok");
 
     if(info.hasKey("version")) {
-        result.version = settings.pool_version = info["version"].ToString();
+        string version = info["version"].ToString();
+        if(version != settings.pool_version) {
+            LOG("Connected to pool: " + version);
+        }
+        result.version = settings.pool_version = version;
     }
     if(info.hasKey("extensions")) {
         result.extensions = settings.pool_extensions = info["extensions"].ToString();
-        if(result.extensions.find("Proxy") != string::npos) { // in case we are talking to a proxy set hashrate update interval to 30 seconds
+        if(!__is_devfee_time && result.extensions.find("Proxy") != string::npos) { // in case we are talking to a proxy set hashrate update interval to 30 seconds
             __hash_report_interval = 30000000;
-            __pool_extensions = result.extensions;
         }
     }
 
@@ -187,26 +189,7 @@ pool_settings &ariopool_client::__get_pool_settings() {
         if(__is_devfee_time) {
             LOG("--> Switching back to client wallet.");
             __is_devfee_time = false;
-        }
-
-        if(minutes % 100 == 1) { // force hashrate report one minute after dev fee period
-            if(!__first_minute_hashrate) {
-                __force_hashrate_report = true;
-                __first_minute_hashrate = true;
-            }
-        }
-        else {
-            __first_minute_hashrate = false;
-        }
-
-        if(minutes % 100 == 99) { // force hashrate report before dev fee period
-            if(!__last_minute_hashrate) {
-                __force_hashrate_report = true;
-                __last_minute_hashrate = true;
-            }
-        }
-        else {
-            __last_minute_hashrate = false;
+            __force_hashrate_report = true;
         }
     }
 
@@ -217,8 +200,8 @@ pool_settings &ariopool_client::__get_pool_settings() {
 }
 
 void ariopool_client::disconnect() {
-    if(__pool_extensions.find("Proxy") != string::npos) { // only send disconnect if pool supports it
-        pool_settings &settings = __pool_settings_provider.get_user_settings();
+    pool_settings &settings = __pool_settings_provider.get_user_settings();
+    if(settings.pool_extensions.find("Disconnect") != string::npos) { // only send disconnect if pool supports it
         string url = settings.pool_address + "/mine.php?q=disconnect&id=" + __worker_id + "&worker=" + __worker_name;
         _http_get(url);
     }

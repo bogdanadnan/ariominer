@@ -92,11 +92,13 @@ bool proxy::__update_pool_data() {
     if(new_settings.success) {
         __pool_block_settings_lock.lock();
 
-        // inject Proxy and Details pool extensions, necessary for proper reporting
+        // inject Proxy, Disconnect and Details pool extensions, necessary for proper reporting
         if(new_settings.extensions.find("Details") == string::npos)
             new_settings.extensions = new_settings.extensions.empty() ? "Details" : ("Details, " + new_settings.extensions);
         if(new_settings.extensions.find("Proxy") == string::npos)
             new_settings.extensions = new_settings.extensions.empty() ? "Proxy" : ("Proxy, " + new_settings.extensions);
+        if(new_settings.extensions.find("Disconnect") == string::npos)
+            new_settings.extensions = new_settings.extensions.empty() ? "Disconnect" : ("Disconnect, " + new_settings.extensions);
         new_settings.version = "Ariominer Proxy v." ArioMiner_VERSION_MAJOR "." ArioMiner_VERSION_MINOR "." ArioMiner_VERSION_REVISION;
 
         changed = __pool_block_settings.update(new_settings);
@@ -461,7 +463,7 @@ string proxy::process_disconnect_request(const string &ip, const string &miner_i
 
     __miner_clients_lock.lock();
     if(__miner_clients.find(miner_key) != __miner_clients.end()) {
-        LOG("--> Client " + __miner_clients[miner_key].worker_name + " disconnected.");
+        LOG("--> Client " + miner_name + "/" + miner_id + " disconnected.");
         __miner_clients.erase(miner_key);
         erased = true;
     }

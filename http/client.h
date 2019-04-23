@@ -100,11 +100,7 @@ private:
 
     uint64_t __timestamp;
     uint64_t __last_hash_report;
-    bool __first_minute_hashrate;
-    bool __last_minute_hashrate;
     get_status_ptr __get_status;
-
-    string __pool_extensions;
 };
 
 #endif //PROJECT_CLIENT_H

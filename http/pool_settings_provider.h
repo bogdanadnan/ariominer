@@ -12,7 +12,10 @@ struct pool_settings {
     string wallet;
     string pool_address;
     string pool_version;
-    string pool_extensions;
+    string pool_extensions; // supported extensions until now:
+    // Proxy - the pool is actually a proxy to another pool
+    // Details - the pool can accept post request for update query with additional details in request body
+    // Disconnect - the pool can accept disconnect requests from miner
     bool is_devfee;
 };
 
