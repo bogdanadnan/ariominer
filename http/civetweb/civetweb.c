@@ -90,11 +90,11 @@ char static_assert_replacement[1];
 	extern char static_assert_replacement[(cond) ? 1 : -1]
 #endif
 
-mg_static_assert(sizeof(int) == 4 || sizeof(int) == 8,
+/*mg_static_assert(sizeof(int) == 4 || sizeof(int) == 8,
                  "int data type size check");
 mg_static_assert(sizeof(void *) == 4 || sizeof(void *) == 8,
                  "pointer data type size check");
-mg_static_assert(sizeof(void *) >= sizeof(int), "data type size check");
+mg_static_assert(sizeof(void *) >= sizeof(int), "data type size check"); */
 /* mg_static_assert(sizeof(size_t) == 4 || sizeof(size_t) == 8, "size_t data
  * type size check"); */
 
@@ -215,8 +215,8 @@ clock_gettime(int clk_id, struct timespec *t)
 #define SOCKET_TIMEOUT_QUANTUM (10000)
 #endif
 
-mg_static_assert(MAX_WORKER_THREADS >= 1,
-                 "worker threads must be a positive number");
+/*mg_static_assert(MAX_WORKER_THREADS >= 1,
+                 "worker threads must be a positive number");*/
 
 #if defined(_WIN32)                                                            \
     && !defined(__SYMBIAN32__) /* WINDOWS / UNIX include block */
@@ -234,7 +234,7 @@ typedef const char *SOCK_OPT_TYPE;
 #define PATH_MAX (4096)
 #endif
 
-mg_static_assert(PATH_MAX >= 1, "path length must be a positive number");
+/*mg_static_assert(PATH_MAX >= 1, "path length must be a positive number"); */
 
 #ifndef _IN_PORT_T
 #ifndef in_port_t
@@ -570,8 +570,8 @@ static pthread_mutexattr_t pthread_mutex_attr;
 #define MAX_REQUEST_SIZE (16384)
 #endif
 
-mg_static_assert(MAX_REQUEST_SIZE >= 256,
-                 "request size length must be a positive number");
+/*mg_static_assert(MAX_REQUEST_SIZE >= 256,
+                 "request size length must be a positive number"); */
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
 
@@ -1213,9 +1213,9 @@ static struct mg_option config_options[] = {
 
 /* Check if the config_options and the corresponding enum have compatible
  * sizes. */
-mg_static_assert((sizeof(config_options) / sizeof(config_options[0]))
+/* mg_static_assert((sizeof(config_options) / sizeof(config_options[0]))
                      == (NUM_OPTIONS + 1),
-                 "config_options and enum not sync");
+                 "config_options and enum not sync"); */
 
 enum { REQUEST_HANDLER, WEBSOCKET_HANDLER, AUTH_HANDLER };
 

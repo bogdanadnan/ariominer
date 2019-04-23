@@ -389,7 +389,7 @@ bool proxy_base_handler::handleGet(CivetServer *server, struct mg_connection *co
               "%s\r\nConnection: close\r\n\r\n", content_type.c_str());
 
 
-    FILE *fl = fopen(request_uri.c_str(), "r");
+    FILE *fl = fopen(request_uri.c_str(), "rb");
 
     if(!fl)
         return false;
@@ -402,6 +402,8 @@ bool proxy_base_handler::handleGet(CivetServer *server, struct mg_connection *co
     fclose(fl);
 
     mg_write(conn, data, len);
+
+    free(data);
 
     return true;
 }
