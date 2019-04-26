@@ -55,7 +55,7 @@ $ make
 Parameters:  
 --help: show this help text  
 --verbose: print more informative text during run  
---mode <mode>: start in specific mode - arguments: miner / proxy  
+--mode <mode>: start in specific mode - arguments: miner / autotune / proxy  
 * miner: this instance will mine for arionum
 * autotune: for finding best intensity for GPU mining
 * proxy: this instance will act as a hub for multiple miners, useful to aggregate multiple miners into a single instance reducing the load on the pool
