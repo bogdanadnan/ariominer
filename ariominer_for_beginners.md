@@ -38,7 +38,7 @@ Your Private Key is: xxxx
 
 - this command will check each value between 20 and 60 averaging hashrate over 20 seconds for each step, and will allow you to find the best possible intensity for your system for GBlocks. You can run it for CBlocks as well using --block-type CPU, but as I said, for those is better to use a high value, close to 100 so is easier to optimize manually.
 
-## Specific use cases
+## Specific use cases and questions
 
 ### I have several cards and I want to use only some of them. 
 In this case use --gpu-filter argument. Please keep in mind that this is actually a filter and accepts a string as a filter. When you start the miner it detects your cards and displays a list of them with an index in front (eg. [1] Intel - Iris Pro (1.5GB)). The filter argument will actually check that text if it has the filter in it. For example, --gpu-filter AMD will match all cards that have AMD in their name. Or --gpu-filter [1] will match all cards that have the text [1] in the name. You can specify multiple filters using comma separator. For example --gpu-filter [1],[2],[3] will use the cards having [1] or [2] or [3] in the name, so basically the first 3 cards in the system. Be careful not to use spaces between filters, just comma.
@@ -61,5 +61,8 @@ That's the proxy mode for. Ariominer has a builtin proxy that can act as a pool 
 After you start it, redirect all your miners to point to the address and port of your proxy. The wallet used for the miners is irrelevant as it will be replaced by the wallet set on the proxy. There is a nice dashboard embedded into ariominer that allows you to get a lot of statistics from last 24h. You can check it out by visiting the proxy address in a browser: http://<proxy ip>:<proxy port> . Please keep in mind that proxy support is an experimental feature.  
 ### Ariominer is trying to connect to coinfee.changeling.biz, what is this?
 This site has the dev fee settings to use (dev wallet and pool to connect to during that 1 min period). I implement it as such in order to be able to change the wallet in case the current one becomes compromised or to change the pool to a specific one in the future. Please don't block the site, there is no malicious code run by ariominer. The source code is open and if you don't trust the binaries you can always compile it yourself and check the code. 
-
+### How can I solo mine?
+There is no support (yet) for solo mining. I might add it in the future as it is not a difficult task, but for the moment the need for it was not big enough.
+  
+  
 
