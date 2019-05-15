@@ -1,4 +1,4 @@
-# ArioMiner v0.1
+# ArioMiner v0.2
 ### Arionum miner for CPU and GPU 
 
 ## Dev Fee
