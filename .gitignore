@@ -10,3 +10,6 @@
 /win32/ariominer/x64
 .idea
 cmake-build-debug
+proxy/reporting/package-lock.json
+proxy/reporting/node_modules
+

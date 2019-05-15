@@ -24,6 +24,7 @@
 amdgcn_hasher::amdgcn_hasher() {
 	_type = "GPU";
 	_subtype = "AMDGCN";
+	_short_subtype = "GCN";
 	_priority = 0;
 	_intensity = 0;
 	__running = false;
@@ -53,6 +54,16 @@ bool amdgcn_hasher::initialize() {
 	return true;
 }
 
+#ifndef CL_DEVICE_TOPOLOGY_AMD
+#define CL_DEVICE_TOPOLOGY_AMD                      0x4037
+#endif
+
+typedef union
+{
+    struct { cl_uint type; cl_uint data[5]; } raw;
+    struct { cl_uint type; cl_char unused[17]; cl_char bus; cl_char device; cl_char function; } pcie;
+} device_topology_amd;
+
 bool amdgcn_hasher::configure(arguments &args) {
 	int index = args.get_cards_count();
 	double intensity_cpu = 0;
@@ -79,6 +90,8 @@ bool amdgcn_hasher::configure(arguments &args) {
 		return false;
 	}
 
+	bool cards_selected = false;
+
 	for(vector<amdgcn_device_info *>::iterator d = __devices.begin(); d != __devices.end(); d++, index++) {
 		stringstream ss;
 		ss << "["<< (index + 1) << "] " << (*d)->device_string;
@@ -100,6 +113,12 @@ bool amdgcn_hasher::configure(arguments &args) {
 				_description += ss.str();
 				continue;
 			}
+			else {
+				cards_selected = true;
+			}
+		}
+		else {
+			cards_selected = true;
 		}
 
 		ss << endl;
@@ -123,11 +142,32 @@ bool amdgcn_hasher::configure(arguments &args) {
 			_description += "\n";
 			continue;
 		};
+
+		device_info device;
+
+		device_topology_amd amdtopo;
+		if(clGetDeviceInfo((*d)->device, CL_DEVICE_TOPOLOGY_AMD, sizeof(amdtopo), &amdtopo, NULL) == CL_SUCCESS) {
+			char bus_id[50];
+			sprintf(bus_id, "%02x:%02x.%x", amdtopo.pcie.bus, amdtopo.pcie.device, amdtopo.pcie.function);
+			device.bus_id = bus_id;
+		}
+
+		device.name = (*d)->device_string;
+		device.cblocks_intensity = device_intensity_cpu;
+		device.gblocks_intensity = device_intensity_gpu;
+		_store_device_info((*d)->device_index, device);
+
 		total_threads_profile_4_4_16384 += (*d)->profile_info.threads_profile_4_4_16384;
 		total_threads_profile_1_1_524288 += (*d)->profile_info.threads_profile_1_1_524288;
 	}
 
 	args.set_cards_count(index);
+
+	if(!cards_selected) {
+		_intensity = 0;
+		_description += "Status: DISABLED - no card enabled because of filtering.";
+		return false;
+	}
 
 	if (total_threads_profile_4_4_16384 == 0 && total_threads_profile_1_1_524288 == 0) {
 		_intensity = 0;
@@ -224,7 +264,7 @@ amdgcn_device_info *amdgcn_hasher::__get_device_info(cl_platform_id platform, cl
 #define CL_DEVICE_BOARD_NAME_AMD                    0x4038
 #endif
 
-    sz = 0;
+    	sz = 0;
 	clGetDeviceInfo(device, CL_DEVICE_BOARD_NAME_AMD, 0, NULL, &sz);
 	buffer = (char *)malloc(sz + 1);
 	device_info->error = clGetDeviceInfo(device, CL_DEVICE_BOARD_NAME_AMD, sz, buffer, &sz);
@@ -239,7 +279,7 @@ amdgcn_device_info *amdgcn_hasher::__get_device_info(cl_platform_id platform, cl
 		free(buffer);
 	}
 
-	device_info->device_string = board_name.empty() ? (board_name + " (" + device_name + ")") : device_name;
+	device_info->device_string = (!board_name.empty()) ? (board_name + " (" + device_name + ")") : device_name;
 
 	device_info->error = clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(device_info->max_mem_size), &(device_info->max_mem_size), NULL);
 	if(device_info->error != CL_SUCCESS) {
@@ -252,6 +292,11 @@ amdgcn_device_info *amdgcn_hasher::__get_device_info(cl_platform_id platform, cl
 		device_info->error_message = "Error querying device max memory allocation.";
 		return device_info;
 	}
+
+	double mem_in_gb = device_info->max_mem_size / 1073741824.0;
+	stringstream ss;
+	ss << setprecision(2) << mem_in_gb;
+	device_info->device_string += (" (" + ss.str() + "GB)");
 
 	return device_info;
 }
@@ -508,8 +553,8 @@ bool amdgcn_hasher::__setup_device_info(amdgcn_device_info *device, double inten
 	int32_t *addresses_1_1_524288 = (int32_t *)malloc((argon2profile_1_1_524288.block_refs_size + 2) * 2 * sizeof(int32_t)); //add 2 to ref_size to be exact$
 
 	for(int i=0;i<argon2profile_1_1_524288.block_refs_size;i++) {
-		addresses_1_1_524288[i * 2] = argon2profile_1_1_524288.block_refs[i*3];
-		addresses_1_1_524288[i * 2 + 1] = argon2profile_1_1_524288.block_refs[i*3 + 2];
+		addresses_1_1_524288[i * 2] = argon2profile_1_1_524288.block_refs[i*4];
+		addresses_1_1_524288[i * 2 + 1] = argon2profile_1_1_524288.block_refs[i*4 + 2];
 	}
 	error=clEnqueueWriteBuffer(device->queue, device->arguments.address_profile_1_1_524288, CL_TRUE, 0, (argon2profile_1_1_524288.block_refs_size + 2) * 2 * sizeof(int32_t), addresses_1_1_524288, 0, NULL, NULL);
 	if(error != CL_SUCCESS) {
@@ -520,12 +565,15 @@ bool amdgcn_hasher::__setup_device_info(amdgcn_device_info *device, double inten
 	free(addresses_1_1_524288);
 
 	//optimise address sizes
-	int16_t *addresses_4_4_16384 = (int16_t *)malloc(argon2profile_4_4_16384.block_refs_size * 2 * sizeof(int16_t));
+	uint16_t *addresses_4_4_16384 = (uint16_t *)malloc(argon2profile_4_4_16384.block_refs_size * 2 * sizeof(uint16_t));
 	for(int i=0;i<argon2profile_4_4_16384.block_refs_size;i++) {
-		addresses_4_4_16384[i*2] = argon2profile_4_4_16384.block_refs[i*3 + (i == 65528 ? 1 : 0)];
-		addresses_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[i*3 + 2];
+		addresses_4_4_16384[i*2] = argon2profile_4_4_16384.block_refs[i*4 + (i >= 65528 ? 1 : 0)];
+		addresses_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[i*4 + 2];
+		if(argon2profile_4_4_16384.block_refs[i*4 + 3] == 0) {
+			addresses_4_4_16384[i*2] |= 32768;
+		}
 	}
-	error=clEnqueueWriteBuffer(device->queue, device->arguments.address_profile_4_4_16384, CL_TRUE, 0, argon2profile_4_4_16384.block_refs_size * 2 * sizeof(int16_t), addresses_4_4_16384, 0, NULL, NULL);
+	error=clEnqueueWriteBuffer(device->queue, device->arguments.address_profile_4_4_16384, CL_TRUE, 0, argon2profile_4_4_16384.block_refs_size * 2 * sizeof(uint16_t), addresses_4_4_16384, 0, NULL, NULL);
 	if(error != CL_SUCCESS) {
 		device->error = error;
 		device->error_message = "Error writing to gpu memory.";
@@ -539,7 +587,7 @@ bool amdgcn_hasher::__setup_device_info(amdgcn_device_info *device, double inten
 		for(int s=0;s<16;s++) {
 			int idx = offset + s * 4;
 			int seg_start = argon2profile_4_4_16384.segments[idx * 3];
-			int prev_blk = argon2profile_4_4_16384.block_refs[seg_start * 3 + 1];
+			int prev_blk = argon2profile_4_4_16384.block_refs[seg_start * 4 + 1];
 			printf("0x%02hhx, 0x%02hhx, 0x%02hhx, 0x%02hhx, ", ((uint8_t *) &seg_start)[0],
 				   ((uint8_t *) &seg_start)[1], ((uint8_t *) &prev_blk)[0],
 				   ((uint8_t *) &prev_blk)[1]);
@@ -764,7 +812,7 @@ void amdgcn_hasher::__run(amdgcn_device_info *device, int thread_id) {
 				input.hash = *it;
 				stored_hashes.push_back(input);
 			}
-			_store_hash(stored_hashes);
+			_store_hash(stored_hashes, device->device_index);
 		}
 	}
 

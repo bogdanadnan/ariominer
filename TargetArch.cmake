@@ -8,6 +8,8 @@
 set(archdetect_c_code "
 #if defined(__arm__) || defined(__TARGET_ARCH_ARM)
     #error cmake_ARCH arm
+#elif defined(__aarch64__)
+    #error cmake_ARCH aarch64
 #elif defined(__i386) || defined(__i386__) || defined(_M_IX86)
     #error cmake_ARCH i386
 #elif defined(__x86_64) || defined(__x86_64__) || defined(__amd64) || defined(_M_X64)

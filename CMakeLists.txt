@@ -14,7 +14,7 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(SOURCE
         http/http.cpp http/http.h
         http/client.cpp http/client.h
-        http/server.cpp http/server.h
+        http/civetweb/civetweb.c http/civetweb/CivetServer.cpp
         http/simplejson/json.h
         miner/miner.cpp miner/miner.h
         proxy/proxy.cpp proxy/proxy.h
@@ -23,9 +23,10 @@ set(SOURCE
         miner/mini-gmp/mini-gmp.h miner/mini-gmp/mini-gmp.c
         autotune/autotune.cpp autotune/autotune.h
         app/runner.h
-        )
+        miner/miner_api.cpp miner/miner_api.h http/pool_settings_provider.cpp http/pool_settings_provider.h http/simplejson/json.cpp proxy/proxy_server.cpp proxy/proxy_server.h http/node_api.cpp http/node_api.h)
 set(SOURCE_COMMON app/arguments.cpp app/arguments.h common/common.h common/common.cpp common/dllimport.h common/dllexport.h
-        crypt/sha512.cpp crypt/sha512.h crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h)
+        crypt/sha512.cpp crypt/sha512.h crypt/base64.cpp crypt/base64.h crypt/random_generator.cpp crypt/random_generator.h
+        common/cfgpath.h)
 set(SOURCE_HASHER hash/hasher.cpp hash/hasher.h hash/argon2/argon2.cpp hash/argon2/argon2.h
         hash/argon2/defs.h hash/argon2/blake2/blake2b.c hash/argon2/blake2/blake2.h hash/argon2/blake2/blake2b-round.h
         hash/argon2/blake2/blake2b-load-sse41.h hash/argon2/blake2/blake2b-load-sse2.h hash/argon2/blake2/blake2-config.h
@@ -101,6 +102,9 @@ if(NOT WITHOUT_CUDA)
             LIBRARY_OUTPUT_DIRECTORY modules
             )
     target_link_libraries(cuda_hasher hasher)
+    if(NOT WIN32)
+        add_definitions(-DPARALLEL_CUDA)
+    endif()
     add_dependencies(ariominer cuda_hasher)
 endif()
 
@@ -142,6 +146,9 @@ target_link_libraries(ariominer common hasher)
 if(WIN32)
     target_link_libraries(ariominer ws2_32.lib)
 endif()
+if(APPLE)
+    set_target_properties(ariominer PROPERTIES LINK_FLAGS "-framework CoreServices")
+endif()
 
 add_library(argon2_fill_blocks_REF MODULE ${ARGON2_FILL_BLOCKS_SRC})
 set_target_properties(argon2_fill_blocks_REF
@@ -173,7 +180,7 @@ if(ARCH STREQUAL "x86_64")
     add_dependencies(ariominer argon2_fill_blocks_SSE2 argon2_fill_blocks_SSSE3 argon2_fill_blocks_AVX argon2_fill_blocks_AVX2 argon2_fill_blocks_AVX512F)
 endif(ARCH STREQUAL "x86_64")
 
-if(ARCH STREQUAL "arm")
+if(ARCH STREQUAL "arm" OR ARCH STREQUAL "aarch64")
     add_library(argon2_fill_blocks_NEON MODULE ${ARGON2_FILL_BLOCKS_SRC})
     set_target_properties(argon2_fill_blocks_NEON
             PROPERTIES
@@ -181,9 +188,15 @@ if(ARCH STREQUAL "arm")
             SUFFIX ".opt"
             LIBRARY_OUTPUT_DIRECTORY modules
             )
-    target_compile_options(argon2_fill_blocks_NEON PRIVATE -D__NEON__ -mfpu=neon -funsafe-math-optimizations)
+    target_compile_options(common PRIVATE -D__NEON__)
+    if(ARCH STREQUAL "arm")
+       target_compile_options(argon2_fill_blocks_NEON PRIVATE -D__NEON__ -mfpu=neon -funsafe-math-optimizations)
+    else()
+       target_compile_options(argon2_fill_blocks_NEON PRIVATE -D__NEON__)
+    endif(ARCH STREQUAL "arm")
+
     add_dependencies(ariominer argon2_fill_blocks_NEON)
-endif(ARCH STREQUAL "arm")
+endif(ARCH STREQUAL "arm" OR ARCH STREQUAL "aarch64")
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D_CRT_SECURE_NO_WARNINGS=1")
@@ -192,3 +205,7 @@ if(WIN32)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /D_CRT_SECURE_NO_WARNINGS=1")
 endif()
 
+add_custom_target(copy-reporting-files ALL
+        COMMAND cmake -E copy_directory "${CMAKE_SOURCE_DIR}/proxy/reporting/dist" "${CMAKE_BINARY_DIR}/reporting")
+
+add_dependencies(ariominer copy-reporting-files)

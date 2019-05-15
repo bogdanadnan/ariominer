@@ -5,8 +5,6 @@
 #ifndef PROJECT_MINER_H
 #define PROJECT_MINER_H
 
-#define GOLD_RESULT         240
-
 #include "../http/client.h"
 #include "../app/runner.h"
 
@@ -18,11 +16,15 @@ public:
     virtual void run();
     virtual void stop();
 
+    string get_status();
+
+	static string calc_duration(const string &base, const string &hash);
+	static uint64_t calc_compare(const string &duration, const string &difficulty);
+
 private:
-    string __calc_duration(const string &base, const string &hash);
-    uint64_t __calc_compare(const string &duration);
     bool __update_pool_data();
     bool __display_report();
+    void __disconnect_from_pool();
 
     string __argon2profile;
     string __recommendation;
@@ -33,11 +35,14 @@ private:
     string __public_key;
     uint32_t __height;
     uint32_t __found;
-    uint32_t __confirmed;
-    uint32_t __rejected;
+	uint32_t __confirmed_cblocks;
+	uint32_t __confirmed_gblocks;
+	uint32_t __rejected_cblocks;
+	uint32_t __rejected_gblocks;
     int __chs_threshold_hit;
     int __ghs_threshold_hit;
     int __blocks_count;
+	uint64_t __display_hits;
 
     time_t __begin_time;
 
