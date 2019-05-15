@@ -51,7 +51,7 @@ This can be enabled by specifying multiple hashers in --force-gpu-optimization f
 ### I have a card that is randomly crashing but the miner doesn't detect this and continues to mine without it until I restart. 
 You can use --chs-threshold and --ghs-threshold to specify a value for cblocks and gblocks hashrate under which the miner will automatically exit. Using a loop in bash or bat file you can force it in this way to automatically restart if hashrate goes under your specified value. The hashrate needs to be under that value for at least 5 reports before the exit is triggered (~50 sec). It is built as such in order to allow for the system to stabilize at startup or after block change.
 ### I want to integrate this with specific mining monitor software, is there an API available? 
-Yes there is, you need to use --enable-api-port <value greater than 1024> to enable it. Once you add this argument, you can get status reports at http://localhost:api_port/status link. This will return you a JSON with a lot of internal details. Btw, there is a hiveos package already built in case you want to use it, you can find it on release page (https://github.com/bogdanadnan/ariominer/releases).
+Yes there is, you need to use --enable-api-port <value greater than 1024> to enable it. Once you add this argument, you can get status reports at http://localhost:<api_port>/status link. This will return you a JSON with a lot of internal details. Btw, there is a hiveos package already built in case you want to use it, you can find it on release page (https://github.com/bogdanadnan/ariominer/releases).
 
 
 
