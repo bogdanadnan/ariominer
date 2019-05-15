@@ -13,8 +13,10 @@
 #include <vector>
 #include <queue>
 #include <list>
+#include <map>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <iomanip>
 #include <regex>
 #include <random>
@@ -49,5 +51,10 @@ using namespace std;
 
 DLLEXPORT uint64_t microseconds();
 DLLEXPORT vector<string> get_files(string folder);
+DLLEXPORT bool is_number(const string &s);
+DLLEXPORT string generate_uid(size_t length);
+DLLEXPORT string format_seconds(uint64_t seconds);
+
+#define GOLD_RESULT         240
 
 #endif //ARIOMINER_COMMON_H

@@ -31,7 +31,7 @@ void xor_block(block *dst, const block *src) {
 
 #if defined(__AVX512F__)
 static void fill_block(__m512i *state, const block *ref_block,
-                       block *next_block, int with_xor) {
+                       block *next_block, int with_xor, int keep) {
     __m512i block_XY[ARGON2_512BIT_WORDS_IN_BLOCK];
     unsigned int i;
 
@@ -61,7 +61,7 @@ static void fill_block(__m512i *state, const block *ref_block,
             state[2 * 4 + i], state[2 * 5 + i], state[2 * 6 + i], state[2 * 7 + i]);
     }
 
-    if(next_block != NULL) {
+    if(keep) {
         for (i = 0; i < ARGON2_512BIT_WORDS_IN_BLOCK; i++) {
             state[i] = _mm512_xor_si512(state[i], block_XY[i]);
             _mm512_storeu_si512((__m512i *)next_block->v + i, state[i]);
@@ -75,7 +75,7 @@ static void fill_block(__m512i *state, const block *ref_block,
 }
 #elif defined(__AVX2__)
 static void fill_block(__m256i *state, const block *ref_block,
-                       block *next_block, int with_xor) {
+                       block *next_block, int with_xor, int keep) {
     __m256i block_XY[ARGON2_HWORDS_IN_BLOCK];
     unsigned int i;
 
@@ -103,7 +103,7 @@ static void fill_block(__m256i *state, const block *ref_block,
                        state[16 + i], state[20 + i], state[24 + i], state[28 + i]);
     }
 
-    if(next_block != NULL) {
+    if(keep) {
         for (i = 0; i < ARGON2_HWORDS_IN_BLOCK; i++) {
             state[i] = _mm256_xor_si256(state[i], block_XY[i]);
             _mm256_store_si256((__m256i *)next_block->v + i, state[i]);
@@ -121,7 +121,7 @@ static void fill_block(__m256i *state, const block *ref_block,
 #define D2I(x) _mm256_castpd_si256(x)
 
 static void fill_block(__m128i *state, const block *ref_block,
-                       block *next_block, int with_xor) {
+                       block *next_block, int with_xor, int keep) {
     __m128i block_XY[ARGON2_OWORDS_IN_BLOCK];
     unsigned int i;
 
@@ -158,7 +158,7 @@ static void fill_block(__m128i *state, const block *ref_block,
             state[8 * 6 + i], state[8 * 7 + i]);
     }
 
-    if(next_block != NULL) {
+    if(keep) {
         for (i = 0; i < ARGON2_OWORDS_IN_BLOCK / 2; i++) {
             t = D2I(_mm256_xor_pd(I2D(_mm256_loadu_si256(s256 + i)), \
                 I2D(_mm256_loadu_si256(block256 + i))));
@@ -179,7 +179,7 @@ static void fill_block(__m128i *state, const block *ref_block,
 }
 #elif defined(__NEON__)
 static void fill_block(uint64x2_t *state, const block *ref_block,
-                       block *next_block, int with_xor) {
+                       block *next_block, int with_xor, int keep) {
     uint64x2_t block_XY[ARGON2_OWORDS_IN_BLOCK];
     uint64x2_t t0, t1;
 
@@ -208,7 +208,7 @@ static void fill_block(uint64x2_t *state, const block *ref_block,
                      state[8 * 6 + i], state[8 * 7 + i]);
     }
 
-    if(next_block != NULL) {
+    if(keep) {
         for (i = 0; i < ARGON2_OWORDS_IN_BLOCK; i++) {
             state[i] = veorq_u64(state[i], block_XY[i]);
             vst1q_u64(next_block->v + i*2, state[i]);
@@ -222,7 +222,7 @@ static void fill_block(uint64x2_t *state, const block *ref_block,
 }
 #else
 static void fill_block(__m128i *state, const block *ref_block,
-                       block *next_block, int with_xor) {
+                       block *next_block, int with_xor, int keep) {
     __m128i block_XY[ARGON2_OWORDS_IN_BLOCK];
     unsigned int i;
 
@@ -252,7 +252,7 @@ static void fill_block(__m128i *state, const block *ref_block,
             state[8 * 6 + i], state[8 * 7 + i]);
     }
 
-    if(next_block != NULL) {
+    if(keep) {
         for (i = 0; i < ARGON2_OWORDS_IN_BLOCK; i++) {
             state[i] = _mm_xor_si128(state[i], block_XY[i]);
             _mm_storeu_si128((__m128i *)next_block->v + i, state[i]);
@@ -268,7 +268,7 @@ static void fill_block(__m128i *state, const block *ref_block,
 
 #else
 static void fill_block(block *prev_block, const block *ref_block,
-                       block *next_block, int with_xor) {
+                       block *next_block, int with_xor, int keep) {
     block block_tmp;
     unsigned i;
 
@@ -304,7 +304,7 @@ static void fill_block(block *prev_block, const block *ref_block,
     }
 
     xor_block(prev_block, &block_tmp);
-    if(next_block != NULL)
+    if(keep)
         copy_block(next_block, prev_block);
 }
 
@@ -333,14 +333,15 @@ DLLEXPORT void *fill_memory_blocks(void *memory, int threads, argon2profile *pro
 
         int32_t *address = profile->block_refs;
 
-        int with_xor = 0;
+        int with_xor = 0, keep = 1;
 
-        for (int i = 0; i < profile->block_refs_size; ++i, address += 3) {
+        for (int i = 0; i < profile->block_refs_size; ++i, address += 4) {
             if(profile->tm_cost > 1 && address[0] == 0)
                 with_xor = 1;
 
             ref_block = blocks + address[2];
             prev_block = (address[1] == -1) ? NULL : (blocks + address[1]);
+            keep = (address[3] == 1);
 
             if (address[0] == -2) {
                 xor_block(prev_block, ref_block);
@@ -348,11 +349,11 @@ DLLEXPORT void *fill_memory_blocks(void *memory, int threads, argon2profile *pro
                 if(prev_block != NULL)
                     memcpy(state, (void *) prev_block, ARGON2_BLOCK_SIZE);
                 curr_block = (address[0] == -1) ? NULL : (blocks + address[0]);
-                fill_block(state, ref_block, curr_block, with_xor);
+                fill_block(state, ref_block, curr_block, with_xor, keep);
             }
         }
 
-        address -= 3;
+        address -= 4;
         if(address[0] == -2)
             memcpy((void*)blocks, (void *) (blocks + address[1]), ARGON2_BLOCK_SIZE);
     }

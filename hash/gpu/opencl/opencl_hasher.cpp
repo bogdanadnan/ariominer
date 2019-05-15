@@ -14,6 +14,25 @@
 
 #if defined(WITH_OPENCL)
 
+#ifndef CL_DEVICE_BOARD_NAME_AMD
+#define CL_DEVICE_BOARD_NAME_AMD                    0x4038
+#endif
+#ifndef CL_DEVICE_TOPOLOGY_AMD
+#define CL_DEVICE_TOPOLOGY_AMD                      0x4037
+#endif
+#ifndef CL_DEVICE_PCI_BUS_ID_NV
+#define CL_DEVICE_PCI_BUS_ID_NV                     0x4008
+#endif
+#ifndef CL_DEVICE_PCI_SLOT_ID_NV
+#define CL_DEVICE_PCI_SLOT_ID_NV                    0x4009
+#endif
+
+typedef union
+{
+    struct { cl_uint type; cl_uint data[5]; } raw;
+    struct { cl_uint type; cl_char unused[17]; cl_char bus; cl_char device; cl_char function; } pcie;
+} device_topology_amd;
+
 #define KERNEL_WORKGROUP_SIZE   32
 
 opencl_device_info *opencl_hasher::__get_device_info(cl_platform_id platform, cl_device_id device) {
@@ -45,10 +64,8 @@ opencl_device_info *opencl_hasher::__get_device_info(cl_platform_id platform, cl
     string device_name;
 	cl_device_info query_type = CL_DEVICE_NAME;
 
-#ifdef	CL_DEVICE_BOARD_NAME_AMD
     if(device_vendor.find("Advanced Micro Devices") != string::npos)
-		query_type = CL_DEVICE_BOARD_NAME_AMD;
-#endif
+	query_type = CL_DEVICE_BOARD_NAME_AMD;
 
 	sz = 0;
 	clGetDeviceInfo(device, query_type, 0, NULL, &sz);
@@ -80,7 +97,7 @@ opencl_device_info *opencl_hasher::__get_device_info(cl_platform_id platform, cl
         free(buffer);
     }
 
-    device_info->device_string = device_vendor + " - " + device_name + " : " + device_version;
+    device_info->device_string = device_vendor + " - " + device_name/* + " : " + device_version*/;
 
     device_info->error = clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(device_info->max_mem_size), &(device_info->max_mem_size), NULL);
     if(device_info->error != CL_SUCCESS) {
@@ -93,6 +110,11 @@ opencl_device_info *opencl_hasher::__get_device_info(cl_platform_id platform, cl
         device_info->error_message = "Error querying device max memory allocation.";
         return device_info;
     }
+
+    double mem_in_gb = device_info->max_mem_size / 1073741824.0;
+    stringstream ss;
+    ss << setprecision(2) << mem_in_gb;
+    device_info->device_string += (" (" + ss.str() + "GB)");
 
     return device_info;
 }
@@ -361,8 +383,8 @@ bool opencl_hasher::__setup_device_info(opencl_device_info *device, double inten
 		int ref_chunk_idx = (i / 32) * 64;
 		int ref_idx = i % 32;
 
-		addresses_1_1_524288[ref_chunk_idx + ref_idx] = argon2profile_1_1_524288.block_refs[i*3];
-		addresses_1_1_524288[ref_chunk_idx + ref_idx + 32] = argon2profile_1_1_524288.block_refs[i*3 + 2];
+		addresses_1_1_524288[ref_chunk_idx + ref_idx] = argon2profile_1_1_524288.block_refs[i*4];
+		addresses_1_1_524288[ref_chunk_idx + ref_idx + 32] = argon2profile_1_1_524288.block_refs[i*4 + 2];
 	}
     error=clEnqueueWriteBuffer(device->queue, device->arguments.address_profile_1_1_524288, CL_TRUE, 0, (argon2profile_1_1_524288.block_refs_size + 2) * 2 * sizeof(int32_t), addresses_1_1_524288, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
@@ -373,12 +395,15 @@ bool opencl_hasher::__setup_device_info(opencl_device_info *device, double inten
     free(addresses_1_1_524288);
 
 	//optimise address sizes
-	int16_t *addresses_4_4_16384 = (int16_t *)malloc(argon2profile_4_4_16384.block_refs_size * 2 * sizeof(int16_t));
+	uint16_t *addresses_4_4_16384 = (uint16_t *)malloc(argon2profile_4_4_16384.block_refs_size * 2 * sizeof(uint16_t));
 	for(int i=0;i<argon2profile_4_4_16384.block_refs_size;i++) {
-		addresses_4_4_16384[i*2] = argon2profile_4_4_16384.block_refs[i*3 + (i == 65528 ? 1 : 0)];
-		addresses_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[i*3 + 2];
+		addresses_4_4_16384[i*2] = argon2profile_4_4_16384.block_refs[i*4 + (i >= 65528 ? 1 : 0)];
+		addresses_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[i*4 + 2];
+		if(argon2profile_4_4_16384.block_refs[i*4 + 3] == 0) {
+			addresses_4_4_16384[i*2] |= 32768;
+		}
 	}
-    error=clEnqueueWriteBuffer(device->queue, device->arguments.address_profile_4_4_16384, CL_TRUE, 0, argon2profile_4_4_16384.block_refs_size * 2 * sizeof(int16_t), addresses_4_4_16384, 0, NULL, NULL);
+    error=clEnqueueWriteBuffer(device->queue, device->arguments.address_profile_4_4_16384, CL_TRUE, 0, argon2profile_4_4_16384.block_refs_size * 2 * sizeof(uint16_t), addresses_4_4_16384, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
         device->error = error;
         device->error_message = "Error writing to gpu memory.";
@@ -391,7 +416,7 @@ bool opencl_hasher::__setup_device_info(opencl_device_info *device, double inten
 	for(int i=0;i<64;i++) {
 		int seg_start = argon2profile_4_4_16384.segments[i*3];
 		segments_4_4_16384[i*2] = seg_start;
-		segments_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[seg_start*3 + 1];
+		segments_4_4_16384[i*2 + 1] = argon2profile_4_4_16384.block_refs[seg_start*4 + 1];
 	}
     error=clEnqueueWriteBuffer(device->queue, device->arguments.segments_profile_4_4_16384, CL_TRUE, 0, 64 * 2 * sizeof(uint16_t), segments_4_4_16384, 0, NULL, NULL);
     if(error != CL_SUCCESS) {
@@ -489,6 +514,7 @@ vector<opencl_device_info*> opencl_hasher::__query_opencl_devices(cl_int &error,
 opencl_hasher::opencl_hasher() {
     _type = "GPU";
 	_subtype = "OPENCL";
+	_short_subtype = "OCL";
 	_priority = 1;
     _intensity = 0;
     __running = false;
@@ -525,6 +551,8 @@ bool opencl_hasher::configure(arguments &args) {
         return false;
     }
 
+    bool cards_selected = false;
+
     for(vector<opencl_device_info *>::iterator d = __devices.begin(); d != __devices.end(); d++, index++) {
         stringstream ss;
         ss << "["<< (index + 1) << "] " << (*d)->device_string;
@@ -546,6 +574,12 @@ bool opencl_hasher::configure(arguments &args) {
                 _description += ss.str();
                 continue;
             }
+            else {
+                cards_selected = true;
+            }
+        }
+        else {
+            cards_selected = true;
         }
 
         ss << endl;
@@ -569,11 +603,46 @@ bool opencl_hasher::configure(arguments &args) {
             _description += "\n";
             continue;
         };
+
+        device_info device;
+
+	if((*d)->device_string.find("Advanced Micro Devices") != string::npos) {
+        	device_topology_amd amdtopo;
+        	if(clGetDeviceInfo((*d)->device, CL_DEVICE_TOPOLOGY_AMD, sizeof(amdtopo), &amdtopo, NULL) == CL_SUCCESS) {
+            		char bus_id[50];
+            		sprintf(bus_id, "%02x:%02x.%x", amdtopo.pcie.bus, amdtopo.pcie.device, amdtopo.pcie.function);
+            		device.bus_id = bus_id;
+        	}
+	}
+	else if((*d)->device_string.find("NVIDIA") != string::npos) {
+		cl_uint bus;
+		cl_uint slot;
+
+		if(clGetDeviceInfo ((*d)->device, CL_DEVICE_PCI_BUS_ID_NV, sizeof(bus), &bus, NULL) == CL_SUCCESS) {
+			if(clGetDeviceInfo ((*d)->device, CL_DEVICE_PCI_SLOT_ID_NV, sizeof(slot), &slot, NULL) == CL_SUCCESS) {
+	            		char bus_id[50];
+        	    		sprintf(bus_id, "%02x:%02x.0", bus, slot);
+	            		device.bus_id = bus_id;
+			}
+		}
+	}
+
+        device.name = (*d)->device_string;
+        device.cblocks_intensity = device_intensity_cpu;
+        device.gblocks_intensity = device_intensity_gpu;
+        _store_device_info((*d)->device_index, device);
+
         total_threads_profile_4_4_16384 += (*d)->profile_info.threads_profile_4_4_16384;
         total_threads_profile_1_1_524288 += (*d)->profile_info.threads_profile_1_1_524288;
     }
 
     args.set_cards_count(index);
+
+    if(!cards_selected) {
+        _intensity = 0;
+        _description += "Status: DISABLED - no card enabled because of filtering.";
+        return false;
+    }
 
     if (total_threads_profile_4_4_16384 == 0 && total_threads_profile_1_1_524288 == 0) {
         _intensity = 0;
@@ -722,7 +791,7 @@ void opencl_hasher::__run(opencl_device_info *device, int thread_id) {
                 input.hash = *it;
 				stored_hashes.push_back(input);
             }
-			_store_hash(stored_hashes);
+			_store_hash(stored_hashes, device->device_index);
 		}
     }
 	free(memory);
@@ -772,7 +841,6 @@ bool opencl_hasher::initialize() {
     string error_message;
 
     __devices = __query_opencl_devices(error, error_message);
-
     if(error != CL_SUCCESS) {
         _description = "No compatible GPU detected: " + error_message;
         return false;

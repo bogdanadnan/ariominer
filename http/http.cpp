@@ -11,10 +11,21 @@
 #define close closesocket
 #endif
 
+struct http_callback_data {
+    string body;
+    bool complete;
+};
+
 int http_callback (http_parser* parser, const char *at, size_t length) {
-    string *body = (string *)parser->data;
-    (*body) += string(at, length);
+    http_callback_data *data = (http_callback_data *)parser->data;
+    data->body += string(at, length);
     return 0;
+}
+
+int http_complete_callback (http_parser* parser) {
+    http_callback_data *data = (http_callback_data *)parser->data;
+    data->complete = true;
+    return  0;
 }
 
 struct http_data {
@@ -78,23 +89,31 @@ public:
     string payload;
 };
 
+int http::__socketlib_reference = 0;
+
 http::http() {
 #ifdef _WIN64
-	WSADATA wsaData;
-	int iResult;
+    if(__socketlib_reference == 0) {
+        WSADATA wsaData;
+        int iResult;
 
-	// Initialize Winsock
-	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (iResult != 0) {
-		LOG("WSAStartup failed:"+ to_string(iResult));
-		exit(1);
+        // Initialize Winsock
+        iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+        if (iResult != 0) {
+            LOG("WSAStartup failed:"+ to_string(iResult));
+            exit(1);
+        }
 	}
 #endif
+    __socketlib_reference++;
 }
 
 http::~http() {
+    __socketlib_reference--;
 #ifdef _WIN64
-	WSACleanup();
+    if(__socketlib_reference == 0) {
+    	WSACleanup();
+	}
 #endif
 }
 
@@ -130,8 +149,9 @@ vector<string> http::__resolve_host(const string &hostname)
     return addresses;
 }
 
-string http::__get_response(const string &url, const string &post_data) {
-    string reply = "";
+string http::__get_response(const string &url, const string &post_data, const string &content_type) {
+    http_callback_data reply;
+    reply.complete = false;
 
     http_data query(url, post_data);
     if(query.protocol != "http")
@@ -161,7 +181,7 @@ string http::__get_response(const string &url, const string &post_data) {
 
         string request = query.action + " " + query.path + ((query.query == "") ? "" : ("?" + query.query)) + " HTTP/1.1\r\nHost: " + query.host + "\r\n";
         if(query.payload != "") {
-            request += "Content-Type: application/x-www-form-urlencoded\r\nContent-Length: " + to_string(query.payload.length()) + "\r\n\r\n" + query.payload + "\r\n";
+            request += "Content-Type: application/" + content_type + "\r\nContent-Length: " + to_string(query.payload.length()) + "\r\n\r\n" + query.payload + "\r\n";
         }
         request += "\r\n";
 
@@ -184,6 +204,7 @@ string http::__get_response(const string &url, const string &post_data) {
         http_parser_settings settings;
         memset(&settings, 0, sizeof(settings));
         settings.on_body = http_callback;
+        settings.on_message_complete = http_complete_callback;
 
         http_parser parser;
         http_parser_init(&parser, HTTP_RESPONSE);
@@ -213,32 +234,26 @@ string http::__get_response(const string &url, const string &post_data) {
                 else if(n <= 0)
                     break;
 
-                if (reply != "")
+                if (reply.complete)
                     break;
             }
         }
 
         close(sockfd);
 
-        if(reply != "")
+        if(reply.body != "")
             break;
     }
 
-    return reply;
+    return reply.body;
 };
 
 string http::_http_get(const string &url) {
-    return __get_response(url, "");
+    return __get_response(url, "", "");
 }
 
-string http::_http_post(const string &url, const string &post_data) {
-    return __get_response(url, post_data);
-}
-
-void http::_http_server(int port) {
-}
-
-void http::_http_server_stop() {
+string http::_http_post(const string &url, const string &post_data, const string &content_type) {
+    return __get_response(url, post_data, content_type);
 }
 
 string http::_encode(const string &src) {

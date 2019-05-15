@@ -65,10 +65,14 @@ bool cpu_hasher::configure(arguments &args) {
     }
 
     _intensity = intensity;
+    __device_info.cblocks_intensity = intensity;
+    __device_info.gblocks_intensity = intensity;
 
     __threads_count = __threads_count * _intensity / 100;
     if (__threads_count == 0)
         __threads_count = 1;
+
+    _store_device_info(0, __device_info);
 
     __running = true;
     _update_running_status(__running);
@@ -86,6 +90,7 @@ string cpu_hasher::__detect_features_and_make_description() {
 #if defined(__x86_64__) || defined(__i386__) || defined(_WIN64)
     char brand_string[49];
     cpu_features::FillX86BrandString(brand_string);
+    __device_info.name = brand_string;
 
     ss << brand_string << endl;
 
@@ -121,6 +126,8 @@ string cpu_hasher::__detect_features_and_make_description() {
     ss << endl;
 #endif
 #if defined(__arm__)
+    __device_info.name = "ARM processor";
+
     cpu_features::ArmFeatures features = cpu_features::GetArmInfo().features;
     ss << "ARM processor" << endl;
     ss << "Optimization features: ";
@@ -206,7 +213,7 @@ void cpu_hasher::__run() {
                 input.realloc_flag = &should_realloc;
                 stored_hashes.push_back(input);
             }
-            _store_hash(stored_hashes);
+            _store_hash(stored_hashes, 0);
         }
     }
 
