@@ -12,7 +12,7 @@ In order to support development, this miner has 1% dev fee included - 1 minute f
 - support for proxy mode, to act as an aggregator for multiple small miners and providing a nice UI dashboard for an overall view of your farm
 
 ## Releases
-There are binaries compiled for Windows 10, Ubuntu 16.04 & 18.04, Debian 9, CentOS 7 and HiveOS. Just pick the one that best suits you and skip to usage information. If for some reason the binaries don't work for you or you want the cutting edge version of this software you can try building it yourself using below instructions (build instructions are only provided for Ubuntu, you will need to adapt them accordingly for other distribution).
+There are binaries compiled for Windows 10 and Linux/HiveOS. Just pick the one matching your OS and skip to usage information. If for some reason the binaries don't work for you or you want the cutting edge version of this software you can try building it yourself using below instructions (build instructions are only provided for Ubuntu, you will need to adapt them accordingly for other distribution).
 You can get the binaries from here:
 https://github.com/bogdanadnan/ariominer/releases
 
@@ -21,9 +21,9 @@ What you need:
 - Recent Linux distribution (recommended - Ubuntu 16.04 or higher)
 - Git client
 - CMake 3
-- GCC & G++ version 7 or higher or LLVM/Clang 7 or higher. Provided binaries are compiled with Clang 7, it seems to give a slightly higher hashrate for CPU mining.
+- GCC & G++ version 7 or higher or LLVM/Clang 7 or higher. Provided binaries are compiled with Clang 8, it seems to give a slightly higher hashrate for CPU mining. You can install Clang using binaries & instructions from here: https://apt.llvm.org/
 - CUDA developer toolkit 9 or higher. Provided binaries are compiled with CUDA 10.1. Follow instructions from NVidia site to get the latest version up and running: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html (be careful that CUDA might have specific requirements for compiler version as well)
-- OpenCL libraries and headers
+- OpenCL libraries and headers (package ocl-icd-opencl-dev in Ubuntu/Debian)
 
 Instructions:
 - run the following snippet:
@@ -34,6 +34,11 @@ $ mkdir build
 $ cd build
 $ cmake .. -DCMAKE_BUILD_TYPE=Release
 $ make
+```
+
+- if you want to use a specific compiler or the default compiler picked up by cmake is not the proper one you can overwrite it modifying the cmake command like this (eg. using clang-8):
+```sh
+$ CC=clang-8 CXX=clang++-8 cmake .. -DCMAKE_BUILD_TYPE=Release
 ```
 
 ## Basic usage:  
@@ -85,3 +90,6 @@ Parameters:
 
 (\*) Mining intensity depends on the number of CPU/GPU cores and available memory. Full load (100) is dynamically calculated by the application. You can use fractional numbers for better tuning.
 
+For detailed description of the parameters and for different use cases, please read the tutorial I wrote https://github.com/bogdanadnan/ariominer/blob/dev/ariominer_for_beginners.md
+
+Thank you, and happy mining :)
