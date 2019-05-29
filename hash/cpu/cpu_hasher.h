@@ -10,6 +10,7 @@ public:
     cpu_hasher();
     ~cpu_hasher();
 
+    virtual bool initialize();
     virtual bool configure(arguments &args);
     virtual void cleanup();
 
@@ -20,6 +21,7 @@ private:
 
     void __run();
 
+    device_info __device_info;
     string __optimization;
     int __available_processing_thr;
     int __available_memory_thr;

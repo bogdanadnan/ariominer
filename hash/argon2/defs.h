@@ -34,9 +34,9 @@ typedef struct Argon2Profile {
     int32_t *segments; // { start, stop (excluding), with_xor }
 } argon2profile;
 
-extern argon2profile argon2profile_4_4_16384;
-extern argon2profile argon2profile_1_1_524288;
-extern argon2profile *argon2profile_default;
+extern DLLEXPORT argon2profile argon2profile_4_4_16384;
+extern DLLEXPORT argon2profile argon2profile_1_1_524288;
+extern DLLEXPORT argon2profile *argon2profile_default;
 
 #ifdef __cplusplus
 }

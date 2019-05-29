@@ -1,0 +1,128 @@
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-4 col-sm-7">
+            <div class="card">
+                <div class="content">
+                    <div class="row">
+                        <div class="col-xs-5">
+                            <div class="icon-big icon-warning text-center">
+                                <i class="ti-alarm-clock"></i>
+                            </div>
+                        </div>
+                        <div class="col-xs-7">
+                            <div class="numbers">
+                                <p>Uptime</p>
+                                {{workerStatus.uptimeHours}}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <hr />
+                        <div class="stats">
+                            <i class="ti-hummer"></i> Devices: {{devices.dataRows.length}}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-sm-7">
+            <div class="card">
+                <div class="content">
+                    <div class="row">
+                        <div class="col-xs-5">
+                            <div class="icon-big icon-warning text-center">
+                                <i class="ti-hummer"></i>
+                            </div>
+                        </div>
+                        <div class="col-xs-7">
+                            <div class="numbers">
+                                <p>Total Hashrate</p>
+                                {{workerStatus.cblocks_hashrate.toFixed(1)}}/{{workerStatus.gblocks_hashrate.toFixed()}}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <hr />
+                        <div class="stats">
+                            <i class="ti-split-h"></i> Shares (C) {{workerStatus.cblocks_shares}} (G) {{workerStatus.gblocks_shares}} (B) {{workerStatus.blocks}}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-sm-7">
+            <div class="card">
+                <div class="content">
+                    <div class="row">
+                        <div class="col-xs-5">
+                            <div class="icon-big icon-danger text-center">
+                                <i class="ti-pulse"></i>
+                            </div>
+                        </div>
+                        <div class="col-xs-7">
+                            <div class="numbers">
+                                <p>Rejects</p>
+                                {{workerStatus.cblocks_rejects  + workerStatus.gblocks_rejects}}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <hr />
+                        <div class="stats">
+                            <i class="ti-split-h"></i> (C) {{workerStatus.cblocks_rejects}} (G) {{workerStatus.gblocks_rejects}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card ">
+                <div class="header">
+                    <h4 class="title">Hashrate History</h4>
+                    <p class="category">{{today}}</p>
+                </div>
+                <div class="content">
+                    <div id="chartActivity" class="ct-chart"></div>
+
+                    <div class="footer">
+                        <div class="chart-legend">
+                            <i class="fa fa-circle text-info"></i> CBlocks Hashrate
+                            <i class="fa fa-circle text-warning"></i> GBlocks Hashrate
+                        </div>
+                        <hr>
+                        <div class="stats">
+                            <i class="ti-info-alt"></i> For 24h interval
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="header">
+                    <h4 class="title">Devices</h4>
+                </div>
+                <div class="content table-responsive table-full-width">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th *ngFor="let cell of devices.headerRow">{{ cell }}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr *ngFor="let row of devices.dataRows">
+                            <td *ngFor="let cell of row">{{cell}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

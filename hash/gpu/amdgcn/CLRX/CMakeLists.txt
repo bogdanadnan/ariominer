@@ -1,0 +1,392 @@
+####
+#  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
+#  Copyright (C) 2014-2018 Mateusz Szpakowski
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2.1 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+####
+
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.1)
+
+PROJECT(CLRadeonExtender)
+
+SET(CLRX_MAJOR_VERSION 0)
+SET(CLRX_MINOR_VERSION 1)
+SET(CLRX_MICRO_VERSION 8)
+SET(CLRX_VERSION ${CLRX_MAJOR_VERSION}.${CLRX_MINOR_VERSION}.${CLRX_MICRO_VERSION}${CLRX_VERSION_REVISION})
+SET(CLRX_LIB_VERSION ${CLRX_MAJOR_VERSION}.${CLRX_MINOR_VERSION}.${CLRX_MICRO_VERSION})
+
+ENABLE_LANGUAGE(CXX)
+
+SET(EXTRA_OPTS CACHE STRING "add extra options")
+SET(CPU_ARCH CACHE STRING "Set CPU architecture option")
+OPTION(GCC5CXX11NEWABI "Force new GCC 5 C++11 ABI" OFF)
+IF(GCC5CXX11NEWABI)
+    MESSAGE(STATUS "GCC5 C++11 New ABI enabled")
+    SET(EXTRA_PACK_SUFFIX "-gcc5")
+ENDIF(GCC5CXX11NEWABI)
+
+#####
+# packacing
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Unofficial OpenCL Radeon extensions")
+SET(CPACK_PACKAGE_VENDOR "matszpk")
+SET(CPACK_PACKAGE_MAINTAINER "matszpk")
+SET(CPACK_PACKAGE_VERSION_MAJOR ${CLRX_MAJOR_VERSION})
+SET(CPACK_PACKAGE_VERSION_MINOR ${CLRX_MINOR_VERSION})
+SET(CPACK_PACKAGE_VERSION_PATCH ${CLRX_MICRO_VERSION})
+SET(CPACK_PACKAGE_VERSION ${CLRX_VERSION})
+SET(CPACK_SYSTEM_NAME ${CMAKE_SYSTEM_NAME})
+IF((CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_CL_64) AND NOT BUILD_32BIT)
+SET(CPACK_PACKAGE_FILE_NAME CLRadeonExtender-${CPACK_PACKAGE_VERSION}-${CPACK_SYSTEM_NAME}-x64${EXTRA_PACK_SUFFIX})
+ELSE((CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_CL_64) AND NOT BUILD_32BIT)
+SET(CPACK_PACKAGE_FILE_NAME CLRadeonExtender-${CPACK_PACKAGE_VERSION}-${CPACK_SYSTEM_NAME}-x86${EXTRA_PACK_SUFFIX})
+ENDIF((CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_CL_64) AND NOT BUILD_32BIT)
+
+INCLUDE(CPack)
+
+######
+## end packaging
+
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+INCLUDE(CheckFunctionExists)
+INCLUDE(CheckLibraryExists)
+INCLUDE(CheckIncludeFileCXX)
+INCLUDE(CheckCCompilerFlag)
+INCLUDE(CheckCXXCompilerFlag)
+
+CHECK_CXX_COMPILER_FLAG("-std=gnu++11" HAVE_GNU11_FLAG)
+
+# workaround for 
+SET(CMAKE_REQUIRED_FLAGS "-std=gnu++11")
+CHECK_INCLUDE_FILE_CXX(iostream HAVE_GNU11_IOSTREAM)
+UNSET(CMAKE_REQUIRED_FLAGS)
+
+IF(HAVE_GNU11_FLAG AND HAVE_GNU11_IOSTREAM)
+    SET(CPP_STANDARD "-std=gnu++11")
+    SET(HAVE_GNU11 1)
+ELSE(HAVE_GNU11_FLAG AND HAVE_GNU11_IOSTREAM)
+    SET(CPP_STANDARD "-std=c++11")
+ENDIF(HAVE_GNU11_FLAG AND HAVE_GNU11_IOSTREAM)
+
+MESSAGE(STATUS "Use standard ${CPP_STANDARD} for ${CMAKE_CXX_COMPILER}")
+
+IF(GCC5CXX11NEWABI)
+    ADD_DEFINITIONS(-D_GLIBCXX_USE_CXX11_ABI=1)
+ENDIF(GCC5CXX11NEWABI)
+
+### 32-bit compilation option
+OPTION(BUILD_32BIT "Build 32-bit version" OFF)
+
+IF(CPU_ARCH)
+    IF(MSVC)
+        SET(EXTRA_OPTS "${EXTRA_OPTS} /arch:${CPU_ARCH}")
+    ELSE(MSVC)
+        SET(EXTRA_OPTS "${EXTRA_OPTS} -march=${CPU_ARCH}")
+    ENDIF(MSVC)
+ENDIF(CPU_ARCH)
+
+IF(BUILD_32BIT)
+    SET(CMAKE_CXX_FLAGS "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD}")
+    SET(CMAKE_CXX_FLAGS_DEBUG "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1")
+    SET(CMAKE_CXX_FLAGS_DEBUGCOV
+        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 --coverage")
+    SET(CMAKE_CXX_FLAGS_GCCSAN
+    "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all -fsanitize=address")
+    SET(CMAKE_CXX_FLAGS_GCCSSP
+        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all")
+    SET(CMAKE_CXX_FLAGS_RELEASE
+        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -O2")
+    SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO
+        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -funroll-loops -DDEBUG=1")
+    SET(CMAKE_CXX_FLAGS_RELWITHPROFILE
+        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -pg")
+ELSE(BUILD_32BIT)
+    IF(MSVC)
+    SET(CMAKE_CXX_FLAGS "/W1 ${EXTRA_OPTS} /EHsc")
+    SET(CMAKE_CXX_FLAGS_DEBUG "/W1 ${EXTRA_OPTS} /EHsc /Zi /Od /DDEBUG=1")
+    SET(CMAKE_CXX_FLAGS_RELEASE "/W1 ${EXTRA_OPTS} /EHsc /O2")
+    SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/W1 ${EXTRA_OPTS} /EHsc /Zi /O2 /DDEBUG=1")
+    ELSE(MSVC)
+    SET(CMAKE_CXX_FLAGS "-Wall ${EXTRA_OPTS} ${CPP_STANDARD}")
+    SET(CMAKE_CXX_FLAGS_DEBUG "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1")
+    SET(CMAKE_CXX_FLAGS_DEBUGCOV
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 --coverage")
+    SET(CMAKE_CXX_FLAGS_GCCSAN
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all -fsanitize=address")
+    SET(CMAKE_CXX_FLAGS_GCCSSP
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all")
+    SET(CMAKE_CXX_FLAGS_RELEASE
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -O2")
+    SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -funroll-loops -DDEBUG=1")
+    SET(CMAKE_CXX_FLAGS_RELWITHPROFILE
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -pg")
+    ENDIF(MSVC)
+ENDIF(BUILD_32BIT)
+
+# FreeBSD support
+STRING(REGEX MATCH "g\\+\\+[0-9]*$" CXX_COMPILER_IS_GCC "${CMAKE_CXX_COMPILER}")
+IF("${CMAKE_SYSTEM_NAME}" STREQUAL "FreeBSD" AND CXX_COMPILER_IS_GCC)
+    IF("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0.0")
+        STRING(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+" "\\1\\2" RPATH_GCC_VER
+                "${CMAKE_CXX_COMPILER_VERSION}")
+    ELSE("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0.0")
+        STRING(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+" "\\1" RPATH_GCC_VER
+                "${CMAKE_CXX_COMPILER_VERSION}")
+    ENDIF("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0.0")
+    
+    SET(GCC_RPATH "/usr/local/lib/gcc${RPATH_GCC_VER}")
+    MESSAGE(STATUS "Add extra rpath ${GCC_RPATH}")
+    
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-rpath=${GCC_RPATH}")
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wl,-rpath=${GCC_RPATH}")
+    SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wl,-rpath=${GCC_RPATH}")
+    SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO
+            "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -Wl,-rpath=${GCC_RPATH}")
+    SET(CMAKE_CXX_FLAGS_DEBUGCOV "${CMAKE_CXX_FLAGS_DEBUGCOV} -Wl,-rpath=${GCC_RPATH}")
+    SET(CMAKE_CXX_FLAGS_GCCSAN "${CMAKE_CXX_FLAGS_GCCSAN} -Wl,-rpath=${GCC_RPATH}")
+    SET(CMAKE_CXX_FLAGS_GCCSSP "${CMAKE_CXX_FLAGS_GCCSSP} -Wl,-rpath=${GCC_RPATH}")
+ENDIF("${CMAKE_SYSTEM_NAME}" STREQUAL "FreeBSD" AND CXX_COMPILER_IS_GCC)
+
+# check system bitness
+TRY_COMPILE(HAVE_64BIT "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/Check64Bit.cpp")
+IF(HAVE_64BIT)
+    MESSAGE(STATUS "Compile for 64-bit system")
+ELSE(HAVE_64BIT)
+    MESSAGE(STATUS "Compile for 32-bit system")
+ENDIF(HAVE_64BIT)
+
+# determine library directory name
+IF(NOT LIB_INSTALL_DIR)
+    IF(HAVE_64BIT AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        SET(LIB_INSTALL_DIR "lib64")
+    ELSE(HAVE_64BIT AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        SET(LIB_INSTALL_DIR "lib")
+    ENDIF(HAVE_64BIT AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    MESSAGE(STATUS "Using library install dirname ${LIB_INSTALL_DIR}")
+ENDIF(NOT LIB_INSTALL_DIR)
+
+IF(IS_DIRECTORY "/usr/lib/x86_64-linux-gnu/amdgpu-pro" OR
+    IS_DIRECTORY "/usr/lib/i386-linux-gnu/amdgpu-pro")
+    SET(HAVE_UBUNTU_GPUPRO TRUE)
+    MESSAGE(STATUS "AMDGPU-PRO for Ubuntu is found")
+ENDIF(IS_DIRECTORY "/usr/lib/x86_64-linux-gnu/amdgpu-pro" OR
+    IS_DIRECTORY "/usr/lib/i386-linux-gnu/amdgpu-pro")
+IF(IS_DIRECTORY "/opt/amdgpu-pro/lib/x86_64-linux-gnu" OR
+        IS_DIRECTORY "/opt/amdgpu-pro/lib/i386-linux-gnu")
+    SET(HAVE_GPUPRO_NEW TRUE)
+    MESSAGE(STATUS "New AMDGPU-PRO is found")
+ENDIF(IS_DIRECTORY "/opt/amdgpu-pro/lib/x86_64-linux-gnu" OR
+        IS_DIRECTORY "/opt/amdgpu-pro/lib/i386-linux-gnu")
+IF (NOT HAVE_GPUPRO_NEW AND NOT HAVE_UBUNTU_GPUPRO)
+    IF(IS_DIRECTORY "/opt/amdgpu-pro/lib64" OR IS_DIRECTORY "/opt/amdgpu-pro/lib")
+        SET(HAVE_GPUPRO_SLES TRUE)
+        MESSAGE(STATUS "SLES AMDGPU-PRO is found")
+    ENDIF(IS_DIRECTORY "/opt/amdgpu-pro/lib64" OR IS_DIRECTORY "/opt/amdgpu-pro/lib")
+ENDIF(NOT HAVE_GPUPRO_NEW AND NOT HAVE_UBUNTU_GPUPRO)
+
+IF("${PROJECT_SOURCE_DIR}" MATCHES "${PROJECT_BINARY_DIR}")
+    MESSAGE("Please do an out-of-tree build:")
+    MESSAGE("rm -f CMakeCache.txt; mkdir -p default; cd default; cmake ..; make")
+    MESSAGE(FATAL_ERROR "in-tree-build detected")
+ENDIF("${PROJECT_SOURCE_DIR}" MATCHES "${PROJECT_BINARY_DIR}")
+
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
+
+OPTION(NO_STATIC "Disable static during compiling" OFF)
+
+INCLUDE(PortUtils)
+IF(WIN32)
+  SET(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+ENDIF(WIN32)
+
+INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}")
+INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
+
+OPTION(NO_OPENCL "Do not use OpenCL" OFF)
+OPTION(NO_CLWRAPPER "Do not enable CLRXWrapper" OFF)
+
+####
+# OpenCL find
+####
+SET(OPENCL_DIST_DIR "" CACHE PATH "OpenCL Distribution directory")
+
+IF(NOT OPENCL_DIST_DIR AND NOT NO_OPENCL)
+    IF(EXISTS /opt/AMDAPP)
+        SET(OPENCL_DIST_DIR "/opt/AMDAPP")
+        MESSAGE(STATUS "OpenCL AMDAPP found")
+    ELSEIF(EXISTS "/Program Files (x86)/AMD APP SDK")
+        FILE(GLOB OPENCL_DIST_DIR "/Program Files (x86)/AMD APP SDK/*")
+        MESSAGE(STATUS "OpenCL AMDAPP found")
+    ELSEIF(EXISTS "/Program Files/AMD APP SDK")
+        FILE(GLOB OPENCL_DIST_DIR "/Program Files/AMD APP SDK/*")
+        MESSAGE(STATUS "OpenCL AMDAPP found")
+    ELSEIF(EXISTS /usr/include/CL)
+        SET(OPENCL_DIST_DIR "/usr")
+        MESSAGE(STATUS "Standard OpenCL found.")
+    ENDIF(EXISTS /opt/AMDAPP)
+ENDIF(NOT OPENCL_DIST_DIR AND NOT NO_OPENCL)
+
+IF (NOT NO_OPENCL AND OPENCL_DIST_DIR)
+    SET(OPENCL_LIBRARY_DIRS "")
+    SET(OPENCL_INCLUDE_DIRS "${OPENCL_DIST_DIR}/include")
+    SET(OPENCL_LIBRARIES "OpenCL")
+    SET(HAVE_OPENCL 1)
+ENDIF(NOT NO_OPENCL AND OPENCL_DIST_DIR)
+
+# check for AMDAPP lib/x86 or lib/x86_64 libOpenCL.so file
+IF(HAVE_OPENCL)
+    IF(HAVE_64BIT)
+        IF(EXISTS ${OPENCL_DIST_DIR}/lib/x86_64/libOpenCL.so OR
+            EXISTS ${OPENCL_DIST_DIR}/lib/x86_64/OpenCL.lib)
+            SET(OPENCL_LIBRARY_DIRS "${OPENCL_DIST_DIR}/lib/x86_64")
+        ENDIF(EXISTS ${OPENCL_DIST_DIR}/lib/x86_64/libOpenCL.so OR
+            EXISTS ${OPENCL_DIST_DIR}/lib/x86_64/OpenCL.lib)
+    ELSE(HAVE_64BIT)
+        IF(EXISTS ${OPENCL_DIST_DIR}/lib/x86/libOpenCL.so OR
+            EXISTS ${OPENCL_DIST_DIR}/lib/x86/OpenCL.lib)
+            SET(OPENCL_LIBRARY_DIRS "${OPENCL_DIST_DIR}/lib/x86")
+        ENDIF(EXISTS ${OPENCL_DIST_DIR}/lib/x86/libOpenCL.so OR
+            EXISTS ${OPENCL_DIST_DIR}/lib/x86/OpenCL.lib)
+    ENDIF(HAVE_64BIT)
+    IF(HAVE_UBUNTU_GPUPRO)
+        IF(HAVE_64BIT)
+            SET(OPENCL_LIBRARY_DIRS "/usr/lib/x86_64-linux-gnu/amdgpu-pro")
+        ELSE(HAVE_64BIT)
+            SET(OPENCL_LIBRARY_DIRS "/usr/lib/i386-linux-gnu/amdgpu-pro")
+        ENDIF(HAVE_64BIT)
+    ENDIF(HAVE_UBUNTU_GPUPRO)
+    IF(HAVE_GPUPRO_NEW)
+        IF(HAVE_64BIT)
+            SET(OPENCL_LIBRARY_DIRS "/opt/amdgpu-pro/lib/x86_64-linux-gnu")
+        ELSE(HAVE_64BIT)
+            SET(OPENCL_LIBRARY_DIRS "/opt/amdgpu-pro/lib/i386-linux-gnu")
+        ENDIF(HAVE_64BIT)
+        IF(NOT OPENCL_INCLUDE_DIRS OR NOT EXISTS "${OPENCL_INCLUDE_DIRS}/CL/cl.h")
+            SET(OPENCL_INCLUDE_DIRS "/opt/amdgpu-pro/include")
+        ENDIF(NOT OPENCL_INCLUDE_DIRS OR NOT EXISTS "${OPENCL_INCLUDE_DIRS}/CL/cl.h")
+    ENDIF(HAVE_GPUPRO_NEW)
+    IF(HAVE_GPUPRO_SLES)
+        IF(HAVE_64BIT)
+            SET(OPENCL_LIBRARY_DIRS "/opt/amdgpu-pro/lib64")
+        ELSE(HAVE_64BIT)
+            SET(OPENCL_LIBRARY_DIRS "/opt/amdgpu-pro/lib")
+        ENDIF(HAVE_64BIT)
+        IF(NOT OPENCL_INCLUDE_DIRS OR NOT EXISTS "${OPENCL_INCLUDE_DIRS}/CL/cl.h")
+            SET(OPENCL_INCLUDE_DIRS "/opt/amdgpu-pro/include")
+        ENDIF(NOT OPENCL_INCLUDE_DIRS OR NOT EXISTS "${OPENCL_INCLUDE_DIRS}/CL/cl.h")
+    ENDIF(HAVE_GPUPRO_SLES)
+ENDIF(HAVE_OPENCL)
+
+###
+# end of OpenCL config
+###
+
+IF(HAVE_OPENCL)
+    MESSAGE(STATUS "OpenCL found")
+    MESSAGE(STATUS "OpenCL library dirs: " ${OPENCL_LIBRARY_DIRS})
+    MESSAGE(STATUS "OpenCL libraries: " ${OPENCL_LIBRARIES})
+    MESSAGE(STATUS "OpenCL include dirs: " ${OPENCL_INCLUDE_DIRS})
+ELSE(HAVE_OPENCL)
+    MESSAGE(STATUS "OpenCL not found")
+ENDIF(HAVE_OPENCL)
+
+## OpenGL finding
+
+IF(NOT NO_CLWRAPPER)
+    FIND_PACKAGE(OpenGL)
+    IF(OPENGL_INCLUDE_DIR)
+        FIND_PATH(HAVE_OPENGL GL/gl.h PATHS "${OPENGL_INCLUDE_DIR}")
+    ELSE(OPENGL_INCLUDE_DIR)
+        SET(OPENGL_INCLUDE_DIR "")
+    ENDIF(OPENGL_INCLUDE_DIR)
+    # check GL/gl.h even if OpenGL is not detected (library is not needed)
+    IF(HAVE_OPENGL)
+        MESSAGE(STATUS "OpenGL found")
+        MESSAGE(STATUS "OpenGL include dirs: " ${OPENGL_INCLUDE_DIR})
+    ELSE(HAVE_OPENGL)
+        MESSAGE(STATUS "OpenGL not found")
+    ENDIF(HAVE_OPENGL)
+ENDIF(NOT NO_CLWRAPPER)
+
+SET(CMAKE_THREAD_PREFER_PTHREAD 1)
+FIND_PACKAGE(Threads)
+
+TRY_COMPILE(HAVE_INT128 "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/Int128Detect.cpp")
+TRY_COMPILE(HAVE_CALL_ONCE "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/ThreadOnce.cpp")
+
+IF(HAVE_INT128)
+    MESSAGE(STATUS "128-bit integer arithmetic detected")
+ELSE(HAVE_INT128)
+    MESSAGE(STATUS "128-bit integer arithmetic not supported by compiler")
+ENDIF(HAVE_INT128)
+
+IF(HAVE_CALL_ONCE)
+    MESSAGE(STATUS "Environment have C++11 std::call_once")
+ELSE(HAVE_CALL_ONCE)
+    MESSAGE(STATUS "Environment have no C++11 std::call_once")
+ENDIF(HAVE_CALL_ONCE)
+
+###
+# other dependencies and checks
+###
+
+FIND_PACKAGE(PNG)
+
+IF(PNG_FOUND)
+    MESSAGE(STATUS "Png found ${PNG_INCLUDE_DIRS}")
+ENDIF(PNG_FOUND)
+
+###
+# end of other dependencies and checks
+###
+
+IF(NOT WIN32)
+    SET(MATHLIB "m")
+ENDIF(NOT WIN32)
+
+CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/CLRX/Config.h.in"
+        "${PROJECT_BINARY_DIR}/CLRX/Config.h")
+
+OPTION(BUILD_STATIC_EXE "Compile static executables instead shared" OFF)
+
+# fixing CMAKE_DL_LIBS
+IF(CMAKE_DL_LIBS)
+    IF(CMAKE_DL_LIBS MATCHES "^-l")
+        SET(DL_LIBS "${CMAKE_DL_LIBS}")
+    ELSE(CMAKE_DL_LIBS MATCHES "^-l")
+        SET(DL_LIBS "-l${CMAKE_DL_LIBS}")
+    ENDIF(CMAKE_DL_LIBS MATCHES "^-l")
+ELSE(CMAKE_DL_LIBS)
+    SET(DL_LIBS "")
+ENDIF(CMAKE_DL_LIBS)
+
+IF(BUILD_STATIC_EXE)
+    SET(PROGRAM_LIB_SUFFIX "Static")
+ELSE(BUILD_STATIC_EXE)
+    SET(PROGRAM_LIB_SUFFIX "")
+ENDIF(BUILD_STATIC_EXE)
+
+INCLUDE_DIRECTORIES(${OPENCL_INCLUDE_DIRS} ${PNG_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR})
+
+LINK_DIRECTORIES("${OPENCL_LIBRARY_DIRS}")
+
+ADD_SUBDIRECTORY(utils)
+ADD_SUBDIRECTORY(amdbin)
+ADD_SUBDIRECTORY(amdasm)
+IF(HAVE_OPENCL)
+    ADD_SUBDIRECTORY(clhelper)
+ENDIF(HAVE_OPENCL)

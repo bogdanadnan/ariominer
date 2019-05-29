@@ -2,10 +2,9 @@
 // Created by Haifa Bogdan Adnan on 04/08/2018.
 //
 
+#include "../common/dllexport.h"
 #include "../common/common.h"
-
 #include <getopt.h>
-
 #include "arguments.h"
 
 arguments::arguments(int argc, char **argv) {
@@ -36,20 +35,30 @@ arguments::arguments(int argc, char **argv) {
             {"gpu-intensity-gblocks", required_argument, NULL, 'g'},
             {"gpu-intensity-cblocks", required_argument, NULL, 'x'},
             {"gpu-filter", required_argument, NULL, 'd'},
-            {"force-cpu-optimization", required_argument, NULL, 'o'},
-            {"update-interval", required_argument, NULL, 'u'},
+            {"gpu-index", required_argument, NULL, 'd'},
+			{"force-cpu-optimization", required_argument, NULL, 'o'},
+			{"force-gpu-optimization", required_argument, NULL, 'f'},
+			{"update-interval", required_argument, NULL, 'u'},
             {"report-interval", required_argument, NULL, 'r'},
+            {"hash-report-interval", required_argument, NULL, 'j'},
             {"block-type", required_argument, NULL, 'b'},
-            {"intensity-start", required_argument, NULL, 'y'},
+			{"intensity-start", required_argument, NULL, 'y'},
+			{"autotune-start", required_argument, NULL, 'y'},
             {"intensity-stop", required_argument, NULL, 'z'},
-            {"intensity-step", required_argument, NULL, 'q'},
-            {"autotune-step-time", required_argument, NULL, 't'},
+			{"autotune-stop", required_argument, NULL, 'z'},
+			{"intensity-step", required_argument, NULL, 'q'},
+			{"autotune-step", required_argument, NULL, 'q'},
+            {"autotune-step-time", required_argument, NULL, 's'},
+            {"chs-threshold", required_argument, NULL, 'e'},
+            {"ghs-threshold", required_argument, NULL, 'i'},
+            {"show-pool-requests", no_argument, NULL, 'k'},
+            {"enable-api-port", required_argument, NULL, 'l'},
             {0, 0, 0, 0}
         };
 
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:x:d:o:u:r:b:y:z:q",
+        c = getopt_long (argc, argv, "hvm:a:p:w:n:c:g:x:d:o:f:u:r:b:y:z:q:s:e:i:j:kl:",
                          options, &option_index);
 
         switch (c)
@@ -69,6 +78,9 @@ arguments::arguments(int argc, char **argv) {
                 break;
             case 'v':
                 __verbose_flag = 1;
+                break;
+            case 'k':
+                __show_pool_requests = true;
                 break;
             case 'm':
                 if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
@@ -119,6 +131,7 @@ arguments::arguments(int argc, char **argv) {
                 }
                 else {
                     __name = optarg;
+                    __auto_generated_name = false;
                 }
                 break;
             case 'c':
@@ -158,6 +171,7 @@ arguments::arguments(int argc, char **argv) {
                 else {
                     string filter = optarg;
                     __gpu_filter = __parse_multiarg(filter);
+                    __process_gpu_indexes();
                 }
                 break;
             case 'b':
@@ -177,35 +191,61 @@ arguments::arguments(int argc, char **argv) {
                     }
                 }
                 break;
-            case 'o':
-                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
-                    __help_flag = 1;
-                }
-                else {
-                    if(strcmp(optarg, "REF") == 0)
-                        __optimization = "REF";
+			case 'o':
+				if (strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+					__help_flag = 1;
+				}
+				else {
+					if (strcmp(optarg, "REF") == 0)
+						__cpu_optimization = "REF";
 #if defined(__x86_64__) || defined(_WIN64)
-                    else if(strcmp(optarg, "SSE2") == 0)
-                        __optimization = "SSE2";
-                    else if(strcmp(optarg, "SSSE3") == 0)
-                        __optimization = "SSSE3";
-                    else if(strcmp(optarg, "AVX2") == 0)
-                        __optimization = "AVX2";
-                    else if(strcmp(optarg, "AVX512F") == 0)
-                        __optimization = "AVX512F";
-#elif defined(__arm__)
-                    else if(strcmp(optarg, "NEON") == 0)
-                        __optimization = "NEON";
+					else if (strcmp(optarg, "SSE2") == 0)
+						__cpu_optimization = "SSE2";
+					else if (strcmp(optarg, "SSSE3") == 0)
+						__cpu_optimization = "SSSE3";
+					else if (strcmp(optarg, "AVX") == 0)
+						__cpu_optimization = "AVX";
+					else if (strcmp(optarg, "AVX2") == 0)
+						__cpu_optimization = "AVX2";
+					else if (strcmp(optarg, "AVX512F") == 0)
+						__cpu_optimization = "AVX512F";
+#elif defined(__NEON__)
+					else if (strcmp(optarg, "NEON") == 0)
+						__cpu_optimization = "NEON";
 #endif
-                    else {
-                        sprintf(buff, "%s: invalid arguments",
-                                argv[0]);
-                        __error_message = buff;
-                        __error_flag = true;
+					else {
+						sprintf(buff, "%s: invalid arguments",
+							argv[0]);
+						__error_message = buff;
+						__error_flag = true;
+					}
+				}
+				break;
+			case 'f':
+				if (strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+					__help_flag = 1;
+				}
+				else {
+				    vector<string> gpu_hashers = __parse_multiarg(optarg);
+				    for(vector<string>::iterator st = gpu_hashers.begin(); st != gpu_hashers.end(); st++) {
+				        string opt = *st;
+                        if (opt == "OPENCL")
+                            __gpu_optimization.push_back("OPENCL");
+                        else if (opt == "CUDA")
+                            __gpu_optimization.push_back("CUDA");
+                        else if (opt == "AMDGCN")
+                            __gpu_optimization.push_back("AMDGCN");
+                        else {
+                            sprintf(buff, "%s: invalid arguments",
+                                    argv[0]);
+                            __error_message = buff;
+                            __error_flag = true;
+                            break;
+                        }
                     }
-                }
-                break;
-            case 'u':
+				}
+			break;
+			case 'u':
                 if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
                     __help_flag = 1;
                 }
@@ -219,6 +259,14 @@ arguments::arguments(int argc, char **argv) {
                 }
                 else {
                     __report_interval = 1000000 * atoi(optarg);
+                }
+                break;
+            case 'j':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    __hash_report_interval = 60000000 * atoi(optarg);
                 }
                 break;
             case 'y':
@@ -245,12 +293,36 @@ arguments::arguments(int argc, char **argv) {
                     __gpu_intensity_step = atof(optarg);
                 }
                 break;
-            case 't':
+            case 's':
                 if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
                     __help_flag = 1;
                 }
                 else {
                     __autotune_step_time = atoi(optarg);
+                }
+                break;
+            case 'e':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    __chs_threshold = atoi(optarg);
+                }
+                break;
+            case 'i':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    __ghs_threshold = atoi(optarg);
+                }
+                break;
+            case 'l':
+                if(strcmp(optarg, "-h") == 0 || strcmp(optarg, "--help") == 0) {
+                    __help_flag = 1;
+                }
+                else {
+                    __enable_api_port = atoi(optarg);
                 }
                 break;
             case ':':
@@ -266,8 +338,8 @@ arguments::arguments(int argc, char **argv) {
 		if (__gpu_intensity_cblocks.size() == 0)
 			__gpu_intensity_cblocks.push_back(100);
 
-		if (__gpu_intensity_gblocks.size() == 0)
-			__gpu_intensity_gblocks.push_back(100);
+        if (__gpu_intensity_gblocks.size() == 0)
+            __gpu_intensity_gblocks.push_back(100);
 	}
 	else if (__autotune_flag) {
 		__gpu_intensity_cblocks.clear();
@@ -340,6 +412,16 @@ bool arguments::valid(string &error) {
             error = "Reporting interval must be at least 1 sec.";
             return false;
         }
+
+        if (__hash_report_interval < 60000000) {
+            error = "Reporting interval must be at least 1 min.";
+            return false;
+        }
+
+        if(__enable_api_port != 0 && __enable_api_port < 1024) {
+            error = "Ariominer API port must be at least 1024, lower port numbers are usually reserved by system and requires administrator privileges.";
+            return false;
+        }
     }
     else if(__autotune_flag == 1) {
         if (__argon2profile.empty()) {
@@ -371,9 +453,50 @@ bool arguments::valid(string &error) {
             error = "GPU autotune step time must be at least 10 seconds.";
             return false;
         }
+
+        if(__gpu_optimization.size() > 1) {
+            error = "In autotune mode you can only use one gpu hasher type (AMDGCN|CUDA|OPENCL).";
+            return false;
+        }
     }
-    else {
-        error = "Only miner or autotune mode are supported for the moment";
+    else if(__proxy_flag == 1) {
+        if(__proxy_port < 1024) {
+            error = "Proxy listening port must be at least 1024, lower port numbers are usually reserved by system and requires administrator privileges.";
+            return false;
+        }
+
+        if (__pool.empty()) {
+            error = "Pool address is mandatory.";
+            return false;
+        }
+
+        if (__pool.find("https://") == 0) {
+            error = "Only HTTP protocol is allowed for pool connection, HTTPS is not supported.";
+            return false;
+        }
+
+        if (__wallet.empty()) {
+            error = "Wallet is mandatory.";
+            return false;
+        }
+
+        if (__name.empty()) {
+            error = "Worker name is mandatory.";
+            return false;
+        }
+
+        if (__update_interval < 2000000) {
+            error = "Pool update interval must be at least 2 sec.";
+            return false;
+        }
+
+        if (__hash_report_interval < 60000000) {
+            error = "Reporting interval must be at least 1 min.";
+            return false;
+        }
+    }
+    else  {
+        error = "You need to specify an operation mode (miner/autotune/proxy).";
         return false;
     }
 
@@ -432,16 +555,24 @@ vector<string> arguments::gpu_filter() {
     return __gpu_filter;
 }
 
-string arguments::optimization() {
-    return __optimization;
+string arguments::cpu_optimization() {
+	return __cpu_optimization;
 }
 
-int arguments::update_interval() {
+vector<string> arguments::gpu_optimization() {
+	return __gpu_optimization;
+}
+
+int64_t arguments::update_interval() {
     return __update_interval;
 }
 
-int arguments::report_interval() {
+int64_t arguments::report_interval() {
     return __report_interval;
+}
+
+int64_t arguments::hash_report_interval() {
+    return __hash_report_interval;
 }
 
 string arguments::argon2_profile() {
@@ -460,20 +591,32 @@ double arguments::gpu_intensity_step() {
     return __gpu_intensity_step;
 }
 
-int arguments::autotune_step_time() {
+int64_t arguments::autotune_step_time() {
     return __autotune_step_time;
+}
+
+int arguments::chs_threshold() {
+    return __chs_threshold;
+}
+
+int arguments::ghs_threshold() {
+    return __ghs_threshold;
+}
+
+bool arguments::show_pool_requests() {
+    return __show_pool_requests;
 }
 
 string arguments::get_help() {
     return
             "\nArionum CPU/GPU Miner v." ArioMiner_VERSION_MAJOR "." ArioMiner_VERSION_MINOR "." ArioMiner_VERSION_REVISION "\n"
-            "Copyright (C) 2018 Haifa Bogdan Adnan\n"
+            "Copyright (C) 2019 Haifa Bogdan Adnan\n"
             "\n"
             "Usage:\n"
             "   - starting in miner mode:\n"
-            "       ariominer --mode miner --pool <pool / proxy address> --wallet <wallet address> --name <worker name> --cpu-intensity <intensity> --gpu-intensity <intensity>\n"
+            "       ariominer --mode miner --pool <pool / proxy address> --wallet <wallet address> --name <worker name> --cpu-intensity <intensity> --gpu-intensity-cblocks <intensity> --gpu-intensity-gblocks <intensity>\n"
             "   - starting in autotune mode:\n"
-            "       ariominer --mode autotune --block-type GPU --intensity-start <intensity> --intensity-stop <intensity> --intensity-step <intensity>\n"
+            "       ariominer --mode autotune --block-type GPU --autotune-start <intensity> --autotune-stop <intensity> --autotune-step <intensity>\n"
             "   - starting in proxy mode:\n"
             "       ariominer --mode proxy --port <proxy port> --pool <pool address> --wallet <wallet address> --name <proxy name>\n"
             "\n"
@@ -490,43 +633,64 @@ string arguments::get_help() {
             "   --wallet <wallet address>: wallet address\n"
             "                    this is optional if in miner mode and you are connecting to a proxy\n"
             "   --name <worker identifier>: worker identifier\n"
-            "                    this is optional if in miner mode and you are connecting to a proxy\n"
+            "                    this is optional, will be autogenerated if is not provided\n"
             "   --port <proxy port>: proxy specific option, port on which to listen for clients\n"
             "                    this is optional, defaults to 8088\n"
+            "   --enable-api-port <api port>: miner specific option, port on which to listen for api requests\n"
+            "                    if enabled, you can get reports in json format at http://localhost:port/status\n"
+            "                    this is optional, defaults to disabled (value 0)\n"
             "   --cpu-intensity: miner specific option, mining intensity on CPU\n"
             "                    value from 0 (disabled) to 100 (full load)\n"
             "                    this is optional, defaults to 100 (*)\n"
             "   --gpu-intensity-cblocks: miner specific option, mining intensity on GPU\n"
             "                    value from 0 (disabled) to 100 (full load)\n"
             "                    this is optional, defaults to 100 (*)\n"
-            "                    you can add more entries separated by comma for each GPU\n"
+            "                    you can add more entries separated by comma for each GPU;\n"
+            "                    in this case you need to add entries for all cards displayed,\n"
+            "                    even if card is disabled by gpu-filter - use 0 for those\n"
             "   --gpu-intensity-gblocks: miner specific option, mining intensity on GPU\n"
             "                    value from 0 (disabled) to 100 (full load)\n"
             "                    this is optional, defaults to 100 (*)\n"
-            "                    you can add more entries separated by comma for each GPU\n"
+            "                    you can add more entries separated by comma for each GPU;\n"
+            "                    in this case you need to add entries for all cards displayed,\n"
+            "                    even if card is disabled by gpu-filter - use 0 for those\n"
             "   --gpu-filter: miner specific option, filter string for device selection\n"
             "                    it will select only devices that have in description the specified string\n"
-            "                    this is optional, defaults to \"\"; you can add more entries separated by comma\n"
-            "   --force-cpu-optimization: miner specific option, what type of CPU optimization to use\n"
+            "                    this is optional, defaults to \"\"; you can add more entries separated by comma;\n"
+            "                    if using multiple gpu hashers you can select specific filters for each like this:\n"
+            "                    --gpu-filter CUDA:[1],CUDA:[2],OPENCL:AMD where [1], [2] and AMD are filters for cards\n"
+			"   --force-cpu-optimization: miner specific option, what type of CPU optimization to use\n"
 #if defined(__x86_64__) || defined(_WIN64)
-            "                    values: REF, SSE2, SSSE3, AVX2, AVX512F\n"
-#elif defined(__arm__)
-            "                    values: REF, NEON\n"
+			"                    values: REF, SSE2, SSSE3, AVX, AVX2, AVX512F\n"
+#elif defined(__NEON__)
+			"                    values: REF, NEON\n"
 #else
-            "                    values: REF\n"
+			"                    values: REF\n"
 #endif
-            "                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
-            "   --block-type: miner specific option, override block type sent by pool\n"
+			"                    this is optional, defaults to autodetect, change only if autodetected one crashes\n"
+			"   --force-gpu-optimization: what type of GPU optimization/hasher to use; values: OPENCL, CUDA, AMDGCN\n"
+			"                    this is optional, defaults to autodetect\n"
+            "                    you can add more entries separated by comma\n"
+            "   --chs-threshold: miner specific option, cblocks hashrate value under which\n"
+            "                    miner will exit - it will trigger after 5 displays in report in order to allow\n"
+            "                    warmup after block changes (default is disabled)\n"
+            "   --ghs-threshold: miner specific option, gblocks hashrate value under which\n"
+            "                    miner will exit - it will trigger after 5 displays in report in order to allow\n"
+            "                    warmup after block changes (default is disabled)\n"
+			"   --block-type: miner specific option, override block type sent by pool\n"
             "                    useful for tunning intensity; values: CPU, GPU\n"
             "                    don't use for regular mining, shares submitted during opposite block type will be rejected\n"
             "   --update-interval: how often should we update mining settings from pool, in seconds\n"
             "                    increasing it will lower the load on pool but will increase rejection rate\n"
             "                    this is optional, defaults to 2 sec and can't be set lower than that\n"
+            "   --hash-report-interval: how often should we send hashrate to pool, in minutes\n"
+            "                    this is optional, defaults to 10 min and can't be set lower than 1 min\n"
             "   --report-interval: how often should we display mining reports, in seconds\n"
             "                    this is optional, defaults to 10 sec\n"
-            "   --intensity-start: autotune specific option, start intensity for autotuning (default 1)\n"
-            "   --intensity-stop: autotune specific option, stop intensity for autotuning (default 100)\n"
-            "   --intensity-step: autotune specific option, intensity steps for autotuning (default 1)\n"
+            "   --show-pool-requests: miner specific option, show full requests sent to pool, debug purpose only\n"
+            "   --autotune-start: autotune specific option, start intensity for autotuning (default 1)\n"
+            "   --autotune-stop: autotune specific option, stop intensity for autotuning (default 100)\n"
+            "   --autotune-step: autotune specific option, intensity steps for autotuning (default 1)\n"
             "   --autotune-step-time: autotune specific option, how much time should wait in a step\n"
             "                    before measuring h/s, in seconds (minimum 10, default 20)\n"
             "\n"
@@ -542,20 +706,31 @@ void arguments::__init() {
 
     __pool = "";
     __wallet = "";
-    __name = "";
+    __uid = generate_uid(8);
+    __name = __uid;
+    __auto_generated_name = true;
     __cpu_intensity = 100;
     __proxy_port = 8088;
     __update_interval = 2000000;
     __report_interval = 10000000;
+    __hash_report_interval = 600000000;
 
     __gpu_intensity_start = 1;
     __gpu_intensity_stop = 100;
     __gpu_intensity_step = 1;
     __autotune_step_time = 20;
 
-    __optimization = "";
+    __cpu_optimization = "";
+	__gpu_optimization.clear();
     __argon2profile = "";
 
+    __chs_threshold = -1;
+    __ghs_threshold = -1;
+
+    __show_pool_requests = false;
+    __enable_api_port = 0;
+
+    __cards_count = 0;
     __error_flag = false;
 }
 
@@ -570,6 +745,18 @@ string arguments::get_app_folder() {
         app_folder = ".";
     }
     return app_folder;
+}
+
+string arguments::get_app_name() {
+    size_t last_slash = __argv_0.find_last_of("/\\");
+    if (last_slash == string::npos)
+        return __argv_0;
+
+    string app_name = __argv_0.substr(last_slash + 1);
+    if(app_name.empty()) {
+        app_name = "ariominer";
+    }
+    return app_name;
 }
 
 vector<string> arguments::__parse_multiarg(const string &arg) {
@@ -592,4 +779,43 @@ vector<string> arguments::__parse_multiarg(const string &arg) {
     }
 
     return tokens;
+}
+
+void arguments::__process_gpu_indexes() {
+    // if all are numbers and less than 17 than presume those are indexes and add []
+    // this will work for rigs with at most 16 cards
+    bool all_indexes = true;
+    for(vector<string>::iterator fit = __gpu_filter.begin(); fit != __gpu_filter.end(); fit++) {
+        if(!is_number(*fit) || atoi(fit->c_str()) > 16)  {
+            all_indexes = false;
+            break;
+        }
+    }
+
+    if(all_indexes) {
+        for(vector<string>::iterator fit = __gpu_filter.begin(); fit != __gpu_filter.end(); fit++) {
+            *fit = "[" + *fit + "]";
+        }
+    }
+}
+
+bool arguments::is_autogenerated_name() {
+    return __auto_generated_name;
+}
+
+int arguments::enable_api_port() {
+    return __enable_api_port;
+}
+
+string arguments::uid() {
+    return __uid;
+}
+
+// todo - add support for percentage hashrate threshold
+double arguments::hs_threshold() {
+    return __hs_threshold;
+}
+
+string arguments::get_app_version() {
+    return "ariominer_" ArioMiner_VERSION_MAJOR "_" ArioMiner_VERSION_MINOR "_" ArioMiner_VERSION_REVISION;
 }

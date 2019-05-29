@@ -7,6 +7,7 @@
 #include "../../crypt/random_generator.h"
 
 #include "blake2/blake2.h"
+#include "../../common/dllexport.h"
 #include "argon2.h"
 #include "defs.h"
 
@@ -20,41 +21,9 @@ argon2::argon2(argon2_blocks_filler_ptr filler, void *seed_memory, void *user_da
 }
 
 vector<string> argon2::generate_hashes(const argon2profile &profile, const string &base, string salt_) {
-    vector<string> result;
-    vector<string> salts;
-
-    uint8_t blockhash[ARGON2_PREHASH_SEED_LENGTH];
-    uint8_t raw_hash[ARGON2_RAW_LENGTH];
-
-    for(int i=0;i<__threads;i++) {
-        string salt = salt_;
-
-        if(salt.empty()) {
-            salt = __make_salt();
-        }
-        salts.push_back(salt);
-
-        __initial_hash(profile, blockhash, base, salt);
-
-        memset(blockhash + ARGON2_PREHASH_DIGEST_LENGTH, 0,
-               ARGON2_PREHASH_SEED_LENGTH -
-               ARGON2_PREHASH_DIGEST_LENGTH);
-
-        __fill_first_blocks(profile, blockhash, i);
-    }
-
-    __output_memory = (uint8_t *)(*__filler) (__seed_memory, __threads, (argon2profile*)&profile, __user_data);
-
-    if(__output_memory != NULL) {
-        for (int i = 0; i < __threads; i++) {
-            blake2b_long((void *) raw_hash, ARGON2_RAW_LENGTH,
-                         (void *) (__output_memory + i * __seed_memory_offset), ARGON2_BLOCK_SIZE);
-
-            string hash = __encode_string(profile, salts[i], raw_hash);
-            result.push_back(hash);
-        }
-    }
-    return result;
+    initialize_seeds(profile, base, salt_);
+    fill_blocks(profile);
+    return encode_hashes(profile);
 }
 
 string argon2::__make_salt() {
@@ -177,5 +146,47 @@ void argon2::set_threads(int threads) {
 void argon2::set_lane_length(int length) {
     if(length > 0)
         __lane_length = length;
+}
+
+void argon2::initialize_seeds(const argon2profile &profile, const string &base, string salt_) {
+    uint8_t blockhash[ARGON2_PREHASH_SEED_LENGTH];
+    __salts.clear();
+
+    for(int i=0;i<__threads;i++) {
+        string salt = salt_;
+
+        if(salt.empty()) {
+            salt = __make_salt();
+        }
+        __salts.push_back(salt);
+
+        __initial_hash(profile, blockhash, base, salt);
+
+        memset(blockhash + ARGON2_PREHASH_DIGEST_LENGTH, 0,
+               ARGON2_PREHASH_SEED_LENGTH -
+               ARGON2_PREHASH_DIGEST_LENGTH);
+
+        __fill_first_blocks(profile, blockhash, i);
+    }
+}
+
+void argon2::fill_blocks(const argon2profile &profile) {
+    __output_memory = (uint8_t *)(*__filler) (__seed_memory, __threads, (argon2profile*)&profile, __user_data);
+}
+
+vector<string> argon2::encode_hashes(const argon2profile &profile) {
+    vector<string> result;
+    uint8_t raw_hash[ARGON2_RAW_LENGTH];
+
+    if(__output_memory != NULL) {
+        for (int i = 0; i < __threads; i++) {
+            blake2b_long((void *) raw_hash, ARGON2_RAW_LENGTH,
+                         (void *) (__output_memory + i * __seed_memory_offset), ARGON2_BLOCK_SIZE);
+
+            string hash = __encode_string(profile, __salts[i], raw_hash);
+            result.push_back(hash);
+        }
+    }
+    return result;
 }
 

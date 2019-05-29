@@ -8,3 +8,8 @@
 /win32/ariominer/ariominer.vcxproj.user
 /win32/argon2_fill_blocks/argon2_fill_blocks.vcxproj.user
 /win32/ariominer/x64
+.idea
+cmake-build-debug
+proxy/reporting/package-lock.json
+proxy/reporting/node_modules
+

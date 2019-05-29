@@ -17,11 +17,11 @@
 #include "../argon2/argon2.h"
 
 #include "cpu_hasher.h"
-
-#include <dlfcn.h>
+#include "../../common/dllexport.h"
 
 cpu_hasher::cpu_hasher() : hasher() {
     _type = "CPU";
+    _subtype = "CPU";
     __optimization = "REF";
     __available_processing_thr = 1;
     __available_memory_thr = 1;
@@ -29,7 +29,6 @@ cpu_hasher::cpu_hasher() : hasher() {
     __running = false;
     __argon2_blocks_filler_ptr = NULL;
     __dll_handle = NULL;
-    _description = __detect_features_and_make_description();
 }
 
 cpu_hasher::~cpu_hasher() {
@@ -38,9 +37,9 @@ cpu_hasher::~cpu_hasher() {
 
 bool cpu_hasher::configure(arguments &args) {
     double intensity = args.cpu_intensity();
-    if(args.optimization() != "") {
-        _description += "Overiding detected optimization feature with " + args.optimization() + ".\n";
-        __optimization = args.optimization();
+    if(args.cpu_optimization() != "") {
+        _description += "Overiding detected optimization feature with " + args.cpu_optimization() + ".\n";
+        __optimization = args.cpu_optimization();
     }
 
     __load_argon2_block_filler();
@@ -66,12 +65,17 @@ bool cpu_hasher::configure(arguments &args) {
     }
 
     _intensity = intensity;
+    __device_info.cblocks_intensity = intensity;
+    __device_info.gblocks_intensity = intensity;
 
     __threads_count = __threads_count * _intensity / 100;
     if (__threads_count == 0)
         __threads_count = 1;
 
+    _store_device_info(0, __device_info);
+
     __running = true;
+    _update_running_status(__running);
     for(int i=0;i<__threads_count;i++) {
 		__runners.push_back(new thread([&]() { this->__run(); }));
     }
@@ -86,6 +90,7 @@ string cpu_hasher::__detect_features_and_make_description() {
 #if defined(__x86_64__) || defined(__i386__) || defined(_WIN64)
     char brand_string[49];
     cpu_features::FillX86BrandString(brand_string);
+    __device_info.name = brand_string;
 
     ss << brand_string << endl;
 
@@ -96,6 +101,7 @@ string cpu_hasher::__detect_features_and_make_description() {
     ss << "SSE2 ";
     __optimization = "SSE2";
 #else
+    ss << "none";
     __optimization = "REF";
 #endif
 
@@ -103,6 +109,10 @@ string cpu_hasher::__detect_features_and_make_description() {
         if (features.ssse3) {
             ss << "SSSE3 ";
             __optimization = "SSSE3";
+        }
+        if (features.avx) {
+            ss << "AVX ";
+            __optimization = "AVX";
         }
         if (features.avx2) {
             ss << "AVX2 ";
@@ -113,12 +123,11 @@ string cpu_hasher::__detect_features_and_make_description() {
             __optimization = "AVX512F";
         }
     }
-    else {
-        ss << "none";
-    }
     ss << endl;
 #endif
 #if defined(__arm__)
+    __device_info.name = "ARM processor";
+
     cpu_features::ArmFeatures features = cpu_features::GetArmInfo().features;
     ss << "ARM processor" << endl;
     ss << "Optimization features: ";
@@ -160,6 +169,8 @@ void cpu_hasher::__run() {
     void *mem = __allocate_memory(buffer);
     if(mem == NULL) {
         LOG("Error allocating memory");
+        __running = false;
+        _update_running_status(__running);
         return;
     }
 
@@ -168,7 +179,7 @@ void cpu_hasher::__run() {
     bool should_realloc = false;
 
     while(__running) {
-        if(should_pause()) {
+        if(_should_pause()) {
             this_thread::sleep_for(chrono::milliseconds(100));
             continue;
         }
@@ -177,9 +188,9 @@ void cpu_hasher::__run() {
             void *new_buffer;
             mem = __allocate_memory(new_buffer);
             if(mem == NULL) {
-                free(buffer);
                 LOG("Error allocating memory");
-                return;
+                __running = false;
+                exit(0);
             }
             hash_factory.set_seed_memory((uint8_t *)mem);
             free(buffer);
@@ -187,22 +198,26 @@ void cpu_hasher::__run() {
             should_realloc = false;
         }
 
-        hash_data input = get_input();
-        argon2profile *profile = get_argon2profile();
+        hash_data input = _get_input();
+        argon2profile *profile = _get_argon2profile();
 
         if(!input.base.empty()) {
             hash_factory.set_seed_memory_offset(profile->memsize);
             hash_factory.set_threads((int)(argon2profile_default->memsize / profile->memsize));
 
             vector<string> hashes = hash_factory.generate_hashes(*profile, input.base, input.salt);
+
+            vector<hash_data> stored_hashes;
             for(vector<string>::iterator it = hashes.begin(); it != hashes.end(); ++it) {
                 input.hash = *it;
                 input.realloc_flag = &should_realloc;
-                _store_hash(input);
+                stored_hashes.push_back(input);
             }
+            _store_hash(stored_hashes, 0);
         }
     }
 
+    _update_running_status(__running);
     free(buffer);
 }
 
@@ -230,6 +245,11 @@ void cpu_hasher::cleanup() {
     __runners.clear();
     if(__dll_handle != NULL)
         dlclose(__dll_handle);
+}
+
+bool cpu_hasher::initialize() {
+    _description = __detect_features_and_make_description();
+    return true;
 }
 
 REGISTER_HASHER(cpu_hasher);

@@ -2,6 +2,7 @@
 // Created by Haifa Bogdan Adnan on 17/08/2018.
 //
 
+#include "../common/dllexport.h"
 #include "../common/common.h"
 #include "base64.h"
 
