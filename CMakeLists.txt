@@ -88,6 +88,9 @@ add_dependencies(ariominer cpu_hasher)
 
 if(NOT WITHOUT_CUDA)
     add_definitions(-DWITH_CUDA)
+    if(NOT WIN32)
+        add_definitions(-DPARALLEL_CUDA)
+    endif()
     find_package(CUDA REQUIRED)
     set(
             CUDA_NVCC_FLAGS
@@ -102,9 +105,6 @@ if(NOT WITHOUT_CUDA)
             LIBRARY_OUTPUT_DIRECTORY modules
             )
     target_link_libraries(cuda_hasher hasher)
-    if(NOT WIN32)
-        add_definitions(-DPARALLEL_CUDA)
-    endif()
     add_dependencies(ariominer cuda_hasher)
 endif()
 
