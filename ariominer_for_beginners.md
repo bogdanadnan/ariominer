@@ -51,18 +51,23 @@ This can be enabled by specifying multiple hashers in --force-gpu-optimization f
 ### I have a card that is randomly crashing but the miner doesn't detect this and continues to mine without it until I restart. 
 You can use --chs-threshold and --ghs-threshold to specify a value for cblocks and gblocks hashrate under which the miner will automatically exit. Using a loop in bash or bat file you can force it in this way to automatically restart if hashrate goes under your specified value. The hashrate needs to be under that value for at least 5 reports before the exit is triggered (~50 sec). It is built as such in order to allow for the system to stabilize at startup or after block change.
 ### I want to integrate this with specific mining monitor software, is there an API available? 
-Yes there is, you need to use --enable-api-port <value greater than 1024> to enable it. Once you add this argument, you can get status reports at http://localhost:<api_port>/status link. This will return you a JSON with a lot of internal details. Btw, there is a hiveos package already built in case you want to use it, you can find it on release page (https://github.com/bogdanadnan/ariominer/releases).
+Yes there is, you need to use --enable-api-port <value greater than 1024> to enable it. Once you add this argument, you can get status reports at http://localhost:api_port/status. This will return you a JSON with a lot of internal details. Btw, there is a hiveos package already built in case you want to use it, you can find it on release page (https://github.com/bogdanadnan/ariominer/releases).
 ### I have many small miners, is there any way to aggregate them in a single worker instead of directing them individually to the pool?
 That's the proxy mode for. Ariominer has a builtin proxy that can act as a pool relay for many small miners and which will relay the requests to a pool of your choice. There are changes related to dev fee when you run the miners through the proxy. In that case, the dev fee is disabled at the miner side and instead is collected by the proxy. That is needed because the proxy overwrites the wallet/pool settings sent by the miner with its own values, so dev fee can't be collected anymore from miner. You can start ariominer in proxy mode using the following syntax:
 ```
 ./ariominer --mode proxy --port <proxy port> --pool <pool address> --wallet <wallet address> --name <proxy name>
 ```
 
-After you start it, redirect all your miners to point to the address and port of your proxy. The wallet used for the miners is irrelevant as it will be replaced by the wallet set on the proxy. There is a nice dashboard embedded into ariominer that allows you to get a lot of statistics from last 24h. You can check it out by visiting the proxy address in a browser: http://<proxy ip>:<proxy port> . Please keep in mind that proxy support is an experimental feature.  
+After you start it, redirect all your miners to point to the address and port of your proxy. The wallet used for the miners is irrelevant as it will be replaced by the wallet set on the proxy. There is a nice dashboard embedded into ariominer that allows you to get a lot of statistics from last 24h. You can check it out by visiting the proxy address in a browser: http://proxy_ip:proxy_port . Please keep in mind that proxy support is an experimental feature.  
 ### Ariominer is trying to connect to coinfee.changeling.biz, what is this?
 This site has the dev fee settings to use (dev wallet and pool to connect to during that 1 min period). I implement it as such in order to be able to change the wallet in case the current one becomes compromised or to change the pool to a specific one in the future. Please don't block the site, there is no malicious code run by ariominer. The source code is open and if you don't trust the binaries you can always compile it yourself and check the code. 
 ### How can I solo mine?
 There is no support (yet) for solo mining. I might add it in the future as it is not a difficult task, but for the moment the need for it was not big enough.
+### I only want to use CPU to mine, how can I disable GPU?
+Set --gpu-intensity-cblocks and --gpu-intensity-gblocks to 0, this will disable mining with GPU.
+### I only want to use GPU to mine, how can I disable CPU?
+Set --cpu-intensity to 0, this will disable mining with CPU.
+  
   
   
 
