@@ -24,9 +24,9 @@ gpu_data=`gpu-stats`
 busids_data=`echo $gpu_data | jq -r ".busids[]"`
 busids=($busids_data)
 temp_data=`echo $gpu_data | jq -r ".temp[]"`
-temp=($temp_data)
+temp_local=($temp_data)
 fan_data=`echo $gpu_data | jq -r ".fan[]"`
-fan=($fan_data)
+fan_local=($fan_data)
 device_bus_data=`echo $json_data | jq -c ".[]" | jq -c ".hashers[]" | jq -c ".devices[]" | jq -r ".bus_id"`
 device_bus=($device_bus_data)
 
@@ -38,8 +38,8 @@ for i in "${!device_bus[@]}"; do
   found=0
   for j in "${!busids[@]}"; do
     if [ "${device_bus[$i],,}" == "${busids[$j],,}" ]; then
-	stats_temp="$stats_temp ${temp[$j]}"
-	stats_fan="$stats_fan ${fan[$j]}"
+	stats_temp="$stats_temp ${temp_local[$j]}"
+	stats_fan="$stats_fan ${fan_local[$j]}"
 	bus_number=$(echo ${busids[$j]} | cut -d ':' -f 1 | awk '{printf("%d\n", "0x"$1)}')
 	bus_numbers="$bus_numbers $bus_number"
         found=1
@@ -69,5 +69,6 @@ stats=$(jq -nc \
 	--arg uptime "$uptime" \
 	--arg ac "$total_shares" --arg rj "$total_rejects" \
 	--arg algo "argon2i" \
+	--arg ver "ariominer_0_2_0" \
 	--argjson bus_numbers "`echo "$bus_numbers" | tr " " "\n" | jq -cs '.'`" \
-	'{$hs, $hs_units, $temp, $fan, $uptime,ar: [$ac, $rj], $bus_numbers, $algo}')
+	'{$hs, $hs_units, $temp, $fan, $uptime,ar: [$ac, $rj], $bus_numbers, $algo, $ver}')
