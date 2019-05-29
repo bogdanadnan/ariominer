@@ -90,6 +90,6 @@ Parameters:
 
 (\*) Mining intensity depends on the number of CPU/GPU cores and available memory. Full load (100) is dynamically calculated by the application. You can use fractional numbers for better tuning.
 
-For detailed description of the parameters and for different use cases, please read the tutorial I wrote https://github.com/bogdanadnan/ariominer/blob/dev/ariominer_for_beginners.md
+For detailed description of the parameters and for different use cases, please read the tutorial I wrote https://github.com/bogdanadnan/ariominer/blob/master/ariominer_for_beginners.md
 
 Thank you, and happy mining :)
