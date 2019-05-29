@@ -63,6 +63,11 @@ After you start it, redirect all your miners to point to the address and port of
 This site has the dev fee settings to use (dev wallet and pool to connect to during that 1 min period). I implement it as such in order to be able to change the wallet in case the current one becomes compromised or to change the pool to a specific one in the future. Please don't block the site, there is no malicious code run by ariominer. The source code is open and if you don't trust the binaries you can always compile it yourself and check the code. 
 ### How can I solo mine?
 There is no support (yet) for solo mining. I might add it in the future as it is not a difficult task, but for the moment the need for it was not big enough.
+### I only want to use CPU to mine, how can I disable GPU?
+Set --gpu-intensity-cblocks and --gpu-intensity-gblocks to 0, this will disable mining with GPU.
+### I only want to use GPU to mine, how can I disable CPU?
+Set --cpu-intensity to 0, this will disable mining with CPU.
+  
   
   
 
