@@ -95,7 +95,7 @@ if(NOT WITHOUT_CUDA)
     set(
             CUDA_NVCC_FLAGS
             ${CUDA_NVCC_FLAGS};
-            -O3 -arch=compute_35
+            -O3 -arch=compute_35 -std=c++11
     )
     cuda_add_library(cuda_hasher MODULE ${SOURCE_CUDA_HASHER})
     set_target_properties(cuda_hasher
